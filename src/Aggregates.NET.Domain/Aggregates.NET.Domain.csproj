@@ -88,7 +88,6 @@
     <Compile Include="Internal\Repository.cs" />
     <Compile Include="Internal\UnitOfWork.cs" />
     <Compile Include="Domain.cs" />
-    <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
