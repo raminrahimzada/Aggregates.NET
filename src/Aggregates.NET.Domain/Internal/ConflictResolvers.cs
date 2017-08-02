@@ -50,7 +50,7 @@ namespace Aggregates.Internal
 
     internal class ThrowConflictResolver : IResolveConflicts
     {
-        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             throw new ConflictResolutionFailedException("No conflict resolution attempted");
         }
@@ -72,7 +72,7 @@ namespace Aggregates.Internal
             _streamGen = streamGen;
         }
 
-        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             var sourced = (IEventSourced)entity;
 
@@ -95,7 +95,7 @@ namespace Aggregates.Internal
     {
         internal static readonly ILog Logger = LogManager.GetLogger("DiscardConflictResolver");
 
-        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             var sourced = (IEventSourced)entity;
             var stream = sourced.Stream;
@@ -122,7 +122,7 @@ namespace Aggregates.Internal
             _streamGen = streamGen;
         }
 
-        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             var sourced = (IEventSourced)entity;
 
@@ -207,18 +207,18 @@ namespace Aggregates.Internal
             _streamGen = streamGen;
         }
 
-        private IEnumerable<Tuple<string, Id>> BuildParentList(IEventSource entity)
+        private IEnumerable<Tuple<string, Id>> BuildParentList(IEntity entity)
         {
             var results = new List<Tuple<string, Id>>();
-            while (entity.Parent != null)
+            while (entity.EntityParent != null)
             {
-                results.Add(new Tuple<string, Id>(entity.Parent.GetType().AssemblyQualifiedName, entity.Parent.Id));
-                entity = entity.Parent;
+                results.Add(new Tuple<string, Id>(entity.EntityParent.GetType().AssemblyQualifiedName, entity.EntityParent.Id));
+                entity = entity.EntityParent;
             }
             return results;
         }
 
-        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             var sourced = (IEventSourced)entity;
             // Store conflicting events in memory

@@ -98,7 +98,7 @@
     <Compile Include="Contracts\IEntity.cs" />
     <Compile Include="IMemento.cs" />
     <Compile Include="Contracts\IMessaging.cs" />
-    <Compile Include="Contracts\IMutating.cs" />
+    <Compile Include="IMutating.cs" />
     <Compile Include="Contracts\ISnapshot.cs" />
     <Compile Include="Contracts\ISnapshotReader.cs" />
     <Compile Include="Contracts\IStoreEvents.cs" />

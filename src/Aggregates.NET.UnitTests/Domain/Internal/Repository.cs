@@ -21,7 +21,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
             public bool Abandon { get; set; }
 
             public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId,
-                IDictionary<string, string> commitHeaders) where T : class, IEventSource
+                IDictionary<string, string> commitHeaders) where T : IEntity
             {
                 if (Fail)
                     throw new ConflictResolutionFailedException();
@@ -31,8 +31,9 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
                 return Task.CompletedTask;
             }
         }
+        class State { }
         [OptimisticConcurrency(ConcurrencyConflict.Custom, resolver: typeof(FakeResolver))]
-        class Entity : AggregateWithMemento<Entity, Entity.Memento>
+        class Entity : AggregateWithMemento<Entity, State, Entity.Memento>
         {
             private Entity() { }
 
@@ -60,7 +61,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
             }
         }
 
-        class BadEntity : Aggregate<BadEntity> { }
+        class BadEntity : Aggregate<BadEntity, State> { }
 
         private Aggregates.Internal.Repository<Entity> _repository;
         private Moq.Mock<IBuilder> _builder;

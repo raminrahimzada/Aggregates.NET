@@ -34,7 +34,7 @@ namespace Aggregates.Internal
             _streamGen = streamGen;
         }
 
-        public async Task<ISnapshot> GetSnapshot<T>(string bucket, Id streamId, IEnumerable<Id> parents) where T : class, IEventSource
+        public async Task<ISnapshot> GetSnapshot<T>(string bucket, Id streamId, IEnumerable<Id> parents) where T : IEventSource
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
             Logger.Write(LogLevel.Debug, () => $"Getting snapshot for stream [{streamName}]");
@@ -78,7 +78,7 @@ namespace Aggregates.Internal
         }
 
 
-        public async Task WriteSnapshots<T>(string bucket, Id streamId, IEnumerable<Id> parents, long version, IMemento snapshot, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public async Task WriteSnapshots<T>(string bucket, Id streamId, IEnumerable<Id> parents, long version, IMemento snapshot, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
             Logger.Write(LogLevel.Debug, () => $"Writing snapshot to stream [{streamName}]");

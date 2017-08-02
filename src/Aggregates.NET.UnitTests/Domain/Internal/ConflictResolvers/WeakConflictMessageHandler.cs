@@ -14,7 +14,8 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
     [TestFixture]
     public class WeakConflictMessageHandler
     {
-        public class Entity : Aggregates.AggregateWithMemento<Entity, Entity.Memento>
+        class State { }
+        class Entity : Aggregates.AggregateWithMemento<Entity, State, Entity.Memento>
         {
             public int Handles = 0;
             public int Conflicts = 0;
@@ -56,7 +57,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
             }
         }
 
-        public class Child : Aggregates.Entity<Child, Entity>
+        class Child : Aggregates.Entity<Child, State, Entity>
         {
             public int Handles = 0;
             public int Conflicts = 0;
@@ -203,10 +204,10 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
         {
             var child = new Child(_stream.Object, _resolver.Object);
 
-            var repo = new Moq.Mock<IRepository<Entity, Child>>();
+            var repo = new Moq.Mock<IRepository<Child, Entity>>();
             
             repo.Setup(x => x.Get(Moq.It.IsAny<Id>())).Returns(Task.FromResult(child));
-            _uow.Setup(x => x.For<Entity, Child>(Moq.It.IsAny<Entity>())).Returns(repo.Object);
+            _uow.Setup(x => x.For<Child, Entity>(Moq.It.IsAny<Entity>())).Returns(repo.Object);
 
             var handler = new HandleConflictingEvents(_uow.Object);
 

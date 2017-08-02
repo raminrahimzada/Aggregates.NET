@@ -17,7 +17,8 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
     {
         class Test : IEvent { }
 
-        class FakeEntity : Aggregates.Aggregate<FakeEntity>
+        class State { }
+        class FakeEntity : Aggregates.Aggregate<FakeEntity, State>
         {
             public int Handles;
             public int Conflicts;

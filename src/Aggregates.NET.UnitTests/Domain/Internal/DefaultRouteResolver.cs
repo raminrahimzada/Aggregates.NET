@@ -17,7 +17,8 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
         interface Test2 :IEvent { }
         interface Test4 : IEvent { }
 
-        class Entity : Aggregates.Aggregate<Entity>
+        class State { }
+        class Entity : Aggregates.Aggregate<Entity, State>
         {
             private void Handle(Test e) { }
             private void Conflict(Test e) { }

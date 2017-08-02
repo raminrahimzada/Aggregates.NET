@@ -90,26 +90,26 @@ namespace Aggregates.Internal
             _disposed = true;
         }
 
-        public IRepository<T> For<T>() where T : Aggregate<T>
+        public IRepository<TEntity> For<TEntity>() where TEntity : IEntity
         {
-            Logger.Write(LogLevel.Debug, () => $"Retreiving repository for type {typeof(T)}");
-            var key = typeof(T).FullName;
+            Logger.Write(LogLevel.Debug, () => $"Retreiving repository for type {typeof(TEntity)}");
+            var key = typeof(TEntity).FullName;
 
             IRepository repository;
-            if (_repositories.TryGetValue(key, out repository)) return (IRepository<T>)repository;
+            if (_repositories.TryGetValue(key, out repository)) return (IRepository<TEntity>)repository;
 
-            return (IRepository<T>)(_repositories[key] = (IRepository)_repoFactory.ForAggregate<T>(_builder));
+            return (IRepository<TEntity>)(_repositories[key] = (IRepository)_repoFactory.ForAggregate<TEntity>(_builder));
         }
-        public IRepository<TParent, TEntity> For<TParent, TEntity>(TParent parent) where TEntity : Entity<TEntity, TParent> where TParent : Entity<TParent>
+        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : IEntity<TParent> where TParent : IEntity
         {
             Logger.Write(LogLevel.Debug, () => $"Retreiving entity repository for type {typeof(TEntity)}");
             var key = $"{typeof(TParent).FullName}.{typeof(TEntity).FullName}";
 
             IRepository repository;
             if (_repositories.TryGetValue(key, out repository))
-                return (IRepository<TParent, TEntity>)repository;
+                return (IRepository<TEntity, TParent>)repository;
 
-            return (IRepository<TParent, TEntity>)(_repositories[key] = (IRepository)_repoFactory.ForEntity<TParent, TEntity>(parent, _builder));
+            return (IRepository<TEntity, TParent>)(_repositories[key] = (IRepository)_repoFactory.ForEntity<TEntity, TParent>(parent, _builder));
         }
         public IPocoRepository<T> Poco<T>() where T : class, new()
         {
@@ -121,16 +121,16 @@ namespace Aggregates.Internal
 
             return (IPocoRepository<T>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<T>(_builder));
         }
-        public IPocoRepository<TParent, T> Poco<TParent, T>(TParent parent) where T : class, new() where TParent : Entity<TParent>
+        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : IEntity
         {
             Logger.Write(LogLevel.Debug, () => $"Retreiving child poco repository for type {typeof(T)}");
             var key = $"{typeof(TParent).FullName}.{typeof(T).FullName}";
 
             IRepository repository;
             if (_pocoRepositories.TryGetValue(key, out repository))
-                return (IPocoRepository<TParent, T>)repository;
+                return (IPocoRepository<T, TParent>)repository;
 
-            return (IPocoRepository<TParent, T>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<TParent, T>(parent, _builder));
+            return (IPocoRepository<T, TParent>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<T, TParent>(parent, _builder));
         }
         public Task<IEnumerable<TResponse>> Query<TQuery, TResponse>(TQuery query) where TResponse : IQueryResponse where TQuery : IQuery<TResponse>
         {

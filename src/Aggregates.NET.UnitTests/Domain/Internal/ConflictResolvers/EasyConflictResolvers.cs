@@ -15,7 +15,8 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
     [TestFixture]
     public class EasyConflictResolvers
     {
-        class Entity : Aggregates.Aggregate<Entity>
+        class State { }
+        class Entity : Aggregates.Aggregate<Entity, State>
         {
             public Entity(IEventStream stream, IRouteResolver resolver)
             {

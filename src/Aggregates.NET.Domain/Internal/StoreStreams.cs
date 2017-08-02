@@ -70,7 +70,7 @@ namespace Aggregates.Internal
         }
 
 
-        public async Task<IEventStream> GetStream<T>(string bucket, Id streamId, IEnumerable<Id> parents = null) where T : class, IEventSource
+        public async Task<IEventStream> GetStream<T>(string bucket, Id streamId, IEnumerable<Id> parents = null) where T : IEventSource
         {
             parents = parents ?? new Id[] { };
 
@@ -130,7 +130,7 @@ namespace Aggregates.Internal
             return eventstream;
         }
 
-        public Task<IEventStream> NewStream<T>(string bucket, Id streamId, IEnumerable<Id> parents = null) where T : class, IEventSource
+        public Task<IEventStream> NewStream<T>(string bucket, Id streamId, IEnumerable<Id> parents = null) where T : IEventSource
         {
             parents = parents ?? new Id[] { };
             Logger.Write(LogLevel.Debug, () => $"Creating new stream [{streamId}] in bucket [{bucket}] for type {typeof(T).FullName}");
@@ -139,13 +139,13 @@ namespace Aggregates.Internal
             return Task.FromResult(stream);
         }
 
-        public async Task<long> GetSize<T>(IEventStream stream, string oob) where T : class, IEventSource
+        public async Task<long> GetSize<T>(IEventStream stream, string oob) where T : IEventSource
         {
             var streamName = _streamGen(typeof(T), StreamTypes.OOB, stream.Bucket, stream.StreamId, stream.Parents);
 
             return (await Enumerable.Range(1, 10).ToArray().StartEachAsync(5, (vary) => _store.Size($"{streamName}-{oob}.{vary}")).ConfigureAwait(false)).Sum();
         }
-        public async Task<IEnumerable<IFullEvent>> GetEvents<T>(IEventStream stream, long start, int count, string oob = null) where T : class, IEventSource
+        public async Task<IEnumerable<IFullEvent>> GetEvents<T>(IEventStream stream, long start, int count, string oob = null) where T : IEventSource
         {
             if (string.IsNullOrEmpty(oob))
             {
@@ -162,7 +162,7 @@ namespace Aggregates.Internal
                 .ConfigureAwait(false);
             return events.SelectMany(x => x);
         }
-        public async Task<IEnumerable<IFullEvent>> GetEventsBackwards<T>(IEventStream stream, long start, int count, string oob = null) where T : class, IEventSource
+        public async Task<IEnumerable<IFullEvent>> GetEventsBackwards<T>(IEventStream stream, long start, int count, string oob = null) where T : IEventSource
         {
             if (string.IsNullOrEmpty(oob))
             {
@@ -182,7 +182,7 @@ namespace Aggregates.Internal
 
 
 
-        public async Task WriteStream<T>(Guid commitId, IEventStream stream, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public async Task WriteStream<T>(Guid commitId, IEventStream stream, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Domain, stream.Bucket, stream.StreamId, stream.Parents);
             Logger.Write(LogLevel.Debug,
@@ -300,7 +300,7 @@ namespace Aggregates.Internal
         }
 
         public async Task VerifyVersion<T>(IEventStream stream)
-            where T : class, IEventSource
+            where T : IEventSource
         {
             // New streams dont need verification
             if (stream.CommitVersion == -1) return;

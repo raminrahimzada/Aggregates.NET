@@ -11,7 +11,7 @@ namespace Aggregates.Internal
     class NSBPublisher : IMessagePublisher
     {
 
-        public async Task Publish<T>(string streamName, IEnumerable<IFullEvent> events, IDictionary<string, string> commitHeaders) where T : class, IEventSource
+        public async Task Publish<T>(string streamName, IEnumerable<IFullEvent> events, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             await events.WhenAllAsync(@event =>
             {

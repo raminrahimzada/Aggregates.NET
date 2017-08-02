@@ -14,7 +14,8 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
     [TestFixture]
     public class WeakConflictResolver
     {
-        class Entity : Aggregates.AggregateWithMemento<Entity, Entity.Memento>
+        class State { }
+        class Entity : Aggregates.AggregateWithMemento<Entity, State, Entity.Memento>
         {
             public int Handles = 0;
             public int Conflicts = 0;

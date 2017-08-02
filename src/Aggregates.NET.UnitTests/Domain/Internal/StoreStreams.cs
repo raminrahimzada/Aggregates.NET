@@ -15,9 +15,10 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
     [TestFixture]
     public class StoreStreams
     {
-        class Entity : Aggregate<Entity> { }
+        class State { }
+        class Entity : Aggregate<Entity, State> { }
 
-        class EntityWithMemento : AggregateWithMemento<EntityWithMemento, EntityWithMemento.Memento>
+        class EntityWithMemento : AggregateWithMemento<EntityWithMemento, State, EntityWithMemento.Memento>
         {
             public class Memento : IMemento
             {

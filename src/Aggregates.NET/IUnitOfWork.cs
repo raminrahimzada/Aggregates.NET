@@ -8,10 +8,10 @@ namespace Aggregates
 {
     public interface IUnitOfWork : IDisposable
     {
-        IRepository<T> For<T>() where T : Aggregate<T>;
-        IRepository<TParent, TEntity> For<TParent, TEntity>(TParent parent) where TEntity : Aggregates.Entity<TEntity, TParent> where TParent : Internal.Entity<TParent>;
+        IRepository<TEntity> For<TEntity>() where TEntity : IEntity;
+        IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : IEntity<TParent> where TParent : IEntity;
         IPocoRepository<T> Poco<T>() where T : class, new();
-        IPocoRepository<TParent, T> Poco<TParent, T>(TParent parent) where T : class, new() where TParent : Internal.Entity<TParent>;
+        IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : IEntity;
 
 
         Task<IEnumerable<TResponse>> Query<TQuery, TResponse>(TQuery query) where TResponse : IQueryResponse where TQuery : IQuery<TResponse>;

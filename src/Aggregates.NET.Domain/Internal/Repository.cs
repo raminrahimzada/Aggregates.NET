@@ -17,7 +17,7 @@ using AggregateException = Aggregates.Exceptions.AggregateException;
 
 namespace Aggregates.Internal
 {
-    class Repository<TParent, T> : Repository<T>, IRepository<TParent, T> where TParent : Entity<TParent> where T : Entity<T, TParent>
+    class Repository<T, TParent> : Repository<T>, IRepository<T, TParent> where TParent : IEntity where T : class, IEntity<TParent>
     {
         private static readonly ILog Logger = LogManager.GetLogger("Repository");
 
@@ -57,7 +57,7 @@ namespace Aggregates.Internal
             var stream = await _store.GetStream<T>(bucket, streamId, parents).ConfigureAwait(false);
 
             var entity = Newup(stream);
-            entity.Parent = _parent;
+            entity.EntityParent = _parent;
 
             (entity as IEventSourced).Hydrate(stream.Committed.Select(e => e.Event as IEvent));
 
@@ -73,7 +73,7 @@ namespace Aggregates.Internal
             var stream = await _store.NewStream<T>(parent.Stream.Bucket, id, parent.BuildParents()).ConfigureAwait(false);
             var root = Newup(stream);
 
-            root.Parent = _parent;
+            root.EntityParent = _parent;
 
             var cacheId = $"{parent.Stream.Bucket}.{parent.BuildParentsString()}.{id}";
             Tracked[cacheId] = root;
@@ -81,7 +81,7 @@ namespace Aggregates.Internal
         }
     }
 
-    class Repository<T> : IRepository<T>, IRepository where T : Entity<T>
+    class Repository<T> : IRepository<T>, IRepository where T : class, IEntity
     {
         private static OptimisticConcurrencyAttribute _conflictResolution;
 

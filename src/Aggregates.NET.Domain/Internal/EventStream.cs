@@ -14,7 +14,7 @@ using NServiceBus.ObjectBuilder;
 namespace Aggregates.Internal
 {
 
-    class EventStream<T> : IEventStream where T : class, IEventSource
+    class EventStream<T> : IEventStream where T : IEventSource
     {
         private static readonly ILog Logger = LogManager.GetLogger("EventStream");
 

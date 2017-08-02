@@ -2,9 +2,9 @@
 
 namespace Aggregates.Contracts
 {
-    public interface IHaveEntities<TParent> where TParent : Internal.Entity<TParent>
+    public interface IHaveEntities<TParent> where TParent : IEntity
     {
-        IRepository<TParent, T> For<T>() where T : Aggregates.Entity<T, TParent>;
-        IPocoRepository<TParent, T> Poco<T>() where T : class, new();
+        IRepository<TEntity, TParent> For<TEntity>() where TEntity : IEntity<TParent>;
+        IPocoRepository<T, TParent> Poco<T>() where T : class, new();
     }
 }

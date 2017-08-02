@@ -12,7 +12,7 @@ using NServiceBus.ObjectBuilder;
 
 namespace Aggregates.Internal
 {
-    public abstract class Entity<TThis> : IEntity, IEventSourced, IHaveEntities<TThis>, INeedBuilder, INeedStream, INeedEventFactory, INeedRouteResolver where TThis : Entity<TThis>
+    public abstract class Entity<TThis, TState> : IEntity, IEventSourced, IHaveEntities<TThis>, INeedBuilder, INeedStream, INeedEventFactory, INeedRouteResolver where TThis : Entity<TThis, TState> where TState : class,new()
     {
         internal static readonly ILog Logger = LogManager.GetLogger(typeof(TThis).Name);
 
@@ -26,13 +26,25 @@ namespace Aggregates.Internal
 
         Id IEventSource.Id => Id;
         long IEventSource.Version => Version;
-        IEventSource IEventSource.Parent => null;
+        IEntity IEntity.EntityParent { get; set; }
 
         public Id Id => Stream.StreamId;
         public string Bucket => Stream.Bucket;
         public long Version => Stream.StreamVersion;
         public long CommitVersion => Stream.CommitVersion;
-        
+
+        private TState _state;
+
+        public TState State
+        {
+            get
+            {
+                if (_state == null)
+                    _state = new TState();
+                return _state;
+            }
+        }
+
 
         IEventStream INeedStream.Stream { get; set; }
         IEventStream IEventSourced.Stream => (this as INeedStream).Stream;
@@ -43,17 +55,17 @@ namespace Aggregates.Internal
         IBuilder INeedBuilder.Builder { get; set; }
 
 
-        public IRepository<TThis, TEntity> For<TEntity>() where TEntity : Aggregates.Entity<TEntity, TThis>
+        public IRepository<TEntity, TThis> For<TEntity>() where TEntity : IEntity<TThis>
         {
             // Get current UOW
             var uow = Builder.Build<IUnitOfWork>();
-            return uow.For<TThis, TEntity>(this as TThis);
+            return uow.For<TEntity, TThis>(this as TThis);
         }
-        public IPocoRepository<TThis, T> Poco<T>() where T : class, new()
+        public IPocoRepository<T, TThis> Poco<T>() where T : class, new()
         {
             // Get current UOW
             var uow = Builder.Build<IUnitOfWork>();
-            return uow.Poco<TThis, T>(this as TThis);
+            return uow.Poco<T, TThis>(this as TThis);
         }
 
         public Task<long> GetSize(string oob)

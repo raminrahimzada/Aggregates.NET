@@ -15,38 +15,38 @@ namespace Aggregates.Contracts
         Task Commit(Guid commitId, IDictionary<string, string> commitHeaders);
     }
 
-    public interface IRepository<T> where T : Internal.Entity<T>
+    public interface IRepository<TEntity> where TEntity : IEntity
     {
         /// <summary>
         /// Attempts to get aggregate from store, if stream does not exist it throws
         /// </summary>
-        Task<T> Get(Id id);
-        Task<T> Get(string bucketId, Id id);
+        Task<TEntity> Get(Id id);
+        Task<TEntity> Get(string bucketId, Id id);
         /// <summary>
         /// Attempts to retreive aggregate from store, if stream does not exist it does not throw
         /// </summary>
-        Task<T> TryGet(Id id);
-        Task<T> TryGet(string bucketId, Id id);
+        Task<TEntity> TryGet(Id id);
+        Task<TEntity> TryGet(string bucketId, Id id);
 
         /// <summary>
         /// Initiates a new event stream
         /// </summary>
-        Task<T> New(Id id);
-        Task<T> New(string bucketId, Id id);
+        Task<TEntity> New(Id id);
+        Task<TEntity> New(string bucketId, Id id);
     }
-    public interface IRepository<TParent, T> where TParent : Internal.Entity<TParent> where T : Aggregates.Entity<T, TParent>
+    public interface IRepository<TEntity, TParent> where TParent : IEntity where TEntity : IEntity<TParent> 
     {
         /// <summary>
         /// Attempts to get aggregate from store, if stream does not exist it throws
         /// </summary>
-        Task<T> Get(Id id);
+        Task<TEntity> Get(Id id);
         /// <summary>
         /// Attempts to retreive aggregate from store, if stream does not exist it does not throw
         /// </summary>
-        Task<T> TryGet(Id id);
+        Task<TEntity> TryGet(Id id);
         /// <summary>
         /// Initiates a new event stream
         /// </summary>
-        Task<T> New(Id id);
+        Task<TEntity> New(Id id);
     }
 }

@@ -7,11 +7,9 @@ namespace Aggregates.Contracts
     {
         Id Id { get; }
         long Version { get; }
-        IEventSource Parent { get; }
-
     }
 
-    internal interface IEventSourced : IEventSource         
+    public interface IEventSourced : IEventSource         
     {
 
         IEventStream Stream { get; }

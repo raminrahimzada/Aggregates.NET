@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NServiceBus;
 
-namespace Aggregates.Contracts
+namespace Aggregates
 {
     public interface IMutating
     {
