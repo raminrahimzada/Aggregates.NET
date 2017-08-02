@@ -50,7 +50,7 @@ namespace Aggregates.Internal
 
     internal class ThrowConflictResolver : IResolveConflicts
     {
-        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
+        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             throw new ConflictResolutionFailedException("No conflict resolution attempted");
         }
@@ -72,7 +72,7 @@ namespace Aggregates.Internal
             _streamGen = streamGen;
         }
 
-        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
+        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             var sourced = (IEventSourced)entity;
 
@@ -95,7 +95,7 @@ namespace Aggregates.Internal
     {
         internal static readonly ILog Logger = LogManager.GetLogger("DiscardConflictResolver");
 
-        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
+        public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             var sourced = (IEventSourced)entity;
             var stream = sourced.Stream;
@@ -122,7 +122,7 @@ namespace Aggregates.Internal
             _streamGen = streamGen;
         }
 
-        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
+        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             var sourced = (IEventSourced)entity;
 
@@ -218,7 +218,7 @@ namespace Aggregates.Internal
             return results;
         }
 
-        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEntity
+        public async Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where T : IEventSource
         {
             var sourced = (IEventSourced)entity;
             // Store conflicting events in memory

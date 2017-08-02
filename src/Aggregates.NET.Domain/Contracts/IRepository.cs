@@ -15,7 +15,7 @@ namespace Aggregates.Contracts
         Task Commit(Guid commitId, IDictionary<string, string> commitHeaders);
     }
 
-    public interface IRepository<TEntity> where TEntity : IEntity
+    public interface IRepository<TEntity> where TEntity : IEventSource
     {
         /// <summary>
         /// Attempts to get aggregate from store, if stream does not exist it throws
@@ -34,7 +34,7 @@ namespace Aggregates.Contracts
         Task<TEntity> New(Id id);
         Task<TEntity> New(string bucketId, Id id);
     }
-    public interface IRepository<TEntity, TParent> where TParent : IEntity where TEntity : IEntity<TParent> 
+    public interface IRepository<TEntity, TParent> where TParent : IEventSource where TEntity : IEventSource 
     {
         /// <summary>
         /// Attempts to get aggregate from store, if stream does not exist it throws

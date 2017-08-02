@@ -7,12 +7,13 @@ namespace Aggregates.Contracts
     {
         Id Id { get; }
         long Version { get; }
+        IEventStream Stream { get; }
+        IEventSource Parent { get; }
     }
 
     public interface IEventSourced : IEventSource         
     {
 
-        IEventStream Stream { get; }
         void Hydrate(IEnumerable<IEvent> events);
         void Conflict(IEvent @event, IDictionary<string, string> metadata = null);
         void Apply(IEvent @event, IDictionary<string, string> metadata = null);

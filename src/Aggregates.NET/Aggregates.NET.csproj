@@ -71,6 +71,7 @@
     <Compile Include="Bus.cs" />
     <Compile Include="Attributes\DelayedAttribute.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Contracts\INeedStream.cs" />
     <Compile Include="Contracts\IPocoRepository.cs" />
     <Compile Include="Contracts\IRouteResolver.cs" />
     <Compile Include="Contracts\ISnapshotting.cs" />

@@ -12,7 +12,7 @@ using NServiceBus.ObjectBuilder;
 
 namespace Aggregates.Internal
 {
-    public abstract class Entity<TThis, TState> : IEntity, IEventSourced, IHaveEntities<TThis>, INeedBuilder, INeedStream, INeedEventFactory, INeedRouteResolver where TThis : Entity<TThis, TState> where TState : class, IState, new()
+    public abstract class Entity<TThis, TState> : IEventSource, IEventSourced, IHaveEntities<TThis>, INeedBuilder, INeedStream, INeedEventFactory, INeedRouteResolver where TThis : Entity<TThis, TState> where TState : class, IState, new()
     {
         internal static readonly ILog Logger = LogManager.GetLogger(typeof(TThis).Name);
 
@@ -26,7 +26,7 @@ namespace Aggregates.Internal
 
         Id IEventSource.Id => Id;
         long IEventSource.Version => Version;
-        IEntity IEntity.EntityParent { get; set; }
+        IEventSource IEventSource.Parent => null;
 
         public Id Id => Stream.StreamId;
         public string Bucket => Stream.Bucket;
@@ -47,7 +47,7 @@ namespace Aggregates.Internal
 
 
         IEventStream INeedStream.Stream { get; set; }
-        IEventStream IEventSourced.Stream => (this as INeedStream).Stream;
+        IEventStream IEventSource.Stream => (this as INeedStream).Stream;
 
         IMessageCreator INeedEventFactory.EventFactory { get; set; }
 
@@ -55,7 +55,7 @@ namespace Aggregates.Internal
         IBuilder INeedBuilder.Builder { get; set; }
 
 
-        public IRepository<TEntity, TThis> For<TEntity>() where TEntity : IEntity<TThis>
+        public IRepository<TEntity, TThis> For<TEntity>() where TEntity : IEventSource
         {
             // Get current UOW
             var uow = Builder.Build<IUnitOfWork>();

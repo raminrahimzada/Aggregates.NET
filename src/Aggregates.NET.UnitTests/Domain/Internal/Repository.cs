@@ -21,7 +21,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
             public bool Abandon { get; set; }
 
             public Task Resolve<T>(T entity, IEnumerable<IFullEvent> uncommitted, Guid commitId,
-                IDictionary<string, string> commitHeaders) where T : IEntity
+                IDictionary<string, string> commitHeaders) where T : IEventSource
             {
                 if (Fail)
                     throw new ConflictResolutionFailedException();

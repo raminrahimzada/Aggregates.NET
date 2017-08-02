@@ -10,13 +10,13 @@ namespace Aggregates.Internal
     {
         private static readonly ConcurrentDictionary<Type, Type> RepoCache = new ConcurrentDictionary<Type, Type>();
 
-        public IRepository<TEntity> ForAggregate<TEntity>(IBuilder builder) where TEntity : IEntity
+        public IRepository<TEntity> ForAggregate<TEntity>(IBuilder builder) where TEntity : IEventSource
         {
             var repoType = RepoCache.GetOrAdd(typeof(TEntity), (key) => typeof(Repository<>).MakeGenericType(typeof(TEntity)));
 
             return (IRepository<TEntity>)Activator.CreateInstance(repoType, builder);
         }
-        public IRepository<TEntity, TParent> ForEntity<TEntity, TParent>(TParent parent, IBuilder builder) where TEntity : IEntity<TParent> where TParent : IEntity
+        public IRepository<TEntity, TParent> ForEntity<TEntity, TParent>(TParent parent, IBuilder builder) where TEntity : IEventSource where TParent : IEventSource
         {
             var repoType = RepoCache.GetOrAdd(typeof(TEntity), (key) => typeof(Repository<,>).MakeGenericType(typeof(TParent), typeof(TEntity)));
 
@@ -29,7 +29,7 @@ namespace Aggregates.Internal
 
             return (IPocoRepository<T>)Activator.CreateInstance(repoType, builder);
         }
-        public IPocoRepository<T, TParent> ForPoco<T, TParent>(TParent parent, IBuilder builder) where T : class, new() where TParent : IEntity
+        public IPocoRepository<T, TParent> ForPoco<T, TParent>(TParent parent, IBuilder builder) where T : class, new() where TParent : IEventSource
         {
             var repoType = RepoCache.GetOrAdd(typeof(T), (key) => typeof(PocoRepository<,>).MakeGenericType(typeof(TParent), typeof(T)));
 

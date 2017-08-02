@@ -65,7 +65,6 @@
     <Compile Include="Contracts\INeedBuilder.cs" />
     <Compile Include="Contracts\INeedEventFactory.cs" />
     <Compile Include="Contracts\INeedRouteResolver.cs" />
-    <Compile Include="Contracts\INeedStream.cs" />
     <Compile Include="Contracts\IRepository.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Exceptions\ConflictResolutionFailedException.cs" />

@@ -90,7 +90,7 @@ namespace Aggregates.Internal
             _disposed = true;
         }
 
-        public IRepository<TEntity> For<TEntity>() where TEntity : IEntity
+        public IRepository<TEntity> For<TEntity>() where TEntity : IEventSource
         {
             Logger.Write(LogLevel.Debug, () => $"Retreiving repository for type {typeof(TEntity)}");
             var key = typeof(TEntity).FullName;
@@ -100,7 +100,7 @@ namespace Aggregates.Internal
 
             return (IRepository<TEntity>)(_repositories[key] = (IRepository)_repoFactory.ForAggregate<TEntity>(_builder));
         }
-        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : IEntity<TParent> where TParent : IEntity
+        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : IEventSource<TParent> where TParent : IEventSource
         {
             Logger.Write(LogLevel.Debug, () => $"Retreiving entity repository for type {typeof(TEntity)}");
             var key = $"{typeof(TParent).FullName}.{typeof(TEntity).FullName}";
@@ -121,7 +121,7 @@ namespace Aggregates.Internal
 
             return (IPocoRepository<T>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<T>(_builder));
         }
-        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : IEntity
+        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : IEventSource
         {
             Logger.Write(LogLevel.Debug, () => $"Retreiving child poco repository for type {typeof(T)}");
             var key = $"{typeof(TParent).FullName}.{typeof(T).FullName}";

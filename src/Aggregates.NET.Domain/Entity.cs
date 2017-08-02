@@ -3,14 +3,16 @@
 namespace Aggregates
 {
 
-    public abstract class Entity<TThis, TState, TParent> : Internal.Entity<TThis, TState>, IEntity<TParent> where TParent : IEntity  where TThis : Entity<TThis, TState, TParent> where TState : class, IState, new()
+    public abstract class Entity<TThis, TState, TParent> : Internal.Entity<TThis, TState>, IEntity<TParent> where TParent : IEventSource  where TThis : Entity<TThis, TState, TParent> where TState : class, IState, new()
     {
+        IEventSource IEventSource.Parent => Parent;
+        TParent IEntity<TParent>.Parent { get; set; }
 
-        public TParent Parent => (TParent)(this as IEntity).EntityParent;
+        public TParent Parent => (this as IEntity<TParent>).Parent;
     }
     
 
-    public abstract class EntityWithMemento<TThis, TState, TParent, TMemento> : Entity<TThis, TState, TParent>, ISnapshotting where TMemento : class, IMemento where TParent : IEntity where TThis : EntityWithMemento<TThis, TState, TParent, TMemento> where TState : class, IState, new()
+    public abstract class EntityWithMemento<TThis, TState, TParent, TMemento> : Entity<TThis, TState, TParent>, ISnapshotting where TMemento : class, IMemento where TParent : IEventSource where TThis : EntityWithMemento<TThis, TState, TParent, TMemento> where TState : class, IState, new()
     {
         ISnapshot ISnapshotting.Snapshot => Stream.Snapshot;
 

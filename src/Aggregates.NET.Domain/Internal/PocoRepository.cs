@@ -13,7 +13,7 @@ using NServiceBus.ObjectBuilder;
 
 namespace Aggregates.Internal
 {
-    class PocoRepository<T, TParent> : PocoRepository<T>, IPocoRepository<T, TParent> where TParent : IEntity where T : class, new()
+    class PocoRepository<T, TParent> : PocoRepository<T>, IPocoRepository<T, TParent> where TParent : IEventSource where T : class, new()
     {
         private static readonly ILog Logger = LogManager.GetLogger("PocoRepository");
 
