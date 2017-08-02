@@ -15,7 +15,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
     public class EventStream
     {
         class FakeEvent : IEvent { }
-        class State { }
+        class State : Aggregates.State { }
         class Entity : Aggregates.Aggregate<Entity, State> { }
 
         private Moq.Mock<IBuilder> _builder;

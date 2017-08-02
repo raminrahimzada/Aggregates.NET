@@ -13,7 +13,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
     [TestFixture]
     public class StrongConflictResolver
     {
-        class State { }
+        class State : Aggregates.State { }
         class Entity : Aggregates.AggregateWithMemento<Entity,State, Entity.Memento>
         {
             public int Handles = 0;

@@ -12,7 +12,7 @@ using NServiceBus.ObjectBuilder;
 
 namespace Aggregates.Internal
 {
-    public abstract class Entity<TThis, TState> : IEntity, IEventSourced, IHaveEntities<TThis>, INeedBuilder, INeedStream, INeedEventFactory, INeedRouteResolver where TThis : Entity<TThis, TState> where TState : class,new()
+    public abstract class Entity<TThis, TState> : IEntity, IEventSourced, IHaveEntities<TThis>, INeedBuilder, INeedStream, INeedEventFactory, INeedRouteResolver where TThis : Entity<TThis, TState> where TState : class, IState, new()
     {
         internal static readonly ILog Logger = LogManager.GetLogger(typeof(TThis).Name);
 
@@ -168,7 +168,7 @@ namespace Aggregates.Internal
         
         internal void RouteFor(IEvent @event)
         {
-            var route = Resolver.Resolve(this, @event.GetType());
+            var route = Resolver.Resolve(State, @event.GetType());
             if (route == null)
             {
                 Logger.Write(LogLevel.Debug, () => $"Failed to route event {@event.GetType().FullName} on type {typeof(TThis).FullName}");
@@ -179,7 +179,7 @@ namespace Aggregates.Internal
         }
         internal void RouteForConflict(IEvent @event)
         {
-            var route = Resolver.Conflict(this, @event.GetType());
+            var route = Resolver.Conflict(State, @event.GetType());
             if (route == null)
                 throw new NoRouteException($"Failed to route {@event.GetType().FullName} for conflict resolution on entity {typeof(TThis).FullName} stream id [{Id}] bucket [{Bucket}].  If you want to handle conflicts here, define a new method of signature `private void Conflict({@event.GetType().Name} e)`");
 

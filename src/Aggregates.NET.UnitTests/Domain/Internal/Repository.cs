@@ -31,7 +31,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
                 return Task.CompletedTask;
             }
         }
-        class State { }
+        class State : Aggregates.State { }
         [OptimisticConcurrency(ConcurrencyConflict.Custom, resolver: typeof(FakeResolver))]
         class Entity : AggregateWithMemento<Entity, State, Entity.Memento>
         {

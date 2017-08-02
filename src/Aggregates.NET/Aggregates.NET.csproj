@@ -81,6 +81,7 @@
     <Compile Include="Contracts\IRepository.cs" />
     <Compile Include="Contracts\IRouteResolver.cs" />
     <Compile Include="Contracts\ISnapshotting.cs" />
+    <Compile Include="Contracts\IState.cs" />
     <Compile Include="Contracts\IStoreStreams.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Exceptions\DiscardEventException.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="Specifications\NotSpecification.cs" />
     <Compile Include="Specifications\OrSpecification.cs" />
     <Compile Include="Specifications\Specification.cs" />
+    <Compile Include="State.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>
