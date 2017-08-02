@@ -14,19 +14,10 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
     [TestFixture]
     public class WeakConflictMessageHandler
     {
-        class State : Aggregates.State { }
-        class Entity : Aggregates.AggregateWithMemento<Entity, State, Entity.Memento>
+        public class State : Aggregates.State
         {
             public int Handles = 0;
             public int Conflicts = 0;
-            public bool TakeASnapshot = false;
-
-            public Entity(IEventStream stream, IRouteResolver resolver)
-            {
-                (this as INeedStream).Stream = stream;
-                (this as INeedRouteResolver).Resolver = resolver;
-            }
-
             public void Handle(IEvent e)
             {
                 Handles++;
@@ -36,6 +27,17 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
             {
                 Conflicts++;
             }
+        }
+        public class Entity : Aggregates.AggregateWithMemento<Entity, State, Entity.Memento>
+        {
+            public bool TakeASnapshot = false;
+
+            public Entity(IEventStream stream, IRouteResolver resolver)
+            {
+                (this as INeedStream).Stream = stream;
+                (this as INeedRouteResolver).Resolver = resolver;
+            }
+
 
             public class Memento : IMemento
             {
@@ -57,24 +59,12 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
             }
         }
 
-        class Child : Aggregates.Entity<Child, State, Entity>
+        public class Child : Aggregates.Entity<Child, State, Entity>
         {
-            public int Handles = 0;
-            public int Conflicts = 0;
             public Child(IEventStream stream, IRouteResolver resolver)
             {
                 (this as INeedStream).Stream = stream;
                 (this as INeedRouteResolver).Resolver = resolver;
-            }
-
-            public void Handle(IEvent e)
-            {
-                Handles++;
-            }
-
-            public void Conflict(IEvent e)
-            {
-                Conflicts++;
             }
         }
         class Event : IEvent { }
@@ -99,14 +89,10 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
             _store = new Moq.Mock<IStoreStreams>();
             _channel = new Moq.Mock<IDelayedChannel>();
 
-            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<Entity>(), typeof(Event)))
-                .Returns((entity, e) => (entity as Entity).Conflict((IEvent)e));
-            _resolver.Setup(x => x.Resolve(Moq.It.IsAny<Entity>(), typeof(Event)))
-                .Returns((entity, e) => (entity as Entity).Handle((IEvent)e));
-            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<Child>(), typeof(Event)))
-                .Returns((entity, e) => (entity as Child).Conflict((IEvent)e));
-            _resolver.Setup(x => x.Resolve(Moq.It.IsAny<Child>(), typeof(Event)))
-                .Returns((entity, e) => (entity as Child).Handle((IEvent)e));
+            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<State>(), typeof(Event)))
+                .Returns((entity, e) => (entity as State).Conflict((IEvent)e));
+            _resolver.Setup(x => x.Resolve(Moq.It.IsAny<State>(), typeof(Event)))
+                .Returns((entity, e) => (entity as State).Handle((IEvent)e));
 
             _stream.Setup(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()));
 
@@ -147,7 +133,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
 
             await handler.Handle(_conflicting, new Moq.Mock<IMessageHandlerContext>().Object).ConfigureAwait(false);
 
-            Assert.AreEqual(1, _entity.Conflicts);
+            Assert.AreEqual(1, _entity.State.Conflicts);
 
             _stream.Verify(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()),
                 Moq.Times.Once);
@@ -159,7 +145,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
         {
             var handler = new HandleConflictingEvents(_uow.Object);
 
-            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<Entity>(), typeof(Event))).Throws<NoRouteException>();
+            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<State>(), typeof(Event))).Throws<NoRouteException>();
 
             Assert.ThrowsAsync<ConflictResolutionFailedException>(
                 () => handler.Handle(_conflicting, new Moq.Mock<IMessageHandlerContext>().Object));
@@ -171,7 +157,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
         {
             var handler = new HandleConflictingEvents(_uow.Object);
 
-            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<Entity>(), typeof(Event))).Throws<AbandonConflictException>();
+            _resolver.Setup(x => x.Conflict(Moq.It.IsAny<State>(), typeof(Event))).Throws<AbandonConflictException>();
 
             Assert.ThrowsAsync<AbandonConflictException>(
                 () => handler.Handle(_conflicting, new Moq.Mock<IMessageHandlerContext>().Object));
@@ -191,7 +177,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
             await handler.Handle(_conflicting, new Moq.Mock<IMessageHandlerContext>().Object)
                 .ConfigureAwait(false);
 
-            Assert.AreEqual(1, _entity.Conflicts);
+            Assert.AreEqual(1, _entity.State.Conflicts);
 
             _stream.Verify(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()),
                 Moq.Times.Once);
@@ -220,7 +206,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal.ConflictResolvers
 
             await handler.Handle(conflict, new Moq.Mock<IMessageHandlerContext>().Object).ConfigureAwait(false);
 
-            Assert.AreEqual(1, child.Conflicts);
+            Assert.AreEqual(1, child.State.Conflicts);
 
             _stream.Verify(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()),
                 Moq.Times.Once);

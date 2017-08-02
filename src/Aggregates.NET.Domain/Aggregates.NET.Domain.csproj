@@ -55,13 +55,23 @@
     <Compile Include="..\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Aggregate.cs" />
     <Compile Include="Attributes\OptimisticConcurrencyAttribute.cs" />
     <Compile Include="ConcurrencyConflict.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Contracts\IEntity.cs" />
+    <Compile Include="Contracts\IHaveEntities.cs" />
     <Compile Include="Contracts\IMessagePublisher.cs" />
+    <Compile Include="Contracts\INeedBuilder.cs" />
+    <Compile Include="Contracts\INeedEventFactory.cs" />
+    <Compile Include="Contracts\INeedRouteResolver.cs" />
+    <Compile Include="Contracts\INeedStream.cs" />
+    <Compile Include="Contracts\IRepository.cs" />
+    <Compile Include="Entity.cs" />
     <Compile Include="Exceptions\ConflictResolutionFailedException.cs" />
     <Compile Include="Exceptions\ConflictingCommandException.cs" />
     <Compile Include="Extensions\EventSourceExtensions.cs" />
+    <Compile Include="Internal\Entity.cs" />
     <Compile Include="Internal\EventStream.cs" />
     <Compile Include="Internal\StorePocos.cs" />
     <Compile Include="Internal\StoreSnapshots.cs" />
@@ -88,6 +98,7 @@
     <Compile Include="Internal\Repository.cs" />
     <Compile Include="Internal\UnitOfWork.cs" />
     <Compile Include="Domain.cs" />
+    <Compile Include="IUnitOfWork.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

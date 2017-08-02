@@ -361,7 +361,7 @@ namespace Aggregates.Internal
                 var method =
                     typeof(IUnitOfWork).GetMethods()
                         .Single(x => x.Name == "For" && x.GetParameters().Length == 1)
-                        .MakeGenericMethod(parent.GetType(), entityType);
+                        .MakeGenericMethod(entityType, parent.GetType());
 
                 var repo = method.Invoke(_uow, new object[] { parent });
 

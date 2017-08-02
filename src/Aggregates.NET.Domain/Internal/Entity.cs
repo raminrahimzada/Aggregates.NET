@@ -175,7 +175,7 @@ namespace Aggregates.Internal
                 return;
             }
 
-            route(this, @event);
+            route(State, @event);
         }
         internal void RouteForConflict(IEvent @event)
         {
@@ -183,7 +183,7 @@ namespace Aggregates.Internal
             if (route == null)
                 throw new NoRouteException($"Failed to route {@event.GetType().FullName} for conflict resolution on entity {typeof(TThis).FullName} stream id [{Id}] bucket [{Bucket}].  If you want to handle conflicts here, define a new method of signature `private void Conflict({@event.GetType().Name} e)`");
 
-            route(this, @event);
+            route(State, @event);
         }
     }
 }

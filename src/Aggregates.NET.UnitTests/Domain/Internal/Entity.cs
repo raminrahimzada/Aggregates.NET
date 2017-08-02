@@ -17,23 +17,12 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
     {
         class Test : IEvent { }
 
-        class State : Aggregates.State { }
-        class FakeEntity : Aggregates.Aggregate<FakeEntity, State>
+        class State : Aggregates.State
         {
             public int Handles;
             public int Conflicts;
 
             public bool Discard;
-
-            public FakeEntity(IEventStream stream, IBuilder builder, IMessageCreator creator,
-                IRouteResolver resolver)
-            {
-                (this as INeedStream).Stream = stream;
-                (this as INeedBuilder).Builder = builder;
-                (this as INeedEventFactory).EventFactory = creator;
-                (this as INeedRouteResolver).Resolver = resolver;
-            }
-
             private void Handle(Test e)
             {
                 Handles++;
@@ -45,6 +34,19 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
                 if (Discard)
                     throw new DiscardEventException();
             }
+        }
+        class FakeEntity : Aggregates.Aggregate<FakeEntity, State>
+        {
+
+            public FakeEntity(IEventStream stream, IBuilder builder, IMessageCreator creator,
+                IRouteResolver resolver)
+            {
+                (this as INeedStream).Stream = stream;
+                (this as INeedBuilder).Builder = builder;
+                (this as INeedEventFactory).EventFactory = creator;
+                (this as INeedRouteResolver).Resolver = resolver;
+            }
+
 
             public void ApplyEvent()
             {
@@ -133,7 +135,7 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
 
             (_entity as IEventSourced).Hydrate(events);
 
-            Assert.AreEqual(2, _entity.Handles);
+            Assert.AreEqual(2, _entity.State.Handles);
         }
 
         [Test]
@@ -143,8 +145,8 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
 
             (_entity as IEventSourced).Conflict(new Test());
 
-            Assert.AreEqual(1, _entity.Conflicts);
-            Assert.AreEqual(1, _entity.Handles);
+            Assert.AreEqual(1, _entity.State.Conflicts);
+            Assert.AreEqual(1, _entity.State.Handles);
 
             _stream.Verify(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Once);
         }
@@ -154,11 +156,11 @@ namespace Aggregates.NET.UnitTests.Domain.Internal
         {
             _stream.Setup(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()));
 
-            _entity.Discard = true;
+            _entity.State.Discard = true;
             (_entity as IEventSourced).Conflict(new Test());
 
-            Assert.AreEqual(1, _entity.Conflicts);
-            Assert.AreEqual(0, _entity.Handles);
+            Assert.AreEqual(1, _entity.State.Conflicts);
+            Assert.AreEqual(0, _entity.State.Handles);
 
             _stream.Verify(x => x.Add(Moq.It.IsAny<IEvent>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Never);
         }
