@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
-using NServiceBus.Logging;
+using Aggregates.Logging;
 
 namespace Aggregates
 {
@@ -29,25 +30,16 @@ namespace Aggregates
         public static readonly string DelayedId = "Aggregates.NET.DelayedMessageId";
         public static readonly string ChannelKey = "Aggregates.NET.ChannelKey";
         public static readonly string OobHeaderKey = "Aggregates.OOB";
+        public static readonly string OobTransientKey = "Aggregates.Transient";
+        public static readonly string OobDaysToLiveKey = "Aggregates.DaysToLive";
+
 
         public static Guid Instance = Guid.NewGuid();
         public static string Bucket = "default";
-        public static string MessageIdHeader = "NServiceBus.MessageId";
         public static string CommitIdHeader = "CommitId";
         public static string InstanceHeader = "Instance";
-        
+
         public static AsyncLocal<LogLevel?> MinimumLogging = new AsyncLocal<LogLevel?>();
 
-        // Header information to take from incoming messages
-        public static IList<string> CarryOverHeaders = new List<string>
-        {
-                                                                          "NServiceBus.MessageId",
-                                                                          "NServiceBus.CorrelationId",
-                                                                          "NServiceBus.Version",
-                                                                          "NServiceBus.TimeSent",
-                                                                          "NServiceBus.ConversationId",
-                                                                          "NServiceBus.OriginatingMachine",
-                                                                          "NServiceBus.OriginatingEndpoint"
-                                                                      };
     }
 }

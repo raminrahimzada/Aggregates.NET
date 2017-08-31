@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Aggregates.Messages;
 
 namespace Aggregates.Contracts
 {
-    public interface IDelayedMessage
+    public interface IDelayedMessage : IEvent
     {
-        string MessageId { get; set; }
-        IDictionary<string, string> Headers { get; set; }
-        object Message { get; set; }
-        DateTime Received { get; set; }
-        String ChannelKey { get; set; }
+        string MessageId { get; }
+        IDictionary<string, string> Headers { get; }
+        object Message { get; }
+        DateTime Received { get; }
+        String ChannelKey { get; }
     }
     public interface IDelayedChannel 
     {

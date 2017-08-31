@@ -1,12 +1,12 @@
 ﻿using System;
-using NServiceBus;
+using Aggregates.Messages;
 
 namespace Aggregates.Contracts
 {
     public interface IFullEvent
     {
         Guid? EventId { get; }
-        object Event { get; }
+        IEvent Event { get; }
         IEventDescriptor Descriptor { get; }
     }
 }
