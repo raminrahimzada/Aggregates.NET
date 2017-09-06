@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Aggregates.Contracts
 {
-    interface IEventMapper
+    public interface IEventMapper
     {
         Type GetMappedTypeFor(Type type);
     }

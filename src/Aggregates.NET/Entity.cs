@@ -12,20 +12,21 @@ using Aggregates.Messages;
 
 namespace Aggregates
 {
-    public abstract class Entity<TThis, TParent, TState> : Entity<TThis, TState>, IChildEntity<TParent> where TParent : Entity<TParent, TState> where TThis : Entity<TThis, TParent, TState> where TState : IState, new()
+    public abstract class Entity<TThis, TParent, TState> : Entity<TThis, TState>, IChildEntity<TParent> where TParent : IEntity where TThis : Entity<TThis, TParent, TState> where TState : IState, new()
     {
         TParent IChildEntity<TParent>.Parent => Parent;
 
         public TParent Parent { get; internal set; }
     }
 
-    public abstract class Entity<TThis, TState> : IEntity<TState>, IHaveEntities<TThis>, INeedContainer where TThis : Entity<TThis, TState> where TState : IState, new()
+    public abstract class Entity<TThis, TState> : IEntity<TState>, IHaveEntities<TThis>, INeedContainer,
+        INeedEventFactory where TThis : Entity<TThis, TState> where TState : IState, new()
     {
         private static readonly ILog Logger = LogProvider.GetLogger(typeof(TThis).Name);
 
         public Id Id { get; internal set; }
         public string Bucket { get; internal set; }
-        public IEnumerable<Id> Parents { get; internal set; }
+        public Id[] Parents { get; internal set; }
         public long Version { get; internal set; }
 
         public bool Dirty => Uncommitted.Any();
@@ -33,11 +34,13 @@ namespace Aggregates
         public IFullEvent[] Uncommitted => _uncommitted.ToArray();
 
         public TState State { get; internal set; }
-        
+
         private readonly IList<IFullEvent> _uncommitted = new List<IFullEvent>();
 
         private TinyIoCContainer Container => (this as INeedContainer).Container;
+        private IEventFactory Factory => (this as INeedEventFactory).EventFactory;
         TinyIoCContainer INeedContainer.Container { get; set; }
+        IEventFactory INeedEventFactory.EventFactory { get; set; }
 
 
         public IRepository<TThis, TEntity> For<TEntity>() where TEntity : IChildEntity<TThis>
@@ -89,20 +92,10 @@ namespace Aggregates
         {
             // if conflict handling fails it throws exception
             State.Conflict(@event);
-            Apply(@event);
+            (this as IEntity<TState>).Apply(@event);
         }
 
         void IEntity<TState>.Apply(IEvent @event)
-        {
-            Apply(@event);
-        }
-
-        void IEntity<TState>.Raise(IEvent @event, string id, bool transient, int? daysToLive)
-        {
-            Raise(@event, id, transient, daysToLive);
-        }
-
-        protected void Apply(IEvent @event)
         {
             State.Apply(@event);
             _uncommitted.Add(new FullEvent
@@ -122,7 +115,7 @@ namespace Aggregates
             });
         }
 
-        protected void Raise(IEvent @event, string id, bool transient = false, int? daysToLive = null)
+        void IEntity<TState>.Raise(IEvent @event, string id, bool transient, int? daysToLive)
         {
             _uncommitted.Add(new FullEvent
             {
@@ -144,6 +137,20 @@ namespace Aggregates
                 },
                 Event = @event
             });
+        }
+
+        protected void Apply<TEvent>(Action<TEvent> @event) where TEvent : IEvent
+        {
+            var instance = Factory.Create(@event);
+
+            (this as IEntity<TState>).Apply(instance);
+        }
+
+        protected void Raise<TEvent>(Action<TEvent> @event, string id, bool transient = false, int? daysToLive = null) where TEvent : IEvent
+        {
+            var instance = Factory.Create(@event);
+
+            (this as IEntity<TState>).Raise(instance, id, transient, daysToLive);
         }
 
         public override int GetHashCode()

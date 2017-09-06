@@ -52,7 +52,7 @@ namespace Aggregates.Internal
             _compress = compress;
         }
 
-        public Task<IFullEvent[]> GetEvents<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents, long? start = null, int? count = null) where TEntity : IEntity
+        public Task<IFullEvent[]> GetEvents<TEntity>(string bucket, Id streamId, Id[] parents, long? start = null, int? count = null) where TEntity : IEntity
         {
             var stream = _generator(typeof(TEntity), StreamTypes.Domain, bucket, streamId, parents);
             return GetEvents(stream, start, count);
@@ -231,7 +231,7 @@ namespace Aggregates.Internal
             Logger.Write(LogLevel.Info, () => $"Read {translatedEvents.Length} events backwards from stream [{stream}]");
             return translatedEvents;
         }
-        public Task<IFullEvent[]> GetEventsBackwards<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents, long? start = null, int? count = null) where TEntity : IEntity
+        public Task<IFullEvent[]> GetEventsBackwards<TEntity>(string bucket, Id streamId, Id[] parents, long? start = null, int? count = null) where TEntity : IEntity
         {
             var stream = _generator(typeof(TEntity), StreamTypes.Domain, bucket, streamId, parents);
             return GetEventsBackwards(stream, start, count);
@@ -242,7 +242,7 @@ namespace Aggregates.Internal
             var size = await Size(stream);
             return size == expectedVersion;
         }
-        public async Task<bool> VerifyVersion<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents,
+        public async Task<bool> VerifyVersion<TEntity>(string bucket, Id streamId, Id[] parents,
             long expectedVersion) where TEntity : IEntity
         {
             var size = await Size<TEntity>(bucket, streamId, parents);
@@ -260,7 +260,7 @@ namespace Aggregates.Internal
             return result.Status == SliceReadStatus.Success ? result.NextEventNumber : 0;
 
         }
-        public Task<long> Size<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents) where TEntity : IEntity
+        public Task<long> Size<TEntity>(string bucket, Id streamId, Id[] parents) where TEntity : IEntity
         {
             var stream = _generator(typeof(TEntity), StreamTypes.Domain, bucket, streamId, parents);
             return Size(stream);
@@ -321,7 +321,7 @@ namespace Aggregates.Internal
 
             return DoWrite(stream, translatedEvents, expectedVersion);
         }
-        public Task<long> WriteEvents<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents, IFullEvent[] events, IDictionary<string, string> commitHeaders, long? expectedVersion = null) where TEntity : IEntity
+        public Task<long> WriteEvents<TEntity>(string bucket, Id streamId, Id[] parents, IFullEvent[] events, IDictionary<string, string> commitHeaders, long? expectedVersion = null) where TEntity : IEntity
         {
             var stream = _generator(typeof(TEntity), StreamTypes.Domain, bucket, streamId, parents);
             return WriteEvents(stream, events, commitHeaders, expectedVersion);
@@ -450,7 +450,7 @@ namespace Aggregates.Internal
             }
         }
 
-        public Task WriteMetadata<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents, long? maxCount = null, long? truncateBefore = null, TimeSpan? maxAge = null,
+        public Task WriteMetadata<TEntity>(string bucket, Id streamId, Id[] parents, long? maxCount = null, long? truncateBefore = null, TimeSpan? maxAge = null,
             TimeSpan? cacheControl = null, bool force = false, IDictionary<string, string> custom = null) where TEntity : IEntity
         {
             var stream = _generator(typeof(TEntity), StreamTypes.Domain, bucket, streamId, parents);
@@ -474,7 +474,7 @@ namespace Aggregates.Internal
                 property = "";
             return property;
         }
-        public Task<string> GetMetadata<TEntity>(string bucket, Id streamId, IEnumerable<Id> parents, string key) where TEntity : IEntity
+        public Task<string> GetMetadata<TEntity>(string bucket, Id streamId, Id[] parents, string key) where TEntity : IEntity
         {
             var stream = _generator(typeof(TEntity), StreamTypes.Domain, bucket, streamId, parents);
             return GetMetadata(stream, key);

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Aggregates.Contracts
 {
-    interface IFullMessage
+    public interface IFullMessage
     {
         object Message { get; }
         IDictionary<string,string> Headers { get; }

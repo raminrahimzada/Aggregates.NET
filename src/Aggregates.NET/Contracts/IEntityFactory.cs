@@ -7,7 +7,6 @@ namespace Aggregates.Contracts
 {
     interface IEntityFactory<TEntity> where TEntity : IEntity
     {
-        TEntity CreateNew(Id id);
-        TEntity CreateFromEvents(Id id, IFullEvent[] events, IState snapshot = null);
+        TEntity Create(string bucket, Id id, Id[] parents = null, IFullEvent[] events = null, IState snapshot = null);
     }
 }

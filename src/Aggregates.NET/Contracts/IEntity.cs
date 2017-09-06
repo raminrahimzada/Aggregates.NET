@@ -9,7 +9,7 @@ namespace Aggregates.Contracts
     {
         Id Id { get; }
         string Bucket { get; }
-        IEnumerable<Id> Parents { get; }
+        Id[] Parents { get; }
 
         long Version { get; }
         bool Dirty { get; }

@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+   <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RootNamespace>Aggregates.UnitTests</RootNamespace>
+    <ApplicationIcon />
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="App.Metrics" Version="1.3.0" />
+    <PackageReference Include="Moq" Version="4.7.99" />
+    <PackageReference Include="NUnit" Version="3.8.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aggregates.NET.EventStore\Aggregates.NET.EventStore.csproj" />
+    <ProjectReference Include="..\Aggregates.NET.NewtonsoftJson\Aggregates.NET.NewtonsoftJson.csproj" />
+    <ProjectReference Include="..\Aggregates.NET.NServiceBus\Aggregates.NET.NServiceBus.csproj" />
+    <ProjectReference Include="..\Aggregates.NET\Aggregates.NET.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="EventStore\" />
+    <Folder Include="Internal\" />
+    <Folder Include="NServiceBus\" />
+  </ItemGroup>
+
+</Project>

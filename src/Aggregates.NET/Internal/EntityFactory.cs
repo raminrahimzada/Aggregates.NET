@@ -29,7 +29,7 @@ namespace Aggregates.Internal
         }
     }
 
-    class EntityFactory<TEntity, TState> : IEntityFactory<TEntity> where TEntity : Entity<TEntity, TState> where TState: IState, new()
+    class EntityFactory<TEntity, TState> : IEntityFactory<TEntity> where TEntity : Entity<TEntity, TState> where TState : IState, new()
     {
         readonly Func<TEntity> _factory;
 
@@ -38,18 +38,7 @@ namespace Aggregates.Internal
             _factory = ReflectionExtensions.BuildCreateEntityFunc<TEntity>();
         }
 
-        public TEntity CreateNew(Id id)
-        {
-            var entity = _factory();
-            var state = new TState();
-
-            entity.Id = id;
-            entity.State = state;
-
-            return entity;
-        }
-
-        public TEntity CreateFromEvents(Id id, IFullEvent[] events, IState snapshot = null)
+        public TEntity Create(string bucket, Id id, Id[] parents = null, IFullEvent[] events = null, IState snapshot = null)
         {
             var entity = _factory();
             var state = new TState();
@@ -57,12 +46,19 @@ namespace Aggregates.Internal
             if (snapshot != null)
                 state.RestoreSnapshot(snapshot);
 
-            for (var i = 0; i < events.Length; i++)
-                state.Apply(events[i].Event);
+            if(events != null)
+                for (var i = 0; i < events.Length; i++)
+                    state.Apply(events[i].Event as IEvent);
 
+            entity.Id = id;
             entity.State = state;
+            entity.Bucket = bucket;
+            
+            entity.Parents = parents;
+            entity.Version = state.Version;
 
             return entity;
         }
+        
     }
 }

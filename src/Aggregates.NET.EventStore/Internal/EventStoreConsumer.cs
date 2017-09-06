@@ -330,7 +330,7 @@ namespace Aggregates.Internal
 
             _metrics.Measure.Counter.Increment(OutstandingEvents);
 
-            callback(e.Event.EventStreamId, e.Event.EventNumber, new WritableEvent
+            callback(e.Event.EventStreamId, e.Event.EventNumber, new FullEvent
             {
                 Descriptor = descriptor,
                 Event = payload as IEvent,

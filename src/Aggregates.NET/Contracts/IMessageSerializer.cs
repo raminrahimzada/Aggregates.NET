@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Aggregates.Contracts
 {
-    interface IMessageSerializer
+    public interface IMessageSerializer
     {
         string ContentType { get; }
         

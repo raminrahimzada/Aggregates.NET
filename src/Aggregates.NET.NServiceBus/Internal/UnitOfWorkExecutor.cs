@@ -73,11 +73,7 @@ namespace Aggregates.Internal
 
             Logger.Write(LogLevel.Debug,
                 () => $"Starting UOW for message {context.MessageId} type {context.Message.MessageType.FullName}");
-
-            var bagId = $"contextbags.{context.MessageId}";
-            Dictionary<Type, ContextBag> savedBags = null;
-            if (!context.Extensions.TryGet<Dictionary<Type, ContextBag>>(bagId, out savedBags))
-                savedBags = new Dictionary<Type, ContextBag>();
+            
             try
             {
                 _metrics.Measure.Counter.Increment(Concurrent);
@@ -162,10 +158,6 @@ namespace Aggregates.Internal
                         trailingExceptions.Add(endException);
                     }
                 
-
-
-                // Save uow bags into context for retries
-                context.Extensions.Set(bagId, savedBags);
 
                 if (trailingExceptions.Any())
                 {

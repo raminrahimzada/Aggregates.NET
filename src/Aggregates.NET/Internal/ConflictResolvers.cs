@@ -27,7 +27,7 @@ namespace Aggregates.Internal
             (b, _) => new ResolveStronglyConflictResolver(b.Resolve<IStoreSnapshots>(), b.Resolve<IStoreEvents>(), b.Resolve<StreamIdGenerator>("StreamGenerator")));
 
         public static ConcurrencyStrategy ResolveWeakly = new ConcurrencyStrategy(ConcurrencyConflict.ResolveWeakly, "ResolveWeakly",
-            (b, _) => new ResolveWeaklyConflictResolver(b.Resolve<IStoreEvents>(), b.Resolve<IStoreEvents>(), b.Resolve<IDelayedChannel>(), b.Resolve<StreamIdGenerator>("StreamGenerator")));
+            (b, _) => new ResolveWeaklyConflictResolver(b.Resolve<IStoreSnapshots>(), b.Resolve<IStoreEvents>(), b.Resolve<IDelayedChannel>(), b.Resolve<StreamIdGenerator>("StreamGenerator")));
 
         public static ConcurrencyStrategy Custom = new ConcurrencyStrategy(ConcurrencyConflict.Custom, "Custom", (b, type) => (IResolveConflicts)b.Resolve(type));
 
@@ -71,7 +71,7 @@ namespace Aggregates.Internal
 
             foreach (var u in uncommitted)
             {
-                state.Apply(u.Event);
+                state.Apply(u.Event as IEvent);
             }
             
             await _store.WriteEvents<TEntity>(entity.Bucket, entity.Id, entity.Parents, uncommitted, commitHeaders).ConfigureAwait(false);
@@ -119,7 +119,7 @@ namespace Aggregates.Internal
             Logger.Write(LogLevel.Info, () => $"Stream is {latestEvents.Count()} events behind store");
 
             for (var i = 0; i < latestEvents.Length; i++)
-                state.Apply(latestEvents[i].Event);
+                state.Apply(latestEvents[i].Event as IEvent);
             
             Logger.Write(LogLevel.Debug, () => "Merging conflicted events");
             try
@@ -127,9 +127,9 @@ namespace Aggregates.Internal
                 foreach (var u in uncommitted)
                 {
                     if (u.Descriptor.StreamType == StreamTypes.Domain)
-                        entity.Conflict(u.Event);
+                        entity.Conflict(u.Event as IEvent);
                     else if (u.Descriptor.StreamType == StreamTypes.OOB)
-                        entity.Raise(u.Event, u.Descriptor.Headers[Defaults.OobHeaderKey]);
+                        entity.Raise(u.Event as IEvent, u.Descriptor.Headers[Defaults.OobHeaderKey]);
                 }
             }
             catch (NoRouteException e)
@@ -170,15 +170,15 @@ namespace Aggregates.Internal
     {
         internal static readonly ILog Logger = LogProvider.GetLogger("ResolveWeaklyConflictResolver");
 
-        private readonly IStoreEvents _store;
+        private readonly IStoreSnapshots _snapstore;
         private readonly IStoreEvents _eventstore;
         private readonly IDelayedChannel _delay;
         private readonly StreamIdGenerator _streamGen;
 
 
-        public ResolveWeaklyConflictResolver(IStoreEvents store, IStoreEvents eventstore, IDelayedChannel delay, StreamIdGenerator streamGen)
+        public ResolveWeaklyConflictResolver(IStoreSnapshots snapstore, IStoreEvents eventstore, IDelayedChannel delay, StreamIdGenerator streamGen)
         {
-            _store = store;
+            _snapstore = snapstore;
             _eventstore = eventstore;
             _delay = delay;
             _streamGen = streamGen;

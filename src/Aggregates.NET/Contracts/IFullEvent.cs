@@ -6,7 +6,7 @@ namespace Aggregates.Contracts
     public interface IFullEvent
     {
         Guid? EventId { get; }
-        IEvent Event { get; }
+        object Event { get; }
         IEventDescriptor Descriptor { get; }
     }
 }

@@ -14,7 +14,7 @@ namespace Aggregates.Contracts
         string StreamType { get; }
         string Bucket { get; }
         Id StreamId { get; }
-        IEnumerable<Id> Parents { get; }
+        Id[] Parents { get; }
 
         long Version { get; }
         DateTime Timestamp { get; }

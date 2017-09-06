@@ -17,7 +17,68 @@ using AggregateException = System.AggregateException;
 
 namespace Aggregates.Internal
 {
-    class Repository<TEntity, TState> : IRepository<TEntity>, IRepository where TEntity : IEntity<TState> where TState : IState, new()
+    class Repository<TParent, TEntity, TState> : Repository<TEntity, TState>, IRepository<TParent, TEntity> where TParent : IEntity where TEntity : Entity<TEntity, TParent, TState> where TState : IState, new()
+    {
+        private static readonly ILog Logger = LogProvider.GetLogger("Repository");
+
+        private readonly TParent _parent;
+
+        public Repository(TParent parent, TinyIoCContainer container) : base(container)
+        {
+            _parent = parent;
+        }
+
+        public override async Task<TEntity> TryGet(Id id)
+        {
+            if (id == null) return default(TEntity);
+            try
+            {
+                return await Get(id).ConfigureAwait(false);
+            }
+            catch (NotFoundException) { }
+            return default(TEntity);
+
+        }
+        public override async Task<TEntity> Get(Id id)
+        {
+            var cacheId = $"{_parent.Bucket}.{_parent.BuildParentsString()}.{id}";
+            TEntity root;
+            if (!Tracked.TryGetValue(cacheId, out root))
+                Tracked[cacheId] = root = await GetUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
+
+            return root;
+        }
+
+        public override async Task<TEntity> New(Id id)
+        {
+            var cacheId = $"{_parent.Bucket}.{_parent.BuildParentsString()}.{id}";
+
+            TEntity root;
+            if (!Tracked.TryGetValue(cacheId, out root))
+                Tracked[cacheId] = root = await NewUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
+
+            return root;
+        }
+
+        protected override async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents)
+        {
+            var entity = await base.GetUntracked(bucket, id, parents);
+
+            entity.Parent = _parent;
+
+            return entity;
+        }
+
+        protected override async Task<TEntity> NewUntracked(string bucket, Id id, Id[] parents)
+        {
+            var entity = await base.NewUntracked(bucket, id, parents);
+
+            entity.Parent = _parent;
+
+            return entity;
+        }
+    }
+    class Repository<TEntity, TState> : IRepository<TEntity>, IRepository where TEntity : Entity<TEntity, TState> where TState : IState, new()
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Repository");
         private static readonly IEntityFactory<TEntity> Factory = EntityFactory.For<TEntity>();
@@ -93,7 +154,7 @@ namespace Aggregates.Internal
                         {
                             await _eventstore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, tracked.Uncommitted, commitHeaders, tracked.Version).ConfigureAwait(false);
 
-                            if(state.ShouldSnapshot())
+                            if(tracked.Dirty && state.ShouldSnapshot())
                                 await _snapstore.WriteSnapshots<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, tracked.Version, state, commitHeaders).ConfigureAwait(false);
                         }
                         catch (VersionException e)
@@ -103,7 +164,7 @@ namespace Aggregates.Internal
 
                             _metrics.Measure.Meter.Mark(Conflicts);
                             // If we expected no stream, no reason to try to resolve the conflict
-                            if (tracked.Version == -1)
+                            if (tracked.Version == 0)
                             {
                                 Logger.Warn(
                                     $"New stream [{tracked.Id}] entity {tracked.GetType().FullName} already exists in store");
@@ -122,8 +183,6 @@ namespace Aggregates.Internal
                                     var strategy = _conflictResolution.Conflict.Build(_container, _conflictResolution.Resolver);
                                     await strategy.Resolve<TEntity, TState>(clean, uncommitted, commitId,
                                             commitHeaders).ConfigureAwait(false);
-
-                                
 
                                 Logger.WriteFormat(LogLevel.Info,
                                     "Stream [{0}] entity {1} version {2} had version conflicts with store - successfully resolved",
@@ -221,18 +280,19 @@ namespace Aggregates.Internal
 
             return root;
         }
-        protected virtual async Task<TEntity> GetUntracked(string bucket, Id streamId, IEnumerable<Id> parents = null)
+        protected virtual async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents = null)
         {
-            parents = parents ?? new Id[] { };
-
-            Logger.Write(LogLevel.Debug, () => $"Retreiving entity id [{streamId}] bucket [{bucket}] for type {typeof(TEntity).FullName} in store");
+            Logger.Write(LogLevel.Debug, () => $"Retreiving entity id [{id}] bucket [{bucket}] for type {typeof(TEntity).FullName} in store");
             
-            var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, streamId, parents).ConfigureAwait(false);
-            var events = await _eventstore.GetEvents<TEntity>(bucket, streamId, parents, start: snapshot?.Version).ConfigureAwait(false);
+            // Todo: pass parent instead of Id[]?
+            var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
+            var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents, start: snapshot?.Version).ConfigureAwait(false);
 
-            var entity = Factory.CreateFromEvents(streamId, events, snapshot?.Payload);
-            
-            Logger.Write(LogLevel.Debug, () => $"Hydrated aggregate id [{streamId}] in bucket [{bucket}] for type {typeof(TEntity).FullName} to version {entity.Version}");
+            var entity = Factory.Create(bucket, id, parents, events, snapshot?.Payload);
+
+            (entity as INeedContainer).Container = _container;
+
+            Logger.Write(LogLevel.Debug, () => $"Hydrated entity id [{id}] in bucket [{bucket}] for type {typeof(TEntity).FullName} to version {entity.Version}");
             return entity;
         }
 
@@ -241,16 +301,22 @@ namespace Aggregates.Internal
             return New(Defaults.Bucket, id);
         }
 
-        public Task<TEntity> New(string bucket, Id id)
+        public async Task<TEntity> New(string bucket, Id id)
+        {
+            TEntity root;
+            var cacheId = $"{bucket}.{id}";
+            if (!Tracked.TryGetValue(cacheId, out root))
+                Tracked[cacheId] = root = await NewUntracked(bucket, id).ConfigureAwait(false);
+            return root;
+        }
+        protected virtual Task<TEntity> NewUntracked(string bucket, Id id, Id[] parents = null)
         {
             Logger.Write(LogLevel.Debug, () => $"Creating new stream id [{id}] in bucket [{bucket}] for type {typeof(TEntity).FullName} in store");
 
-            var entity = Factory.CreateNew(id);
+            var entity = Factory.Create(id, bucket, parents);
 
             (entity as INeedContainer).Container = _container;
 
-            var cacheId = $"{bucket}.{id}";
-            Tracked[cacheId] = entity;
             return Task.FromResult(entity);
         }
         

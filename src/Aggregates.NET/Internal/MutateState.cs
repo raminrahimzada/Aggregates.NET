@@ -5,6 +5,7 @@ using System.Text;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Messages;
+using Aggregates.Exceptions;
 
 namespace Aggregates.Internal
 {
@@ -47,14 +48,19 @@ namespace Aggregates.Internal
         {
             // Todo: can suport "named" events with an attribute here so instead of routing based on object type 
             // route based on event name.
-            var eventMutator = _mutators[$"Handle.{@event.GetType().Name}"];
+            Action<TState, object> eventMutator;
+            if(!_mutators.TryGetValue($"Handle.{@event.GetType().Name}", out eventMutator))
+                throw new NoRouteException($"State {typeof(TState).Name} does not have handler for event {@event.GetType().Name}");
             eventMutator((TState)state, @event);
         }
         public void Conflict(IState state, IEvent @event)
         {
+            // Todo: the "conflict." and "handle." key prefixes are a hack
             // Todo: can suport "named" events with an attribute here so instead of routing based on object type 
             // route based on event name.
-            var eventMutator = _mutators[$"Conflict.{@event.GetType().Name}"];
+            Action<TState, object> eventMutator;
+            if (!_mutators.TryGetValue($"Conflict.{@event.GetType().Name}", out eventMutator))
+                throw new NoRouteException($"State {typeof(TState).Name} does not have handler for event {@event.GetType().Name}");
             eventMutator((TState)state, @event);
         }
     }
