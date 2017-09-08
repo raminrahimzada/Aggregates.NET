@@ -4,7 +4,7 @@ using Aggregates.Messages;
 
 namespace Aggregates.Contracts
 {
-    interface IProcessor
+    public interface IProcessor
     {
         Task<IEnumerable<TResponse>> Process<TQuery, TResponse>(TQuery query) where TQuery : IQuery<TResponse>;
     }

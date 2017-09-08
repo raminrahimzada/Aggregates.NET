@@ -8,7 +8,7 @@ using Aggregates.Exceptions;
 using Aggregates.Contracts;
 using Aggregates.DI;
 using System.IO;
-using Aggregates.NewtonsoftJson.Internal;
+using Aggregates.Internal;
 
 namespace Aggregates.UnitTests.Common
 {

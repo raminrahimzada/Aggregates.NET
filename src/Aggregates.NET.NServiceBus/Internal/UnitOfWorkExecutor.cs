@@ -71,16 +71,18 @@ namespace Aggregates.Internal
             child.Register(domainUOW);
             child.Register(appUOW);
 
+            context.Extensions.Set(child);
+
             Logger.Write(LogLevel.Debug,
                 () => $"Starting UOW for message {context.MessageId} type {context.Message.MessageType.FullName}");
-            
+
             try
             {
                 _metrics.Measure.Counter.Increment(Concurrent);
                 _metrics.Measure.Meter.Mark(Messages);
                 using (_metrics.Measure.Timer.Time(Timer))
                 {
-                        
+
                     Logger.Write(LogLevel.Debug, () => $"Running UOW.Begin for message {context.MessageId}");
                     await domainUOW.Begin().ConfigureAwait(false);
                     await appUOW.Begin().ConfigureAwait(false);
@@ -93,7 +95,7 @@ namespace Aggregates.Internal
                     IDelayedMessage[] delayed;
                     object @event;
                     // Special case for delayed messages read from delayed stream
-                    if (context.Headers.ContainsKey(Defaults.BulkHeader) && context.Extensions.TryGet(Defaults.BulkHeader, out delayed))
+                    if (context.Extensions.TryGet(Defaults.LocalBulkHeader, out delayed))
                     {
 
                         Logger.Write(LogLevel.Debug, () => $"Bulk processing {delayed.Count()} messages, bulk id {context.MessageId}");
@@ -105,7 +107,7 @@ namespace Aggregates.Internal
                             foreach (var header in x.Headers)
                                 context.Headers[$"{Defaults.DelayedPrefixHeader}.{header.Key}"] = header.Value;
 
-                            context.Headers[Defaults.BulkHeader] = delayed.Count().ToString();
+                            context.Headers[Defaults.LocalBulkHeader] = delayed.Count().ToString();
                             context.Headers[Defaults.DelayedId] = x.MessageId;
                             context.Headers[Defaults.ChannelKey] = x.ChannelKey;
                             Logger.Write(LogLevel.Debug, () => $"Processing {index}/{delayed.Count()} message, bulk id {context.MessageId}.  MessageId: {x.MessageId} ChannelKey: {x.ChannelKey}");
@@ -118,8 +120,7 @@ namespace Aggregates.Internal
                         }
 
                     }
-                    else if (context.Headers.ContainsKey(Defaults.EventHeader) &&
-                             context.Extensions.TryGet(Defaults.EventHeader, out @event))
+                    else if (context.Extensions.TryGet(Defaults.EventHeader, out @event))
                     {
 
                         context.UpdateMessageInstance(@event);
@@ -128,14 +129,11 @@ namespace Aggregates.Internal
                     else
                         await next().ConfigureAwait(false);
 
-                    
-                        Logger.Write(LogLevel.Debug, () => $"Running UOW.End for message {context.MessageId}");
-                        
-                        await domainUOW.End().ConfigureAwait(false);
-                        await appUOW.End().ConfigureAwait(false);
-                    
-                    
 
+                    Logger.Write(LogLevel.Debug, () => $"Running UOW.End for message {context.MessageId}");
+
+                    await domainUOW.End().ConfigureAwait(false);
+                    await appUOW.End().ConfigureAwait(false);
                 }
 
             }
@@ -145,19 +143,19 @@ namespace Aggregates.Internal
 
                 _metrics.Measure.Meter.Mark(Errors);
                 var trailingExceptions = new List<Exception>();
-                
-                    try
-                    {
-                        Logger.Write(LogLevel.Debug,
-                            () => $"Running UOW.End with exception [{e.GetType().Name}] for message {context.MessageId}");
-                        await domainUOW.End(e).ConfigureAwait(false);
-                        await appUOW.End(e).ConfigureAwait(false);
+
+                try
+                {
+                    Logger.Write(LogLevel.Debug,
+                        () => $"Running UOW.End with exception [{e.GetType().Name}] for message {context.MessageId}");
+                    await domainUOW.End(e).ConfigureAwait(false);
+                    await appUOW.End(e).ConfigureAwait(false);
                 }
-                    catch (Exception endException)
-                    {
-                        trailingExceptions.Add(endException);
-                    }
-                
+                catch (Exception endException)
+                {
+                    trailingExceptions.Add(endException);
+                }
+
 
                 if (trailingExceptions.Any())
                 {

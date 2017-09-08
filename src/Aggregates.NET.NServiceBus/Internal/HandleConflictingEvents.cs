@@ -11,7 +11,7 @@ using Aggregates.Logging;
 using NServiceBus;
 using IEvent = Aggregates.Messages.IEvent;
 
-namespace Aggregates.NServiceBus.Internal
+namespace Aggregates.Internal
 {
     /// <summary>
     /// When the above pushes a conflicting event package onto the delayed queue it can end up 

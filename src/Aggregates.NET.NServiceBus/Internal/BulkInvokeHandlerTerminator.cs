@@ -34,8 +34,7 @@ namespace Aggregates.Internal
             {
                 Name = "Bulk Messages Time",
                 MeasurementUnit = Unit.None,
-            };
-        
+            };        
 
         private static readonly ConcurrentDictionary<string, DelayedAttribute> IsDelayed = new ConcurrentDictionary<string, DelayedAttribute>();
         private static readonly object Lock = new object();

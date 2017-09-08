@@ -28,9 +28,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="EventStore\" />
     <Folder Include="Internal\" />
-    <Folder Include="NServiceBus\" />
   </ItemGroup>
 
 </Project>

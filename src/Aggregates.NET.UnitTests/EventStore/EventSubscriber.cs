@@ -26,7 +26,6 @@ namespace Aggregates.NET.UnitTests.Consumer.Internal
         private Moq.Mock<IEventStoreConsumer> _consumer;
         private Moq.Mock<IMessageDispatcher> _dispatcher;
         private Aggregates.Internal.EventSubscriber _subscriber;
-        private bool _onMessaged;
 
         [SetUp]
         public void Setup()

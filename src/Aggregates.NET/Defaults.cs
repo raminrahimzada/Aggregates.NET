@@ -25,13 +25,14 @@ namespace Aggregates
         public static readonly string SetupCorrectly = "Aggregates.NET.Safe";
         public static readonly string Retries = "Aggregates.NET.Retries";
         public static readonly string RequestResponse = "Aggregates.NET.Request";
-        public static readonly string BulkHeader = "Aggregates.NET.Bulk";
         public static readonly string EventHeader = "Aggregates.NET.Event";
         public static readonly string DelayedId = "Aggregates.NET.DelayedMessageId";
         public static readonly string ChannelKey = "Aggregates.NET.ChannelKey";
         public static readonly string OobHeaderKey = "Aggregates.OOB";
         public static readonly string OobTransientKey = "Aggregates.Transient";
         public static readonly string OobDaysToLiveKey = "Aggregates.DaysToLive";
+        public static readonly string LocalHeader = "Aggregates.NET.LocalMessage";
+        public static readonly string LocalBulkHeader = "Aggregates.NET.LocalBulkMessage";
 
 
         public static Guid Instance = Guid.NewGuid();

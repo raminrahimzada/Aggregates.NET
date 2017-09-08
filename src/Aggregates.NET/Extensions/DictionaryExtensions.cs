@@ -4,7 +4,7 @@ namespace Aggregates.Extensions
 {
     static class DictionaryExtensions
     {
-        public static IDictionary<T, TU> Merge<T, TU>(this IDictionary<T, TU> first, IDictionary<T, TU> second)
+        public static Dictionary<T, TU> Merge<T, TU>(this IDictionary<T, TU> first, IDictionary<T, TU> second)
         {
             var result = new Dictionary<T, TU>(first);
             

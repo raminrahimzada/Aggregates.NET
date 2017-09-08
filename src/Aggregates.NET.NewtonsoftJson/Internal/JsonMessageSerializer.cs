@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using NewtonSerializer = Newtonsoft.Json.JsonSerializer;
 
-namespace Aggregates.NewtonsoftJson.Internal
+namespace Aggregates.Internal
 {
     // https://github.com/Particular/NServiceBus.Newtonsoft.Json/blob/develop/src/NServiceBus.Newtonsoft.Json/JsonMessageSerializer.cs
     class JsonMessageSerializer : IMessageSerializer
@@ -28,7 +28,8 @@ namespace Aggregates.NewtonsoftJson.Internal
 
             settings = settings ?? new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.Auto
+                TypeNameHandling = TypeNameHandling.Auto,
+                Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter(), new IdJsonConverter() }
             };
 
             this.writerCreator = writerCreator ?? (stream =>

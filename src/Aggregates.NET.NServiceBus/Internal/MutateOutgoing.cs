@@ -39,7 +39,7 @@ namespace Aggregates.Internal
             if (!mutators.Any()) return next();
 
             var container = context.Extensions.Get<TinyIoCContainer>();
-
+            
             foreach (var type in mutators)
             {
                 var mutator = (IMutate)container.Resolve(type);

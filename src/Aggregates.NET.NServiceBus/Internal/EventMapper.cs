@@ -4,7 +4,7 @@ using System.Text;
 using Aggregates.Contracts;
 using NServiceBus.MessageInterfaces;
 
-namespace Aggregates.NServiceBus.Internal
+namespace Aggregates.Internal
 {
     public class EventMapper : IEventMapper
     {

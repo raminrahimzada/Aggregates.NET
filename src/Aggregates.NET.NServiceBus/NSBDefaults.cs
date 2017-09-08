@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Aggregates.NServiceBus
+namespace Aggregates
 {
-    public static class Defaults
+    public static class NSBDefaults
     {
         // Header information to take from incoming messages
         public static IList<string> CarryOverHeaders = new List<string>
