@@ -14,9 +14,6 @@ using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
-using App.Metrics;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace Aggregates.Internal
 {
@@ -26,21 +23,7 @@ namespace Aggregates.Internal
     {
 
         private static readonly ILog Logger = LogProvider.GetLogger("EventSubscriber");
-
-        private static readonly App.Metrics.Core.Options.CounterOptions EventsQueued =
-            new App.Metrics.Core.Options.CounterOptions
-            {
-                Name = "Events Queued",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.MeterOptions EventErrors =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Events Failures",
-                MeasurementUnit = Unit.Items,
-            };
-
-
+        
         private readonly BlockingCollection<Tuple<string, long, IFullEvent>>[] _waitingEvents;
 
         private class ThreadParam
@@ -152,7 +135,7 @@ when({{
 
         private void onEvent(string stream, long position, IFullEvent e)
         {
-            _metrics.Measure.Counter.Increment(EventsQueued);
+            _metrics.Increment("Events Queued", Unit.Event);
 
             var bucket = Math.Abs(stream.GetHashCode() % _concurrency);
             _waitingEvents[bucket].Add(new Tuple<string, long, IFullEvent>(stream, position, e));
@@ -177,7 +160,7 @@ when({{
                     param.Token.ThrowIfCancellationRequested();
 
                     var @event = param.Queue.Take(param.Token);
-                    metrics.Measure.Counter.Decrement(EventsQueued);
+                    metrics.Decrement("Events Queued", Unit.Event);
 
                     try
                     {

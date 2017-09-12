@@ -1,6 +1,5 @@
 ﻿using Aggregates.Contracts;
 using Aggregates.DI;
-using App.Metrics;
 using NServiceBus;
 using NServiceBus.Extensibility;
 using NServiceBus.Pipeline;
@@ -37,12 +36,7 @@ namespace Aggregates.UnitTests.NServiceBus
 
             TinyIoCContainer.Current.Register(_domainUow.Object);
             TinyIoCContainer.Current.Register(_uow.Object);
-
-            _metrics.Setup(x => x.Measure.Meter.Mark(Moq.It.IsAny<App.Metrics.Core.Options.MeterOptions>()));
-            _metrics.Setup(x => x.Measure.Counter.Increment(Moq.It.IsAny<App.Metrics.Core.Options.CounterOptions>()));
-            _metrics.Setup(x => x.Measure.Counter.Decrement(Moq.It.IsAny<App.Metrics.Core.Options.CounterOptions>()));
-            _metrics.Setup(x => x.Measure.Timer.Time(Moq.It.IsAny<App.Metrics.Core.Options.TimerOptions>()));
-
+            
             _context.Setup(x => x.Extensions).Returns(_contextBag);
             _context.Setup(x => x.MessageHeaders).Returns(new Dictionary<string, string>
             {

@@ -8,9 +8,8 @@ using Aggregates.Contracts;
 using Aggregates.Internal;
 using NServiceBus.Transport;
 using NUnit.Framework;
-using App.Metrics;
 
-namespace Aggregates.NET.UnitTests.Consumer.Internal
+namespace Aggregates.UnitTests.Common
 {
     [TestFixture]
     public class SnapshotReader
@@ -25,10 +24,7 @@ namespace Aggregates.NET.UnitTests.Consumer.Internal
             _metrics = new Moq.Mock<IMetrics>();
             _consumer = new Moq.Mock<IEventStoreConsumer>();
             var store = new Moq.Mock<IStoreEvents>();
-
-            _metrics.Setup(x => x.Measure.Counter.Increment(Moq.It.IsAny<App.Metrics.Core.Options.CounterOptions>()));
-            _metrics.Setup(x => x.Measure.Counter.Decrement(Moq.It.IsAny<App.Metrics.Core.Options.CounterOptions>()));
-
+            
             _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object);
             Bus.BusOnline = true;
 

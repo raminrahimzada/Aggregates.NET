@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Aggregates.UnitTests.EventStore
+namespace Aggregates
 {
-    class EventStoreDelayed
+    class WireUp
     {
     }
 }

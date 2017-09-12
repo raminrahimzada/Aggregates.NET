@@ -11,7 +11,6 @@ using Aggregates.Contracts;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using App.Metrics;
 
 
 namespace Aggregates.Internal
@@ -25,13 +24,6 @@ namespace Aggregates.Internal
     {
         private static readonly ILog Logger = LogProvider.GetLogger("SnapshotReader");
         
-        private static readonly App.Metrics.Core.Options.CounterOptions SnapshotsStored =
-            new App.Metrics.Core.Options.CounterOptions
-            {
-                Name = "Snapshots Stored",
-                MeasurementUnit = Unit.Items,
-            };
-
         // Todo: upgrade to LRU cache?
         private static readonly ConcurrentDictionary<string, Tuple<DateTime, ISnapshot>> Snapshots = new ConcurrentDictionary<string, Tuple<DateTime, ISnapshot>>();
         private static readonly ConcurrentDictionary<string, long> TruncateBefore = new ConcurrentDictionary<string, long>();
@@ -86,7 +78,7 @@ namespace Aggregates.Internal
                 Tuple<DateTime, ISnapshot> temp;
                 foreach (var key in expired)
                     if (Snapshots.TryRemove(key, out temp))
-                        m.Measure.Counter.Decrement(SnapshotsStored);
+                        m.Decrement("Snapshots Stored", Unit.Items);
 
                 return Task.CompletedTask;
             }, metrics, TimeSpan.FromMinutes(5), "expires snapshots from the cache");
@@ -128,7 +120,7 @@ namespace Aggregates.Internal
             Logger.Write(LogLevel.Debug, () => $"Got snapshot of stream id [{snapshot.StreamId}] bucket [{snapshot.Bucket}] entity [{snapshot.EntityType}] version {snapshot.Version}");
             Snapshots.AddOrUpdate(stream, (key) =>
             {
-                _metrics.Measure.Counter.Increment(SnapshotsStored);
+                _metrics.Increment("Snapshots Stored", Unit.Items);
                 return new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot);
             }, (key, existing) =>
             {

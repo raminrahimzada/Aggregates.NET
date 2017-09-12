@@ -1,7 +1,6 @@
 ﻿using Aggregates.Attributes;
 using Aggregates.Contracts;
 using Aggregates.DI;
-using App.Metrics;
 using NServiceBus.Extensibility;
 using NServiceBus.MessageInterfaces;
 using NServiceBus.ObjectBuilder;
@@ -39,12 +38,10 @@ namespace Aggregates.UnitTests.NServiceBus
         {
             _metrics = new Moq.Mock<IMetrics>();
             _mapper = new Moq.Mock<IMessageMapper>();
-            _terminator = new Aggregates.Internal.BulkInvokeHandlerTerminator(_metrics.Object, _mapper.Object);
 
-            _metrics.Setup(x => x.Measure.Meter.Mark(Moq.It.IsAny<App.Metrics.Core.Options.MeterOptions>()));
-            _metrics.Setup(x => x.Measure.Counter.Increment(Moq.It.IsAny<App.Metrics.Core.Options.CounterOptions>()));
-            _metrics.Setup(x => x.Measure.Counter.Decrement(Moq.It.IsAny<App.Metrics.Core.Options.CounterOptions>()));
-            _metrics.Setup(x => x.Measure.Timer.Time(Moq.It.IsAny<App.Metrics.Core.Options.TimerOptions>()));
+            _metrics.Setup(x => x.Begin(Moq.It.IsAny<string>())).Returns(new Moq.Mock<ITimer>().Object);
+
+            _terminator = new Aggregates.Internal.BulkInvokeHandlerTerminator(_metrics.Object, _mapper.Object);
 
             _message = new Moq.Mock<IDelayedMessage>();
             _message.Setup(x => x.Message).Returns(new object());

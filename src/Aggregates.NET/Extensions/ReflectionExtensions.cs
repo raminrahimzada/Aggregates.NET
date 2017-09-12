@@ -5,6 +5,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using Aggregates.Contracts;
+using Aggregates.Messages;
+using System.Threading.Tasks;
 
 namespace Aggregates.Extensions
 {
@@ -32,6 +34,29 @@ namespace Aggregates.Extensions
                 };
 
             return stateEventMutators.ToDictionary(m => $"{m.Type}.{m.Name}", m => m.Handler);
+        }
+
+        public static Func<object, TQuery, Task<TResponse>> MakeQueryHandler<TQuery, TResponse>(Type queryHandler) where TQuery : IQuery<TResponse>
+        {
+            var method = queryHandler
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(
+                    m => (m.Name == "Handle") && m.GetParameters().Length == 1 && 
+                    m.GetParameters()[0].ParameterType == typeof(TQuery) && 
+                    m.ReturnType == typeof(Task<>) && 
+                    m.ReturnType.GetGenericArguments()[0].DeclaringType == typeof(TResponse))
+                .SingleOrDefault();
+
+            if (method == null) return null;
+
+            var handlerParam = Expression.Parameter(typeof(object), "handler");
+            var queryParam = Expression.Parameter(typeof(TQuery), "query");
+
+            var castTarget = Expression.Convert(handlerParam, queryHandler);
+
+            var body = Expression.Call(castTarget, method, queryParam);
+
+            return Expression.Lambda<Func<object, TQuery, Task<TResponse>>>(body, handlerParam, queryParam).Compile();
         }
 
         private static Action<TState, object> BuildStateEventMutatorHandler<TState>(Type eventType, MethodInfo method)

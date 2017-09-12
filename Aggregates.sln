@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.10
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET", "src\Aggregates.NET\Aggregates.NET.csproj", "{B9A11078-E76E-487E-BA87-C15C184411E6}"
 EndProject
@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET.NServiceBus"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET.EventStore", "src\Aggregates.NET.EventStore\Aggregates.NET.EventStore.csproj", "{F0CF4975-DAB3-4B2D-8BA1-2FE3B9B44DF8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregates.NET.NewtonsoftJson", "src\Aggregates.NET.NewtonsoftJson\Aggregates.NET.NewtonsoftJson.csproj", "{1E2FB3FB-94FF-41F0-9D40-5239D911CCB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET.NewtonsoftJson", "src\Aggregates.NET.NewtonsoftJson\Aggregates.NET.NewtonsoftJson.csproj", "{1E2FB3FB-94FF-41F0-9D40-5239D911CCB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregates.NET.UnitTests", "src\Aggregates.NET.UnitTests\Aggregates.NET.UnitTests.csproj", "{6E02FE12-034E-4703-92F1-A0706A14F702}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{1E2FB3FB-94FF-41F0-9D40-5239D911CCB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E2FB3FB-94FF-41F0-9D40-5239D911CCB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E2FB3FB-94FF-41F0-9D40-5239D911CCB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E02FE12-034E-4703-92F1-A0706A14F702}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E02FE12-034E-4703-92F1-A0706A14F702}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E02FE12-034E-4703-92F1-A0706A14F702}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E02FE12-034E-4703-92F1-A0706A14F702}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

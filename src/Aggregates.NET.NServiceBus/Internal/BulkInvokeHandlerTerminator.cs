@@ -9,7 +9,6 @@ using Aggregates.Attributes;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using App.Metrics;
 using NServiceBus.MessageInterfaces;
 using NServiceBus.ObjectBuilder;
 using NServiceBus.Pipeline;
@@ -29,13 +28,6 @@ namespace Aggregates.Internal
         private static readonly ILog Logger = LogProvider.GetLogger("BulkInvokeHandlerTerminator");
         private static readonly ILog SlowLogger = LogProvider.GetLogger("Slow Alarm");
         
-        private static readonly App.Metrics.Core.Options.TimerOptions InvokeTime =
-            new App.Metrics.Core.Options.TimerOptions
-            {
-                Name = "Bulk Messages Time",
-                MeasurementUnit = Unit.None,
-            };        
-
         private static readonly ConcurrentDictionary<string, DelayedAttribute> IsDelayed = new ConcurrentDictionary<string, DelayedAttribute>();
         private static readonly object Lock = new object();
         private static readonly HashSet<string> IsNotDelayed = new HashSet<string>();
@@ -194,7 +186,7 @@ namespace Aggregates.Internal
             var count = messages.Length;
             
             Logger.Write(LogLevel.Debug, () => $"Starting invoke handle {count} times channel key [{channelKey}] specific key [{specificKey}]");
-            using (var ctx = _metrics.Measure.Timer.Time(InvokeTime))
+            using (var ctx = _metrics.Begin("Bulk Messages Time"))
             {
                 foreach (var idx in Enumerable.Range(0, messages.Length))
                 {

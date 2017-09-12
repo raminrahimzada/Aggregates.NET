@@ -8,7 +8,6 @@ using Aggregates.Contracts;
 using Aggregates.DI;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using App.Metrics;
 using NServiceBus;
 using NServiceBus.Extensibility;
 using NServiceBus.Pipeline;
@@ -18,32 +17,7 @@ namespace Aggregates.Internal
     internal class UnitOfWorkExecutor : Behavior<IIncomingLogicalMessageContext>
     {
         private static readonly ILog Logger = LogProvider.GetLogger("UOW Executor");
-
-        private static readonly App.Metrics.Core.Options.MeterOptions Messages =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Messages",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.CounterOptions Concurrent =
-            new App.Metrics.Core.Options.CounterOptions
-            {
-                Name = "Messages Concurrent",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.TimerOptions Timer =
-            new App.Metrics.Core.Options.TimerOptions
-            {
-                Name = "Message Duration",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.MeterOptions Errors =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Message Errors",
-                MeasurementUnit = Unit.Items,
-            };
-
+        
         private readonly IMetrics _metrics;
 
         public UnitOfWorkExecutor(IMetrics metrics)
@@ -78,9 +52,9 @@ namespace Aggregates.Internal
 
             try
             {
-                _metrics.Measure.Counter.Increment(Concurrent);
-                _metrics.Measure.Meter.Mark(Messages);
-                using (_metrics.Measure.Timer.Time(Timer))
+                _metrics.Increment("Messages Concurrent", Unit.Message);
+                _metrics.Mark("Messages", Unit.Message);
+                using (_metrics.Begin("Message Duration"))
                 {
 
                     Logger.Write(LogLevel.Debug, () => $"Running UOW.Begin for message {context.MessageId}");
@@ -141,7 +115,7 @@ namespace Aggregates.Internal
             {
                 Logger.Info($"Caught exception '{e.GetType().FullName}' while executing message {context.MessageId} {context.Message.MessageType.FullName}", e);
 
-                _metrics.Measure.Meter.Mark(Errors);
+                _metrics.Mark("Message Errors", Unit.Errors);
                 var trailingExceptions = new List<Exception>();
 
                 try
@@ -167,7 +141,7 @@ namespace Aggregates.Internal
             }
             finally
             {
-                _metrics.Measure.Counter.Decrement(Concurrent);
+                _metrics.Decrement("Messages Concurrent", Unit.Message);
             }
         }
     }

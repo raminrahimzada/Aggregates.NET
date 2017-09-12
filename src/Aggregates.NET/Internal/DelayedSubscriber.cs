@@ -13,8 +13,6 @@ using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
-using App.Metrics;
-using Newtonsoft.Json;
 
 
 namespace Aggregates.Internal
@@ -25,21 +23,7 @@ namespace Aggregates.Internal
     {
         private static readonly ILog Logger = LogProvider.GetLogger("DelaySubscriber");
         private static readonly ILog SlowLogger = LogProvider.GetLogger("Slow Alarm");
-
-        private static readonly App.Metrics.Core.Options.CounterOptions DelayedQueued =
-            new App.Metrics.Core.Options.CounterOptions
-            {
-                Name = "Delayed Queued",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.MeterOptions DelayedErrors =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Delayed Failures",
-                MeasurementUnit = Unit.Items,
-            };
-
-
+        
         private static readonly ConcurrentDictionary<string, List<Tuple<long, IFullEvent>>> WaitingEvents = new ConcurrentDictionary<string, List<Tuple<long, IFullEvent>>>();
 
         private class ThreadParam
@@ -97,7 +81,7 @@ namespace Aggregates.Internal
 
         private void onEvent(string stream, long position, IFullEvent e)
         {
-            _metrics.Measure.Counter.Increment(DelayedQueued);
+            _metrics.Increment("Delayed Queued", Unit.Event);
             WaitingEvents.AddOrUpdate(stream, (key) => new List<Tuple<long, IFullEvent>> { new Tuple<long, IFullEvent>(position, e)}, (key, existing) =>
               {
                   existing.Add(new Tuple<long, IFullEvent>(position, e));
@@ -145,7 +129,7 @@ namespace Aggregates.Internal
                         continue;
                     }
 
-                    metrics.Measure.Counter.Decrement(DelayedQueued);
+                    metrics.Decrement("Delayed Queued", Unit.Event);
 
                     try
                     {

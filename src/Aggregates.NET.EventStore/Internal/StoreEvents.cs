@@ -9,7 +9,6 @@ using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
-using App.Metrics;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using Newtonsoft.Json;
@@ -18,19 +17,6 @@ namespace Aggregates.Internal
 {
     class StoreEvents : IStoreEvents
     {
-        private static readonly App.Metrics.Core.Options.TimerOptions ReadTime =
-            new App.Metrics.Core.Options.TimerOptions
-            {
-                Name = "EventStore Read Time",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.TimerOptions WriteTime =
-            new App.Metrics.Core.Options.TimerOptions
-            {
-                Name = "EventStore Write Time",
-                MeasurementUnit = Unit.Items,
-            };
-
         private static readonly ILog Logger = LogProvider.GetLogger("StoreEvents");
         private static readonly ILog SlowLogger = LogProvider.GetLogger("Slow Alarm");
         private readonly IMetrics _metrics;
@@ -60,16 +46,6 @@ namespace Aggregates.Internal
 
         public async Task<IFullEvent[]> GetEvents(string stream, long? start = null, int? count = null)
         { 
-
-            //var settings = new JsonSerializerSettings
-            //{
-            //    TypeNameHandling = TypeNameHandling.Auto,
-            //    SerializationBinder = new EventSerializationBinder(_mapper),
-            //    ContractResolver = new EventContractResolver(_mapper),
-            //    Converters = new[] { new Newtonsoft.Json.Converters.StringEnumConverter() }
-            //};
-
-
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
 
             var sliceStart = start ?? StreamPosition.Start;
@@ -77,7 +53,7 @@ namespace Aggregates.Internal
             Logger.Write(LogLevel.Debug, () => $"Reading events from stream [{stream}] starting at {sliceStart}");
 
             var events = new List<ResolvedEvent>();
-            using (var ctx = _metrics.Measure.Timer.Time(ReadTime))
+            using (var ctx = _metrics.Begin("EventStore Read Time"))
             {
                 do
                 {
@@ -138,14 +114,6 @@ namespace Aggregates.Internal
 
         public async Task<IFullEvent[]> GetEventsBackwards(string stream, long? start = null, int? count = null)
         {
-            //var settings = new JsonSerializerSettings
-            //{
-            //    TypeNameHandling = TypeNameHandling.Auto,
-            //    SerializationBinder = new EventSerializationBinder(_mapper),
-            //    ContractResolver = new EventContractResolver(_mapper),
-            //    Converters = new[] { new Newtonsoft.Json.Converters.StringEnumConverter() }
-            //};
-
 
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
 
@@ -171,7 +139,7 @@ namespace Aggregates.Internal
                 Logger.Write(LogLevel.Debug,
                     () => $"Reading events backwards from stream [{stream}] starting at {sliceStart}");
 
-                using (var ctx = _metrics.Measure.Timer.Time(ReadTime))
+                using (var ctx = _metrics.Begin("EventStore Read Time"))
                 {
                     do
                     {
@@ -271,15 +239,7 @@ namespace Aggregates.Internal
         {
 
             Logger.Write(LogLevel.Debug, () => $"Writing {events.Count()} events to stream id [{stream}].  Expected version: {expectedVersion}");
-
-            //var settings = new JsonSerializerSettings
-            //{
-            //    TypeNameHandling = TypeNameHandling.Auto,
-            //    SerializationBinder = new EventSerializationBinder(_mapper),
-            //    //ContractResolver = new EventContractResolver(_mapper)
-            //    Converters = new[] { new Newtonsoft.Json.Converters.StringEnumConverter() }
-            //};
-
+            
             var translatedEvents = events.Select(e =>
             {
                 var descriptor = new EventDescriptor
@@ -332,7 +292,7 @@ namespace Aggregates.Internal
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
 
             long nextVersion;
-            using (var ctx = _metrics.Measure.Timer.Time(WriteTime))
+            using (var ctx = _metrics.Begin("EventStore Write Time"))
             {
                 EventStoreTransaction transaction = null;
                 try

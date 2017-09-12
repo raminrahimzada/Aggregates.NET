@@ -6,7 +6,6 @@ using Aggregates.Contracts;
 using Aggregates.DI;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using App.Metrics;
 using NServiceBus;
 using NServiceBus.Pipeline;
 
@@ -14,12 +13,6 @@ namespace Aggregates.Internal
 {
     internal class MutateOutgoing : Behavior<IOutgoingLogicalMessageContext>
     {
-        private static readonly App.Metrics.Core.Options.MeterOptions Outgoing =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Outgoing Messages",
-                MeasurementUnit = Unit.Commands,
-            };
         private static readonly ILog Logger = LogProvider.GetLogger("MutateOutgoing");
 
         private readonly IMetrics _metrics;
@@ -31,7 +24,7 @@ namespace Aggregates.Internal
 
         public override Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
         {
-            _metrics.Measure.Meter.Mark(Outgoing);
+            _metrics.Mark("Outgoing Messages", Unit.Message);
 
             IMutating mutated = new Mutating(context.Message.Instance, context.Headers ?? new Dictionary<string, string>());
 

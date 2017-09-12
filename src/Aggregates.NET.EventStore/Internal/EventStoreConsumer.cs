@@ -12,7 +12,6 @@ using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
-using App.Metrics;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Exceptions;
@@ -24,12 +23,6 @@ namespace Aggregates.Internal
     internal class EventStoreConsumer : IEventStoreConsumer, IDisposable
     {
         private static readonly ILog Logger = LogProvider.GetLogger("EventStoreConsumer");
-        private static readonly App.Metrics.Core.Options.CounterOptions OutstandingEvents =
-            new App.Metrics.Core.Options.CounterOptions
-            {
-                Name = "Outstanding Events",
-                MeasurementUnit = Unit.Events,
-            };
 
         private readonly IMetrics _metrics;
         private readonly IMessageSerializer _serializer;
@@ -54,15 +47,7 @@ namespace Aggregates.Internal
             _subscriptions = new List<EventStoreCatchUpSubscription>();
             _persistentSubs = new List<EventStorePersistentSubscriptionBase>();
             _outstandingEvents = new ConcurrentDictionary<string, Tuple<EventStorePersistentSubscriptionBase, Guid>>();
-            //_settings = new JsonSerializerSettings
-            //{
-            //    TypeNameHandling = TypeNameHandling.Auto,
-            //    SerializationBinder = new EventSerializationBinder(mapper),
-            //    ContractResolver = new EventContractResolver(mapper),
-            //    Converters = new[] { new Newtonsoft.Json.Converters.StringEnumConverter() }
-            //};
-
-
+            
             if (clients.Any(x => x.Settings.GossipSeeds == null || !x.Settings.GossipSeeds.Any()))
                 throw new ArgumentException(
                     "Eventstore connection settings does not contain gossip seeds (even if single host call SetGossipSeedEndPoints and SetClusterGossipPort)");
@@ -269,7 +254,7 @@ namespace Aggregates.Internal
                 Logger.Warn($"Tried to ACK unknown event {@event.EventId}");
                 return Task.CompletedTask;
             }
-            _metrics.Measure.Counter.Decrement(OutstandingEvents);
+            _metrics.Decrement("Outstanding Events", Unit.Event);
 
             outstanding.Item1.Acknowledge(outstanding.Item2);
             return Task.CompletedTask;
@@ -328,7 +313,7 @@ namespace Aggregates.Internal
 
             var payload = _serializer.Deserialize(e.Event.EventType, data);
 
-            _metrics.Measure.Counter.Increment(OutstandingEvents);
+            _metrics.Increment("Outstanding Events", Unit.Event);
 
             callback(e.Event.EventStreamId, e.Event.EventNumber, new FullEvent
             {

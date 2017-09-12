@@ -12,7 +12,6 @@ using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
-using App.Metrics;
 using AggregateException = System.AggregateException;
 
 namespace Aggregates.Internal
@@ -84,26 +83,7 @@ namespace Aggregates.Internal
         private static readonly IEntityFactory<TEntity> Factory = EntityFactory.For<TEntity>();
 
         private static OptimisticConcurrencyAttribute _conflictResolution;
-
-        private static readonly App.Metrics.Core.Options.MeterOptions WriteErrors =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Event Write Errors",
-                MeasurementUnit = Unit.Errors,
-            };
-        private static readonly App.Metrics.Core.Options.MeterOptions Conflicts =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Conflicts",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.MeterOptions ConflictsUnresolved =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Conflicts Unresolved",
-                MeasurementUnit = Unit.Items,
-            };
-        
+                
         protected readonly IDictionary<string, TEntity> Tracked = new Dictionary<string, TEntity>();
         protected readonly TinyIoCContainer _container;
         protected readonly IMetrics _metrics;
@@ -162,7 +142,7 @@ namespace Aggregates.Internal
                             Logger.Write(LogLevel.Info,
                                 () => $"Stream [{tracked.Id}] entity {tracked.GetType().FullName} stream version {state.Version} commit verison {tracked.Version} has version conflicts with store - Message: {e.Message} Store: {e.InnerException?.Message}");
 
-                            _metrics.Measure.Meter.Mark(Conflicts);
+                            _metrics.Mark("Conflicts", Unit.Items);
                             // If we expected no stream, no reason to try to resolve the conflict
                             if (tracked.Version == 0)
                             {
@@ -190,7 +170,7 @@ namespace Aggregates.Internal
                             }
                             catch (AbandonConflictException abandon)
                             {
-                                _metrics.Measure.Meter.Mark(ConflictsUnresolved);
+                                _metrics.Mark("Conflicts Unresolved", Unit.Items);
                                 Logger.WriteFormat(LogLevel.Error,
                                     "Stream [{0}] entity {1} has version conflicts with store - abandoning resolution",
                                     tracked.Id, tracked.GetType().FullName);
@@ -200,7 +180,7 @@ namespace Aggregates.Internal
                             }
                             catch (Exception ex)
                             {
-                                _metrics.Measure.Meter.Mark(ConflictsUnresolved);
+                                _metrics.Mark("Conflicts Unresolved", Unit.Items);
                                 Logger.WriteFormat(LogLevel.Error,
                                     "Stream [{0}] entity {1} has version conflicts with store - FAILED to resolve due to: {3}: {2}",
                                     tracked.Id, tracked.GetType().FullName, ex.Message, ex.GetType().Name);
@@ -215,7 +195,7 @@ namespace Aggregates.Internal
                             Logger.WriteFormat(LogLevel.Warn,
                                 "Failed to commit events to store for stream: [{0}] bucket [{1}] Exception: {3}: {2}",
                                 tracked.Id, tracked.Bucket, e.Message, e.GetType().Name);
-                            _metrics.Measure.Meter.Mark(WriteErrors);
+                            _metrics.Mark("Event Write Errors", Unit.Items);
                             throw;
                         }
                         catch (DuplicateCommitException)
@@ -223,7 +203,7 @@ namespace Aggregates.Internal
                             Logger.WriteFormat(LogLevel.Warn,
                                 "Detected a double commit for stream: [{0}] bucket [{1}] - discarding changes for this stream",
                                 tracked.Id, tracked.Bucket);
-                            _metrics.Measure.Meter.Mark(WriteErrors);
+                            _metrics.Mark("Event Write Errors", Unit.Errors);
                             // I was throwing this, but if this happens it means the events for this message have already been committed.  Possibly as a partial message failure earlier. 
                             // Im changing to just discard the changes, perhaps can take a deeper look later if this ever bites me on the ass
                             //throw;

@@ -9,7 +9,6 @@ using Aggregates.Contracts;
 using Aggregates.Attributes;
 using Aggregates.DI;
 using Aggregates.Messages;
-using App.Metrics;
 
 namespace Aggregates.UnitTests.Common
 {
@@ -86,8 +85,7 @@ namespace Aggregates.UnitTests.Common
             TinyIoCContainer.Current.Register<IMetrics>(_metrics.Object);
             TinyIoCContainer.Current.Register<IStoreSnapshots>(_snapshots.Object);
             TinyIoCContainer.Current.Register<IStoreEvents>(_eventstore.Object);
-
-            _metrics.Setup(x => x.Measure.Meter.Mark(Moq.It.IsAny<App.Metrics.Core.Options.MeterOptions>()));
+            
             _snapshots.Setup(x => x.GetSnapshot<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>()))
                 .Returns(Task.FromResult((ISnapshot)null));
 

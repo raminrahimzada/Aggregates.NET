@@ -22,7 +22,6 @@ namespace Aggregates
         public static readonly string PrefixHeader = "Originating";
         public static readonly string EventPrefixHeader = "Event";
         public static readonly string DelayedPrefixHeader = "Delayed";
-        public static readonly string SetupCorrectly = "Aggregates.NET.Safe";
         public static readonly string Retries = "Aggregates.NET.Retries";
         public static readonly string RequestResponse = "Aggregates.NET.Request";
         public static readonly string EventHeader = "Aggregates.NET.Event";

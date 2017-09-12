@@ -1,7 +1,6 @@
 ﻿using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using App.Metrics;
 using NServiceBus;
 using NServiceBus.Extensibility;
 using NServiceBus.Transport;
@@ -20,20 +19,7 @@ namespace Aggregates.Internal
         private readonly IMetrics _metrics;
         private readonly IMessageSerializer _serializer;
         private readonly IMessageSession _bus;
-
-        private static readonly App.Metrics.Core.Options.MeterOptions Sent =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Dispatched Messages",
-                MeasurementUnit = Unit.Items,
-            };
-        private static readonly App.Metrics.Core.Options.MeterOptions Errors =
-            new App.Metrics.Core.Options.MeterOptions
-            {
-                Name = "Dispatched Errors",
-                MeasurementUnit = Unit.Items,
-            };
-
+        
         // A fake message that will travel through the pipeline in order to process events from the context bag
         private static readonly byte[] Marker = new byte[] { };
 
@@ -55,7 +41,7 @@ namespace Aggregates.Internal
                 foreach (var header in headers)
                     options.SetHeader(header.Key, header.Value);
 
-            _metrics.Measure.Meter.Mark(Sent);
+            _metrics.Mark("Dispatched Messages", Unit.Message);
             return _bus.Send(message.Message, options);
         }
 
@@ -97,7 +83,7 @@ namespace Aggregates.Internal
                         Marker, transportTransaction, tokenSource,
                         contextBag);
                     await Bus.OnMessage(messageContext).ConfigureAwait(false);
-                    _metrics.Measure.Meter.Mark(Sent);
+                    _metrics.Mark("Dispatched Messages", Unit.Message);
                     processed = true;
                 }
                 catch (ObjectDisposedException)
@@ -107,7 +93,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception ex)
                 {
-                    _metrics.Measure.Meter.Mark(Errors);
+                    _metrics.Mark("Dispatched Errors", Unit.Errors);
 
                     ++numberOfDeliveryAttempts;
 
@@ -165,7 +151,7 @@ namespace Aggregates.Internal
                         Marker, transportTransaction, tokenSource,
                         contextBag);
                     await Bus.OnMessage(messageContext).ConfigureAwait(false);
-                    _metrics.Measure.Meter.Mark(Sent, messages.Length);
+                    _metrics.Mark("Dispatched Messages", Unit.Message, messages.Length);
                     processed = true;
                 }
                 catch (ObjectDisposedException)
@@ -175,7 +161,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception ex)
                 {
-                    _metrics.Measure.Meter.Mark(Errors, messages.Length);
+                    _metrics.Mark("Dispatched Errors", Unit.Errors, messages.Length);
 
                     ++numberOfDeliveryAttempts;
 

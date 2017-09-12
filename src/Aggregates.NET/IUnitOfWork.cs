@@ -21,8 +21,8 @@ namespace Aggregates
         IPocoRepository<TParent, T> Poco<TParent, T>(TParent parent) where T : class, new() where TParent : IEntity;
 
 
-        Task<IEnumerable<TResponse>> Query<TQuery, TResponse>(TQuery query) where TQuery : IQuery<TResponse>;
-        Task<IEnumerable<TResponse>> Query<TQuery, TResponse>(Action<TQuery> query) where TQuery : IQuery<TResponse>;
+        Task<TResponse> Query<TQuery, TResponse>(TQuery query) where TQuery : IQuery<TResponse>;
+        Task<TResponse> Query<TQuery, TResponse>(Action<TQuery> query) where TQuery : IQuery<TResponse>;
 
         Guid CommitId { get; }
         object CurrentMessage { get; }
