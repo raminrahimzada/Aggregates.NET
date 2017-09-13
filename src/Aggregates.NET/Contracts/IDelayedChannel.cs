@@ -35,6 +35,8 @@ namespace Aggregates.Contracts
         /// Pulls all delayed objects at channel + key and all objects in durable storage at channel
         /// </summary>
         Task<IEnumerable<IDelayedMessage>> Pull(string channel, string key = null, int? max=null);
-        
+
+        Task Begin();
+        Task End(Exception ex = null);
     }
 }

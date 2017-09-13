@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Aggregates
 {
-    class WireUp
+    class SMConfigure
     {
     }
 }

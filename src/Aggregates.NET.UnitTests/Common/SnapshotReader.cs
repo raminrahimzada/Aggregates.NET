@@ -44,7 +44,7 @@ namespace Aggregates.UnitTests.Common
         {
             _consumer.Setup(x => x.EnableProjection("$by_category")).Returns(Task.FromResult(true));
 
-            await _subscriber.Setup("test", CancellationToken.None, Version.Parse("0.0.0")).ConfigureAwait(false);
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
 
             _consumer.Verify(x => x.EnableProjection("$by_category"), Moq.Times.Once);
         }
@@ -57,7 +57,7 @@ namespace Aggregates.UnitTests.Common
                         Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
                         Moq.It.IsAny<Func<Task>>())).Returns(Task.FromResult(true));
 
-            await _subscriber.Setup("test", CancellationToken.None, Version.Parse("0.0.0")).ConfigureAwait(false);
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
 
             await _subscriber.Connect().ConfigureAwait(false);
 
@@ -86,7 +86,7 @@ namespace Aggregates.UnitTests.Common
                 .Returns(Task.FromResult(true));
 
             var cts = new CancellationTokenSource();
-            await _subscriber.Setup("test", cts.Token, Version.Parse("0.0.0")).ConfigureAwait(false);
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
 
             await _subscriber.Connect().ConfigureAwait(false);
 
@@ -111,7 +111,7 @@ namespace Aggregates.UnitTests.Common
         public async Task get_no_snapshot()
         {
             var cts = new CancellationTokenSource();
-            await _subscriber.Setup("test", cts.Token, Version.Parse("0.0.0")).ConfigureAwait(false);
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
 
             await _subscriber.Connect().ConfigureAwait(false);
 
@@ -135,7 +135,7 @@ namespace Aggregates.UnitTests.Common
                 .Returns(Task.FromResult(true));
 
             var cts = new CancellationTokenSource();
-            await _subscriber.Setup("test", cts.Token, Version.Parse("0.0.0")).ConfigureAwait(false);
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
 
             await _subscriber.Connect().ConfigureAwait(false);
 
@@ -177,7 +177,7 @@ namespace Aggregates.UnitTests.Common
                     })
                 .Returns(Task.FromResult(true));
 
-            await _subscriber.Setup("test", CancellationToken.None, Version.Parse("0.0.0")).ConfigureAwait(false);
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
 
             await _subscriber.Connect().ConfigureAwait(false);
 

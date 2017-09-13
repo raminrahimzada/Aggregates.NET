@@ -19,6 +19,7 @@ namespace Aggregates.UnitTests.NServiceBus
         private Moq.Mock<IIncomingLogicalMessageContext> _context;
         private Moq.Mock<IDomainUnitOfWork> _domainUow;
         private Moq.Mock<IUnitOfWork> _uow;
+        private Moq.Mock<IDelayedChannel> _channel;
         private Moq.Mock<Func<Task>> _next;
 
         private ContextBag _contextBag;
@@ -31,12 +32,15 @@ namespace Aggregates.UnitTests.NServiceBus
             _context = new Moq.Mock<IIncomingLogicalMessageContext>();
             _domainUow = new Moq.Mock<IDomainUnitOfWork>();
             _uow = new Moq.Mock<IUnitOfWork>();
+            _channel = new Moq.Mock<IDelayedChannel>();
             _next = new Moq.Mock<Func<Task>>();
             _contextBag = new ContextBag();
 
             TinyIoCContainer.Current.Register(_domainUow.Object);
             TinyIoCContainer.Current.Register(_uow.Object);
-            
+            TinyIoCContainer.Current.Register(_channel.Object);
+
+            _metrics.Setup(x => x.Begin(Moq.It.IsAny<string>())).Returns(new Moq.Mock<ITimer>().Object);
             _context.Setup(x => x.Extensions).Returns(_contextBag);
             _context.Setup(x => x.MessageHeaders).Returns(new Dictionary<string, string>
             {

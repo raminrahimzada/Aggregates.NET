@@ -6,8 +6,9 @@ namespace Aggregates.Contracts
 {
     public interface IEventSubscriber : IDisposable
     {
-        Task Setup(string endpoint, CancellationToken cancelToken, Version version);
+        Task Setup(string endpoint, Version version);
 
         Task Connect();
+        Task Shutdown();
     }
 }

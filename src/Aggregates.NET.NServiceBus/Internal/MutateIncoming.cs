@@ -31,7 +31,10 @@ namespace Aggregates.Internal
             var mutators = MutationManager.Registered.ToList();
             if (!mutators.Any()) return next();
 
-            var container = context.Extensions.Get<TinyIoCContainer>();
+            TinyIoCContainer container;
+            // If theres a current container in the pipeline, use that
+            if (!context.Extensions.TryGet<TinyIoCContainer>(out container))
+                container = TinyIoCContainer.Current;
 
             foreach (var type in mutators)
             {

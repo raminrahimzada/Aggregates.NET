@@ -36,14 +36,17 @@ namespace Aggregates.Internal
             }
 
             var container = TinyIoCContainer.Current;
+                       
 
             var domainUOW = container.Resolve<IDomainUnitOfWork>();
             var appUOW = container.Resolve<IUnitOfWork>();
+            var delayed = container.Resolve<IDelayedChannel>();
 
             // Child container with resolved domain and app uow used by downstream
             var child = container.GetChildContainer();
             child.Register(domainUOW);
             child.Register(appUOW);
+            child.Register(delayed);
 
             context.Extensions.Set(child);
 
@@ -60,31 +63,32 @@ namespace Aggregates.Internal
                     Logger.Write(LogLevel.Debug, () => $"Running UOW.Begin for message {context.MessageId}");
                     await domainUOW.Begin().ConfigureAwait(false);
                     await appUOW.Begin().ConfigureAwait(false);
+                    await delayed.Begin().ConfigureAwait(false);
 
 
                     // Todo: because commit id is used on commit now instead of during processing we can
                     // once again parallelize event processing (if we want to)
 
                     // Stupid hack to get events from ES and messages from NSB into the same pipeline
-                    IDelayedMessage[] delayed;
+                    IDelayedMessage[] delayedMessages;
                     object @event;
                     // Special case for delayed messages read from delayed stream
-                    if (context.Extensions.TryGet(Defaults.LocalBulkHeader, out delayed))
+                    if (context.Extensions.TryGet(Defaults.LocalBulkHeader, out delayedMessages))
                     {
 
-                        Logger.Write(LogLevel.Debug, () => $"Bulk processing {delayed.Count()} messages, bulk id {context.MessageId}");
+                        Logger.Write(LogLevel.Debug, () => $"Bulk processing {delayedMessages.Count()} messages, bulk id {context.MessageId}");
                         var index = 1;
-                        foreach (var x in delayed)
+                        foreach (var x in delayedMessages)
                         {
                             // Replace all headers with the original headers to preserve CorrId etc.
                             context.Headers.Clear();
                             foreach (var header in x.Headers)
                                 context.Headers[$"{Defaults.DelayedPrefixHeader}.{header.Key}"] = header.Value;
 
-                            context.Headers[Defaults.LocalBulkHeader] = delayed.Count().ToString();
+                            context.Headers[Defaults.LocalBulkHeader] = delayedMessages.Count().ToString();
                             context.Headers[Defaults.DelayedId] = x.MessageId;
                             context.Headers[Defaults.ChannelKey] = x.ChannelKey;
-                            Logger.Write(LogLevel.Debug, () => $"Processing {index}/{delayed.Count()} message, bulk id {context.MessageId}.  MessageId: {x.MessageId} ChannelKey: {x.ChannelKey}");
+                            Logger.Write(LogLevel.Debug, () => $"Processing {index}/{delayedMessages.Count()} message, bulk id {context.MessageId}.  MessageId: {x.MessageId} ChannelKey: {x.ChannelKey}");
 
                             //context.Extensions.Set(Defaults.ChannelKey, x.ChannelKey);
 
@@ -108,6 +112,7 @@ namespace Aggregates.Internal
 
                     await domainUOW.End().ConfigureAwait(false);
                     await appUOW.End().ConfigureAwait(false);
+                    await delayed.End().ConfigureAwait(false);
                 }
 
             }
@@ -122,8 +127,10 @@ namespace Aggregates.Internal
                 {
                     Logger.Write(LogLevel.Debug,
                         () => $"Running UOW.End with exception [{e.GetType().Name}] for message {context.MessageId}");
+                    // Todo: if one throws an exception (again) the others wont work.  Fix with a loop of some kind
                     await domainUOW.End(e).ConfigureAwait(false);
                     await appUOW.End(e).ConfigureAwait(false);
+                    await delayed.End(e).ConfigureAwait(false);
                 }
                 catch (Exception endException)
                 {

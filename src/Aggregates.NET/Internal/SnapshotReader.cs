@@ -84,12 +84,12 @@ namespace Aggregates.Internal
             }, metrics, TimeSpan.FromMinutes(5), "expires snapshots from the cache");
         }
 
-        public async Task Setup(string endpoint, CancellationToken cancelToken, Version version)
+        public async Task Setup(string endpoint, Version version)
         {
+            _cancelation = new CancellationTokenSource();
             _endpoint = endpoint;
             _version = version;
             await _consumer.EnableProjection("$by_category").ConfigureAwait(false);
-            _cancelation = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
         }
 
         public Task Connect()
@@ -98,6 +98,11 @@ namespace Aggregates.Internal
             var stream = $"$ce-{StreamTypes.Snapshot}";
             return Reconnect(stream);
 
+        }
+        public Task Shutdown()
+        {
+            _cancelation.Cancel();
+            return Task.CompletedTask;
         }
 
         private Task Reconnect(string stream)

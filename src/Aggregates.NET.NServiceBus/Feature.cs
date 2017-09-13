@@ -6,8 +6,12 @@ using Aggregates.Logging;
 using Aggregates.Messages;
 using NServiceBus;
 using NServiceBus.Features;
+using NServiceBus.MessageInterfaces;
+using NServiceBus.Unicast;
+using NServiceBus.Unicast.Messages;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,42 +22,49 @@ namespace Aggregates
         public Feature()
         {
             DependsOn("NServiceBus.Features.ReceiveFeature");
-            Defaults(s =>
-            {
-                s.SetDefault("Retries", 10);
-                s.SetDefault("ReadSize", 200);
-                s.SetDefault("Compress", Compression.Snapshots);
-                s.SetDefault("SlowAlertThreshold", 1000);
-                s.SetDefault("SlowAlerts", false);
-                s.SetDefault("MaxDelayed", 10000);
-                s.SetDefault("StreamGenerator", new StreamIdGenerator((type, streamType, bucket, stream, parents) => $"{streamType}-{bucket}-[{parents.BuildParentsString()}]-{type.FullName.Replace(".", "")}-{stream}"));
-            });
         }
         protected override void Setup(FeatureConfigurationContext context)
         {
-            var container = TinyIoCContainer.Current;
-
-            container.Register<IEventFactory, EventFactory>();
-            container.Register<IMessageDispatcher, Dispatcher>();
-            container.Register<IEventMapper, EventMapper>();
-            container.Register<IMessaging, NServiceBusMessaging>();
-
-            container.Register<IDomainUnitOfWork, NSBUnitOfWork>();
-            MutationManager.RegisterMutator("domain unit of work", typeof(NSBUnitOfWork));
-
-            context.RegisterStartupTask(builder => new EndpointRunner(context.Settings.InstanceSpecificQueue()));
-
             var settings = context.Settings;
+            var container = TinyIoCContainer.Current;
+            var config = settings.Get<Configure>("AggregatesConfig");
+
+            context.Container.ConfigureComponent<NSBUnitOfWork>(DependencyLifecycle.InstancePerUnitOfWork);
+            context.Container.ConfigureComponent<IRepositoryFactory>(() => container.Resolve<IRepositoryFactory>(), DependencyLifecycle.InstancePerCall);
+            context.Container.ConfigureComponent<IEventFactory>(() => container.Resolve<IEventFactory>(), DependencyLifecycle.InstancePerCall);
+            context.Container.ConfigureComponent<IProcessor>(() => container.Resolve<IProcessor>(), DependencyLifecycle.InstancePerCall);
+            context.Container.ConfigureComponent<IMetrics>(() => container.Resolve<IMetrics>(), DependencyLifecycle.InstancePerCall);
+
+            context.RegisterStartupTask(builder =>
+            {
+                // use the builder to register certian things in our IoC
+                var tiny = TinyIoCContainer.Current;
+
+                tiny.Register<NSBUnitOfWork>((c, o) => builder.Build<NSBUnitOfWork>()).AsMultiInstance();
+                tiny.Register<IEventFactory>((c,o) => new EventFactory(builder.Build<IMessageCreator>())).AsMultiInstance();
+                tiny.Register<IMessageDispatcher>((c,o) => new Dispatcher(c.Resolve<IMetrics>(), c.Resolve<IMessageSerializer>(), c.Resolve<IMessageSession>())).AsMultiInstance();
+                tiny.Register<IEventMapper>((c, o) => new EventMapper(builder.Build<IMessageMapper>())).AsMultiInstance();
+                tiny.Register<IMessaging>((c, o) => new NServiceBusMessaging(builder.Build<MessageHandlerRegistry>(), builder.Build<MessageMetadataRegistry>())).AsMultiInstance();
+
+                return new EndpointRunner(context.Settings.InstanceSpecificQueue(), config.StartupTasks, config.ShutdownTasks);
+            });
+
             context.Pipeline.Register(
                 b => new ExceptionRejector(TinyIoCContainer.Current.Resolve<IMetrics>(), settings.Get<int>("Retries")),
                 "Watches message faults, sends error replies to client when message moves to error queue"
                 );
 
-            if (settings.Get<bool>("SlowAlerts"))
+            if (config.SlowAlertThreshold.HasValue)
                 context.Pipeline.Register(
                     behavior: new TimeExecutionBehavior(settings.Get<int>("SlowAlertThreshold")),
                     description: "times the execution of messages and reports anytime they are slow"
                     );
+
+            var types = settings.GetAvailableTypes();
+
+            // Register all query handlers in my IoC so query processor can use them
+            foreach (var type in types.Where(IsQueryHandler))
+                container.Register(type);
 
             context.Pipeline.Register<UowRegistration>();
             context.Pipeline.Register<MutateIncomingRegistration>();
@@ -62,6 +73,21 @@ namespace Aggregates
             // We are sending IEvents, which NSB doesn't like out of the box - so turn that check off
             context.Pipeline.Remove("EnforceSendBestPractices");
 
+            // bulk invoke only possible with consumer feature because it uses the eventstore as a sink when overloaded
+            context.Pipeline.Replace("InvokeHandlers", (b) =>
+                new BulkInvokeHandlerTerminator(container.Resolve<IMetrics>(), b.Build<IMessageMapper>()),
+                "Replaces default invoke handlers with one that supports our custom delayed invoker");
+
+        }
+        private static bool IsQueryHandler(Type type)
+        {
+            if (type.IsAbstract || type.IsGenericTypeDefinition)
+                return false;
+
+            return type.GetInterfaces()
+                .Where(@interface => @interface.IsGenericType)
+                .Select(@interface => @interface.GetGenericTypeDefinition())
+                .Any(genericTypeDef => genericTypeDef == typeof(IHandleQueries<,>));
         }
     }
 
@@ -69,13 +95,22 @@ namespace Aggregates
     {
         private static readonly ILog Logger = LogProvider.GetLogger("EndpointRunner");
         private readonly String _instanceQueue;
+        private readonly IEnumerable<Func<Task>> _startupTasks;
+        private readonly IEnumerable<Func<Task>> _shutdownTasks;
 
-        public EndpointRunner(String instanceQueue)
+        public EndpointRunner(String instanceQueue, IEnumerable<Func<Task>> startupTasks, IEnumerable<Func<Task>> shutdownTasks)
         {
             _instanceQueue = instanceQueue;
+            _startupTasks = startupTasks;
+            _shutdownTasks = shutdownTasks;
         }
         protected override async Task OnStart(IMessageSession session)
         {
+            // Weird place for a registration but NSB doesn't make getting IMessageSession easy.
+            // its never registered in their container so we have to register it ourselves
+            // and since this method is run before Bus.Start is done we can't register IMessageSession later
+            TinyIoCContainer.Current.Register(session).AsSingleton();
+
             Logger.Write(LogLevel.Info, "Starting endpoint");
 
             await session.Publish<EndpointAlive>(x =>
@@ -84,6 +119,8 @@ namespace Aggregates
                 x.Instance = Defaults.Instance;
             }).ConfigureAwait(false);
 
+            foreach (var task in _startupTasks)
+                await task();
         }
         protected override async Task OnStop(IMessageSession session)
         {
@@ -93,6 +130,9 @@ namespace Aggregates
                 x.Endpoint = _instanceQueue;
                 x.Instance = Defaults.Instance;
             }).ConfigureAwait(false);
+
+            foreach (var task in _shutdownTasks)
+                await task();
         }
     }
 }

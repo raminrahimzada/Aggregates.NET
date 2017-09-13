@@ -70,7 +70,7 @@ namespace Aggregates
                 var pipelineMethod = pipelineExecutor.GetType().GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public)
                     .MakeFuncDelegateWithTarget<MessageContext, Task>(pipelineExecutor.GetType());
 
-                OnMessage = (c) => pipelineMethod.Invoke(pipelineExecutor, c);
+                OnMessage = (c) => pipelineMethod(pipelineExecutor, c);
 
 
                 var recoverabilityMethod = recoverabilityExecutor.GetType()

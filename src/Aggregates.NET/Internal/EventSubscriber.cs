@@ -63,13 +63,13 @@ namespace Aggregates.Internal
                 _waitingEvents[i] = new BlockingCollection<Tuple<string, long, IFullEvent>>();
         }
 
-        public async Task Setup(string endpoint, CancellationToken cancelToken, Version version)
+        public async Task Setup(string endpoint, Version version)
         {
             _endpoint = endpoint;
             // Changes which affect minor version require a new projection, ignore revision and build numbers
             _version = new Version(version.Major, version.Minor);
             await _consumer.EnableProjection("$by_category").ConfigureAwait(false);
-            _cancelation = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+            _cancelation = new CancellationTokenSource();
 
             var discoveredEvents =
                 _messaging.GetMessageTypes().Where(x => typeof(IEvent).IsAssignableFrom(x)).OrderBy(x => x.FullName).ToList();
@@ -126,6 +126,14 @@ when({{
 
 
             await Reconnect(appStream, group).ConfigureAwait(false);
+        }
+        public Task Shutdown()
+        {
+            _cancelation.Cancel();
+            foreach( var thread in _pinnedThreads)
+                thread.Join();
+
+            return Task.CompletedTask;
         }
 
         private Task Reconnect(string stream, string group)
