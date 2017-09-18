@@ -119,7 +119,7 @@ namespace Client
                 .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
 
             config.UseSerialization<NewtonsoftSerializer>();
-
+            
             config.UsePersistence<InMemoryPersistence>();
             config.UseContainer<StructureMapBuilder>(c => c.ExistingContainer(_container));
 
@@ -138,12 +138,15 @@ namespace Client
 
             var client = await ConfigureStore();
 
-            new Aggregates.Configure()
-                .NServiceBus(config)
-                .EventStore(new[] { client })
-                .NewtonsoftJson();
+            await Aggregates.Configuration.Build(
+                new Aggregates.Configure()
+                    .StructureMap(_container)
+                    .EventStore(new[] { client })
+                    .NewtonsoftJson()
+                    .NServiceBus(config)
+                    );
 
-            return await Aggregates.Bus.Start(config).ConfigureAwait(false);
+            return _container.GetInstance<IEndpointInstance>();
         }
 
         public static async Task<IEventStoreConnection> ConfigureStore()

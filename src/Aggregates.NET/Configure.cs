@@ -1,5 +1,4 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Internal;
@@ -12,8 +11,34 @@ using System.Threading.Tasks;
 
 namespace Aggregates
 {
+    public class Configuration
+    {
+        public static Configure Settings { get; private set; }
+
+        public static async Task Build(Configure settings)
+        {
+            if (settings.Container == null)
+                throw new ArgumentException("Must designate a container implementation");
+
+            Settings = settings;
+
+            try
+            {
+                foreach (var task in settings.SetupTasks)
+                    await task();
+            }
+            catch
+            {
+                Settings = null;
+                throw;
+            }
+        }
+    }
+
+
     public class Configure
     {
+
         // Log settings
         public TimeSpan? SlowAlertThreshold { get; private set; }
         public bool ExtraStats { get; private set; }
@@ -36,11 +61,14 @@ namespace Aggregates
         public TimeSpan DelayedExpiration { get; private set; }
         public int MaxDelayed { get; private set; }
 
+        internal List<Func<Task>> SetupTasks;
         internal List<Func<Task>> StartupTasks;
         internal List<Func<Task>> ShutdownTasks;
+        internal IContainer Container;
 
         public Configure()
         {
+            SetupTasks = new List<Func<Task>>();
             StartupTasks = new List<Func<Task>>();
             ShutdownTasks = new List<Func<Task>>();
 
@@ -58,93 +86,100 @@ namespace Aggregates
             DelayedExpiration = TimeSpan.FromMinutes(5);
             MaxDelayed = 5000;
 
-            var container = TinyIoCContainer.Current;
-
-            container.Register<IRepositoryFactory, RepositoryFactory>().AsMultiInstance();
-            container.Register<IProcessor, Processor>().AsMultiInstance();
-            container.Register<IMetrics, NullMetrics>().AsMultiInstance();
-            container.Register<IDelayedChannel, DelayedChannel>().AsMultiInstance();
-            container.Register<IDomainUnitOfWork, UnitOfWork>().AsMultiInstance();
-
-            container.Register<IDelayedCache, DelayedCache>().AsSingleton();
-            container.Register<ICache, IntelligentCache>().AsSingleton();
-            container.Register<ISnapshotReader, SnapshotReader>().AsSingleton();
-
-            container.Register<IEventSubscriber>((factory, overloads) => new EventSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IMessaging>(), factory.Resolve<IEventStoreConsumer>(), ParallelEvents), "eventsubscriber").AsSingleton();
-            container.Register<IEventSubscriber>((factory, overloads) => new DelayedSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IEventStoreConsumer>(), factory.Resolve<IMessageDispatcher>(), Retries), "delayedsubscriber").AsSingleton();
-            container.Register<IEventSubscriber>((factory, overloads) => (IEventSubscriber)factory.Resolve<ISnapshotReader>(), "snapshotreader").AsSingleton();
-
-            container.Register<Func<Exception, string, Error>>((factory, overloads) =>
+            SetupTasks.Add(() =>
             {
-                var eventFactory = factory.Resolve<IEventFactory>();
-                return (exception, message) =>
+                var container = Configuration.Settings.Container;
+
+                container.Register<IRepositoryFactory, RepositoryFactory>();
+                container.Register<IProcessor, Processor>();
+                container.Register<IMetrics, NullMetrics>();
+                container.Register<IDelayedChannel, DelayedChannel>();
+                container.Register<IDomainUnitOfWork, UnitOfWork>();
+
+                container.RegisterSingleton<IDelayedCache, DelayedCache>();
+                container.RegisterSingleton<ICache, IntelligentCache>();
+                container.RegisterSingleton<ISnapshotReader, SnapshotReader>();
+
+                container.RegisterSingleton<IEventSubscriber>((factory) => new EventSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IMessaging>(), factory.Resolve<IEventStoreConsumer>(), ParallelEvents), "eventsubscriber");
+                container.RegisterSingleton<IEventSubscriber>((factory) => new DelayedSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IEventStoreConsumer>(), factory.Resolve<IMessageDispatcher>(), Retries), "delayedsubscriber");
+                container.RegisterSingleton<IEventSubscriber>((factory) => (IEventSubscriber)factory.Resolve<ISnapshotReader>(), "snapshotreader");
+
+                container.RegisterSingleton<Func<Exception, string, Error>>((factory) =>
                 {
-                    var sb = new StringBuilder();
-                    if (!string.IsNullOrEmpty(message))
+                    var eventFactory = factory.Resolve<IEventFactory>();
+                    return (exception, message) =>
                     {
-                        sb.AppendLine($"Error Message: {message}");
-                    }
-                    sb.AppendLine($"Exception type {exception.GetType()}");
-                    sb.AppendLine($"Exception message: {exception.Message}");
-                    sb.AppendLine($"Stack trace: {exception.StackTrace}");
+                        var sb = new StringBuilder();
+                        if (!string.IsNullOrEmpty(message))
+                        {
+                            sb.AppendLine($"Error Message: {message}");
+                        }
+                        sb.AppendLine($"Exception type {exception.GetType()}");
+                        sb.AppendLine($"Exception message: {exception.Message}");
+                        sb.AppendLine($"Stack trace: {exception.StackTrace}");
 
 
-                    if (exception.InnerException != null)
+                        if (exception.InnerException != null)
+                        {
+                            sb.AppendLine("---BEGIN Inner Exception--- ");
+                            sb.AppendLine($"Exception type {exception.InnerException.GetType()}");
+                            sb.AppendLine($"Exception message: {exception.InnerException.Message}");
+                            sb.AppendLine($"Stack trace: {exception.InnerException.StackTrace}");
+                            sb.AppendLine("---END Inner Exception---");
+
+                        }
+                        var aggregateException = exception as System.AggregateException;
+                        if (aggregateException == null)
+                            return eventFactory.Create<Error>(e => { e.Message = sb.ToString(); });
+
+                        sb.AppendLine("---BEGIN Aggregate Exception---");
+                        var aggException = aggregateException;
+                        foreach (var inner in aggException.InnerExceptions)
+                        {
+
+                            sb.AppendLine("---BEGIN Inner Exception--- ");
+                            sb.AppendLine($"Exception type {inner.GetType()}");
+                            sb.AppendLine($"Exception message: {inner.Message}");
+                            sb.AppendLine($"Stack trace: {inner.StackTrace}");
+                            sb.AppendLine("---END Inner Exception---");
+                        }
+
+                        return eventFactory.Create<Error>(e =>
+                        {
+                            e.Message = sb.ToString();
+                        });
+                    };
+                });
+
+                container.RegisterSingleton<Func<Accept>>((factory) =>
+                {
+                    var eventFactory = factory.Resolve<IEventFactory>();
+                    return () => eventFactory.Create<Accept>(x => { });
+                });
+
+                container.RegisterSingleton<Func<string, Reject>>((factory) =>
+                {
+                    var eventFactory = factory.Resolve<IEventFactory>();
+                    return message => { return eventFactory.Create<Reject>(e => { e.Message = message; }); };
+                });
+                container.RegisterSingleton<Func<BusinessException, Reject>>((factory) =>
+                {
+                    var eventFactory = factory.Resolve<IEventFactory>();
+                    return exception =>
                     {
-                        sb.AppendLine("---BEGIN Inner Exception--- ");
-                        sb.AppendLine($"Exception type {exception.InnerException.GetType()}");
-                        sb.AppendLine($"Exception message: {exception.InnerException.Message}");
-                        sb.AppendLine($"Stack trace: {exception.InnerException.StackTrace}");
-                        sb.AppendLine("---END Inner Exception---");
+                        return eventFactory.Create<Reject>(e =>
+                        {
+                            e.Message = "Exception raised";
+                        });
+                    };
+                });
 
-                    }
-                    var aggregateException = exception as System.AggregateException;
-                    if (aggregateException == null)
-                        return eventFactory.Create<Error>(e => { e.Message = sb.ToString(); });
-
-                    sb.AppendLine("---BEGIN Aggregate Exception---");
-                    var aggException = aggregateException;
-                    foreach (var inner in aggException.InnerExceptions)
-                    {
-
-                        sb.AppendLine("---BEGIN Inner Exception--- ");
-                        sb.AppendLine($"Exception type {inner.GetType()}");
-                        sb.AppendLine($"Exception message: {inner.Message}");
-                        sb.AppendLine($"Stack trace: {inner.StackTrace}");
-                        sb.AppendLine("---END Inner Exception---");
-                    }
-
-                    return eventFactory.Create<Error>(e =>
-                    {
-                        e.Message = sb.ToString();
-                    });
-                };
-            });
-
-            container.Register<Func<Accept>>((factory, overloads) =>
-            {
-                var eventFactory = factory.Resolve<IEventFactory>();
-                return () => eventFactory.Create<Accept>(x => { });
-            });
-
-            container.Register<Func<string, Reject>>((factory, overloads) =>
-            {
-                var eventFactory = factory.Resolve<IEventFactory>();
-                return message => { return eventFactory.Create<Reject>(e => { e.Message = message; }); };
-            });
-            container.Register<Func<BusinessException, Reject>>((factory, overloads) =>
-            {
-                var eventFactory = factory.Resolve<IEventFactory>();
-                return exception => {
-                    return eventFactory.Create<Reject>(e => {
-                        e.Message = "Exception raised";
-                    });
-                };
+                return Task.CompletedTask;
             });
 
             StartupTasks.Add(async () =>
             {
-                var subscribers = TinyIoCContainer.Current.ResolveAll<IEventSubscriber>();
+                var subscribers = Configuration.Settings.Container.ResolveAll<IEventSubscriber>();
 
                 await subscribers.WhenAllAsync(x => x.Setup(
                     UniqueAddress,
@@ -156,7 +191,7 @@ namespace Aggregates
             });
             ShutdownTasks.Add(async () =>
             {
-                var subscribers = TinyIoCContainer.Current.ResolveAll<IEventSubscriber>();
+                var subscribers = Configuration.Settings.Container.ResolveAll<IEventSubscriber>();
 
                 await subscribers.WhenAllAsync(x => x.Shutdown()).ConfigureAwait(false);
             });

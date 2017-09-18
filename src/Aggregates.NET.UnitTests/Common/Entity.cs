@@ -5,7 +5,6 @@ using NUnit.Framework;
 using Aggregates.Contracts;
 using Aggregates.Messages;
 using Aggregates.Exceptions;
-using Aggregates.DI;
 
 namespace Aggregates.UnitTests.Common
 {
@@ -39,7 +38,7 @@ namespace Aggregates.UnitTests.Common
             {
                 Id = "test";
                 State = new FakeState();
-                (this as INeedContainer).Container = TinyIoCContainer.Current;
+                (this as INeedContainer).Container = Configuration.Settings.Container;
                 (this as INeedEventFactory).EventFactory = factory;
             }
             
@@ -59,17 +58,14 @@ namespace Aggregates.UnitTests.Common
             _factory = new Moq.Mock<IEventFactory>();
             _eventstore = new Moq.Mock<IStoreEvents>();
 
-            TinyIoCContainer.Current.Register<IStoreEvents>(_eventstore.Object);
+            var fake = new FakeConfiguration();
+            fake.FakeContainer.Setup(x => x.Resolve<IStoreEvents>()).Returns(_eventstore.Object);
+
+            Configuration.Build(fake).Wait();
 
             _entity = new FakeEntity(_factory.Object);
         }
-
-        [TearDown]
-        public void Teardown()
-        {
-            TinyIoCContainer.Current.Unregister<IStoreEvents>();
-        }
-
+        
 
         [Test]
         public async Task events_get_event()

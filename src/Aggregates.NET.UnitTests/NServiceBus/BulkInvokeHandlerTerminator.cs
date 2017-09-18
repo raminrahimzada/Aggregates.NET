@@ -1,6 +1,5 @@
 ﻿using Aggregates.Attributes;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using NServiceBus.Extensibility;
 using NServiceBus.MessageInterfaces;
 using NServiceBus.ObjectBuilder;

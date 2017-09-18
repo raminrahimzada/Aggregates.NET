@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -154,7 +153,7 @@ when({{
         {
             var param = (ThreadParam)state;
 
-            var container = TinyIoCContainer.Current;
+            var container = Configuration.Settings.Container;
 
             var metrics = container.Resolve<IMetrics>();
             var consumer = container.Resolve<IEventStoreConsumer>();

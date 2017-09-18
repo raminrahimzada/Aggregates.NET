@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using Aggregates.Exceptions;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using System.IO;
 using Aggregates.Internal;
 
@@ -33,10 +32,13 @@ namespace Aggregates.UnitTests.Common
 
             _serializer = new JsonMessageSerializer(_mapper.Object, null, null, null, null);
 
-            TinyIoCContainer.Current.Register<IStorePocos>(_store.Object);
-            TinyIoCContainer.Current.Register<IMessageSerializer>(_serializer);
+            var fake = new FakeConfiguration();
+            fake.FakeContainer.Setup(x => x.Resolve<IStorePocos>()).Returns(_store.Object);
+            fake.FakeContainer.Setup(x => x.Resolve<IMessageSerializer>()).Returns(_serializer);
 
-            _repository = new Aggregates.Internal.PocoRepository<Poco>(TinyIoCContainer.Current);
+            Configuration.Build(fake).Wait();
+            
+            _repository = new Aggregates.Internal.PocoRepository<Poco>(Configuration.Settings.Container);
             
             _store.Setup(
                     x => x.Write<Poco>(Moq.It.IsAny<Tuple<long, Poco>>(), Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(),

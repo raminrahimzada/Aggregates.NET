@@ -1,5 +1,4 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Internal;
 using NServiceBus;
 using NServiceBus.Configuration.AdvancedExtensibility;
@@ -30,7 +29,6 @@ namespace Aggregates
             endpointConfig.LimitMessageProcessingConcurrencyTo(config.ParallelMessages);
             
             settings.Set("Retries", config.Retries);
-            settings.Set("AggregatesConfig", config);
 
             // Set immediate retries to our "MaxRetries" setting
             endpointConfig.Recoverability().Immediate(x =>
@@ -48,6 +46,11 @@ namespace Aggregates
             });
 
             endpointConfig.EnableFeature<Feature>();
+
+            config.SetupTasks.Add(() =>
+            {
+                return Aggregates.Bus.Start(endpointConfig);
+            });
 
             return config;
         }

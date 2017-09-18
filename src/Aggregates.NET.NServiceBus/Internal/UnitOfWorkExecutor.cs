@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using NServiceBus;
@@ -35,8 +34,7 @@ namespace Aggregates.Internal
                 return;
             }
 
-            var container = TinyIoCContainer.Current;
-                       
+            var container = Configuration.Settings.Container;
 
             var domainUOW = container.Resolve<IDomainUnitOfWork>();
             var appUOW = container.Resolve<IUnitOfWork>();
@@ -44,9 +42,9 @@ namespace Aggregates.Internal
 
             // Child container with resolved domain and app uow used by downstream
             var child = container.GetChildContainer();
-            child.Register(domainUOW);
-            child.Register(appUOW);
-            child.Register(delayed);
+            child.RegisterSingleton(domainUOW);
+            child.RegisterSingleton(appUOW);
+            child.RegisterSingleton(delayed);
 
             context.Extensions.Set(child);
 

@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Internal;
 using Aggregates.Logging;
 using Aggregates.Messages;
@@ -37,9 +36,9 @@ namespace Aggregates
 
         private readonly IList<IFullEvent> _uncommitted = new List<IFullEvent>();
 
-        private TinyIoCContainer Container => (this as INeedContainer).Container;
+        private IContainer Container => (this as INeedContainer).Container;
         private IEventFactory Factory => (this as INeedEventFactory).EventFactory;
-        TinyIoCContainer INeedContainer.Container { get; set; }
+        IContainer INeedContainer.Container { get; set; }
         IEventFactory INeedEventFactory.EventFactory { get; set; }
 
 

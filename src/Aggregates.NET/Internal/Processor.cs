@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Messages;
 using System.Collections.Concurrent;
 using Aggregates.Extensions;
@@ -21,7 +20,7 @@ namespace Aggregates.Internal
             var handlerType = typeof(IHandleQueries<,>).MakeGenericType(typeof(TQuery), typeof(TResponse));
 
             var handlerFunc = (Func<object, TQuery, IUnitOfWork, Task<TResponse>>)Processors.GetOrAdd(handlerType, t => ReflectionExtensions.MakeQueryHandler<TQuery, TResponse>(handlerType));
-            var handler = TinyIoCContainer.Current.Resolve(handlerType);
+            var handler = Configuration.Settings.Container.Resolve(handlerType);
 
             return handlerFunc(handler, query, uow);
         }

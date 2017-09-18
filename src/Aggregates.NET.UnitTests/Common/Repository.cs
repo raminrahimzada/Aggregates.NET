@@ -7,7 +7,6 @@ using NUnit.Framework;
 using Aggregates.Exceptions;
 using Aggregates.Contracts;
 using Aggregates.Attributes;
-using Aggregates.DI;
 using Aggregates.Messages;
 
 namespace Aggregates.UnitTests.Common
@@ -81,16 +80,19 @@ namespace Aggregates.UnitTests.Common
             _event = new Moq.Mock<IFullEvent>();
             _resolver = new FakeResolver();
 
-            TinyIoCContainer.Current.Register<FakeResolver>(_resolver);
-            TinyIoCContainer.Current.Register<IMetrics>(_metrics.Object);
-            TinyIoCContainer.Current.Register<IStoreSnapshots>(_snapshots.Object);
-            TinyIoCContainer.Current.Register<IStoreEvents>(_eventstore.Object);
-            
+            var fake = new FakeConfiguration();
+            fake.FakeContainer.Setup(x => x.Resolve<IMetrics>()).Returns(_metrics.Object);
+            fake.FakeContainer.Setup(x => x.Resolve(typeof(FakeResolver))).Returns(_resolver);
+            fake.FakeContainer.Setup(x => x.Resolve<IStoreSnapshots>()).Returns(_snapshots.Object);
+            fake.FakeContainer.Setup(x => x.Resolve<IStoreEvents>()).Returns(_eventstore.Object);
+
+            Configuration.Build(fake).Wait();
+                        
             _snapshots.Setup(x => x.GetSnapshot<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>()))
                 .Returns(Task.FromResult((ISnapshot)null));
 
             _event.Setup(x => x.Event).Returns(new FakeEvent());
-            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(TinyIoCContainer.Current);
+            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(Configuration.Settings.Container);
         }
 
         [Test]

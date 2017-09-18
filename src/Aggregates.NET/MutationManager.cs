@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 

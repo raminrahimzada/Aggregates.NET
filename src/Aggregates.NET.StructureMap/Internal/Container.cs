@@ -44,6 +44,11 @@ namespace Aggregates.Internal
             });
         }
 
+        public void Register(Type concrete)
+        {
+            _container.Configure(x => x.For(concrete).Use(concrete));
+        }
+
         public void Register<TInterface>(Func<IContainer, TInterface> factory, string name = null) where TInterface : class
         {
             _container.Configure(x =>
@@ -63,6 +68,10 @@ namespace Aggregates.Internal
             });
         }
 
+        public object Resolve(Type resolve)
+        {
+            return _container.GetInstance(resolve);
+        }
         public TResolve Resolve<TResolve>() where TResolve : class
         {
             return _container.GetInstance<TResolve>();
@@ -70,6 +79,11 @@ namespace Aggregates.Internal
         public IEnumerable<TResolve> ResolveAll<TResolve>() where TResolve : class
         {
             return _container.GetAllInstances<TResolve>();
+        }
+
+        public IContainer GetChildContainer()
+        {
+            return new Container(_container.GetNestedContainer());
         }
     }
 }

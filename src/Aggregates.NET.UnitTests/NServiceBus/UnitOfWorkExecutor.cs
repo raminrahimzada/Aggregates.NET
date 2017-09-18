@@ -1,5 +1,4 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.DI;
 using NServiceBus;
 using NServiceBus.Extensibility;
 using NServiceBus.Pipeline;
@@ -36,10 +35,13 @@ namespace Aggregates.UnitTests.NServiceBus
             _next = new Moq.Mock<Func<Task>>();
             _contextBag = new ContextBag();
 
-            TinyIoCContainer.Current.Register(_domainUow.Object);
-            TinyIoCContainer.Current.Register(_uow.Object);
-            TinyIoCContainer.Current.Register(_channel.Object);
+            var fake = new FakeConfiguration();
+            fake.FakeContainer.Setup(x => x.Resolve<IDomainUnitOfWork>()).Returns(_domainUow.Object);
+            fake.FakeContainer.Setup(x => x.Resolve<IUnitOfWork>()).Returns(_uow.Object);
+            fake.FakeContainer.Setup(x => x.Resolve<IDelayedChannel>()).Returns(_channel.Object);
 
+            Configuration.Build(fake).Wait();
+            
             _metrics.Setup(x => x.Begin(Moq.It.IsAny<string>())).Returns(new Moq.Mock<ITimer>().Object);
             _context.Setup(x => x.Extensions).Returns(_contextBag);
             _context.Setup(x => x.MessageHeaders).Returns(new Dictionary<string, string>

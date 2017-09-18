@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using NServiceBus;
@@ -31,10 +30,10 @@ namespace Aggregates.Internal
             var mutators = MutationManager.Registered.ToList();
             if (!mutators.Any()) return next();
 
-            TinyIoCContainer container;
+            IContainer container;
             // If theres a current container in the pipeline, use that
-            if (!context.Extensions.TryGet<TinyIoCContainer>(out container))
-                container = TinyIoCContainer.Current;
+            if (!context.Extensions.TryGet<IContainer>(out container))
+                container = Configuration.Settings.Container;
 
             foreach (var type in mutators)
             {

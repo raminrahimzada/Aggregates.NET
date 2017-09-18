@@ -7,7 +7,6 @@ using NUnit.Framework;
 using Aggregates.Messages;
 using Aggregates.Internal;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 
 namespace Aggregates.UnitTests.Common.ConflictResolvers
@@ -25,7 +24,6 @@ namespace Aggregates.UnitTests.Common.ConflictResolvers
             {
                 Id = "test";
                 State = new FakeState();
-                (this as INeedContainer).Container = TinyIoCContainer.Current;
             }
         
         }

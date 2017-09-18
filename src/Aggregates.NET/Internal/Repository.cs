@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Attributes;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -22,7 +21,7 @@ namespace Aggregates.Internal
 
         private readonly TParent _parent;
 
-        public Repository(TParent parent, TinyIoCContainer container) : base(container)
+        public Repository(TParent parent, IContainer container) : base(container)
         {
             _parent = parent;
         }
@@ -85,7 +84,7 @@ namespace Aggregates.Internal
         private static OptimisticConcurrencyAttribute _conflictResolution;
                 
         protected readonly IDictionary<string, TEntity> Tracked = new Dictionary<string, TEntity>();
-        protected readonly TinyIoCContainer _container;
+        protected readonly IContainer _container;
         protected readonly IMetrics _metrics;
         protected readonly IStoreEvents _eventstore;
         protected readonly IStoreSnapshots _snapstore;
@@ -95,7 +94,7 @@ namespace Aggregates.Internal
         public int ChangedStreams => Tracked.Count(x => x.Value.Dirty);
 
         // Pass in child container (the current unit of work creates a new container)
-        public Repository(TinyIoCContainer container)
+        public Repository(IContainer container)
         {
             _container = container;
             _metrics = container.Resolve<IMetrics>();

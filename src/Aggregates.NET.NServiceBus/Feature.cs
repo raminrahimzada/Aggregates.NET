@@ -1,5 +1,4 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Extensions;
 using Aggregates.Internal;
 using Aggregates.Logging;
@@ -26,8 +25,7 @@ namespace Aggregates
         protected override void Setup(FeatureConfigurationContext context)
         {
             var settings = context.Settings;
-            var container = TinyIoCContainer.Current;
-            var config = settings.Get<Configure>("AggregatesConfig");
+            var container = Configuration.Settings.Container;
 
             context.Container.ConfigureComponent<NSBUnitOfWork>(DependencyLifecycle.InstancePerUnitOfWork);
             context.Container.ConfigureComponent<IRepositoryFactory>(() => container.Resolve<IRepositoryFactory>(), DependencyLifecycle.InstancePerCall);
@@ -38,23 +36,23 @@ namespace Aggregates
             context.RegisterStartupTask(builder =>
             {
                 // use the builder to register certian things in our IoC
-                var tiny = TinyIoCContainer.Current;
+                var tiny = Configuration.Settings.Container;
 
-                tiny.Register<NSBUnitOfWork>((c, o) => builder.Build<NSBUnitOfWork>()).AsMultiInstance();
-                tiny.Register<IEventFactory>((c,o) => new EventFactory(builder.Build<IMessageCreator>())).AsMultiInstance();
-                tiny.Register<IMessageDispatcher>((c,o) => new Dispatcher(c.Resolve<IMetrics>(), c.Resolve<IMessageSerializer>(), c.Resolve<IMessageSession>())).AsMultiInstance();
-                tiny.Register<IEventMapper>((c, o) => new EventMapper(builder.Build<IMessageMapper>())).AsMultiInstance();
-                tiny.Register<IMessaging>((c, o) => new NServiceBusMessaging(builder.Build<MessageHandlerRegistry>(), builder.Build<MessageMetadataRegistry>())).AsMultiInstance();
+                tiny.Register<NSBUnitOfWork>((c) => builder.Build<NSBUnitOfWork>());
+                tiny.Register<IEventFactory>((c) => new EventFactory(builder.Build<IMessageCreator>()));
+                tiny.Register<IMessageDispatcher>((c) => new Dispatcher(c.Resolve<IMetrics>(), c.Resolve<IMessageSerializer>(), c.Resolve<IMessageSession>()));
+                tiny.Register<IEventMapper>((c) => new EventMapper(builder.Build<IMessageMapper>()));
+                tiny.Register<IMessaging>((c) => new NServiceBusMessaging(builder.Build<MessageHandlerRegistry>(), builder.Build<MessageMetadataRegistry>()));
 
-                return new EndpointRunner(context.Settings.InstanceSpecificQueue(), config.StartupTasks, config.ShutdownTasks);
+                return new EndpointRunner(context.Settings.InstanceSpecificQueue(), Configuration.Settings.StartupTasks, Configuration.Settings.ShutdownTasks);
             });
 
             context.Pipeline.Register(
-                b => new ExceptionRejector(TinyIoCContainer.Current.Resolve<IMetrics>(), settings.Get<int>("Retries")),
+                b => new ExceptionRejector(b.Build<IMetrics>(), settings.Get<int>("Retries")),
                 "Watches message faults, sends error replies to client when message moves to error queue"
                 );
 
-            if (config.SlowAlertThreshold.HasValue)
+            if (Configuration.Settings.SlowAlertThreshold.HasValue)
                 context.Pipeline.Register(
                     behavior: new TimeExecutionBehavior(settings.Get<int>("SlowAlertThreshold")),
                     description: "times the execution of messages and reports anytime they are slow"
@@ -109,7 +107,7 @@ namespace Aggregates
             // Weird place for a registration but NSB doesn't make getting IMessageSession easy.
             // its never registered in their container so we have to register it ourselves
             // and since this method is run before Bus.Start is done we can't register IMessageSession later
-            TinyIoCContainer.Current.Register(session).AsSingleton();
+            Configuration.Settings.Container.RegisterSingleton(session);
 
             Logger.Write(LogLevel.Info, "Starting endpoint");
 

@@ -1,10 +1,10 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Internal;
 using EventStore.ClientAPI;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Aggregates
 {
@@ -12,26 +12,32 @@ namespace Aggregates
     {
         public static Configure EventStore(this Configure config, IEventStoreConnection[] connections)
         {
-            var container = TinyIoCContainer.Current;
+            config.SetupTasks.Add(() =>
+            {
+                var container = Configuration.Settings.Container;
 
-            container.Register<IEventStoreConsumer>((factory, overloads) => 
-                new EventStoreConsumer(
-                    factory.Resolve<IMetrics>(), 
-                    factory.Resolve<IMessageSerializer>(), 
-                    connections, 
-                    config.ReadSize, 
-                    config.ExtraStats
-                    )).AsMultiInstance();
-            container.Register<IStoreEvents>((factory, overloads) => 
-                new StoreEvents(
-                    factory.Resolve<IMetrics>(),
-                    factory.Resolve<IMessageSerializer>(),
-                    factory.Resolve<IEventMapper>(),
-                    config.Generator,
-                    config.ReadSize,
-                    config.Compression,
-                    connections
-                    )).AsMultiInstance();
+                container.Register<IEventStoreConsumer>((factory) =>
+                    new EventStoreConsumer(
+                        factory.Resolve<IMetrics>(),
+                        factory.Resolve<IMessageSerializer>(),
+                        connections,
+                        config.ReadSize,
+                        config.ExtraStats
+                        ));
+                container.Register<IStoreEvents>((factory) =>
+                    new StoreEvents(
+                        factory.Resolve<IMetrics>(),
+                        factory.Resolve<IMessageSerializer>(),
+                        factory.Resolve<IEventMapper>(),
+                        config.Generator,
+                        config.ReadSize,
+                        config.Compression,
+                        connections
+                        ));
+
+                return Task.CompletedTask;
+            });
+
 
             return config;
         }

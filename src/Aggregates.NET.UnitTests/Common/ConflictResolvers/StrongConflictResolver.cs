@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Exceptions;
 using NUnit.Framework;
-using Aggregates.DI;
 using Aggregates.Messages;
 
 namespace Aggregates.UnitTests.Common.ConflictResolvers

@@ -4,7 +4,12 @@ using System.Text;
 
 namespace Aggregates
 {
-    class SMConfigure
+    public static class SMConfigure
     {
+        public static Configure StructureMap(this Configure config, StructureMap.IContainer container)
+        {
+            config.Container = new Internal.Container(container);
+            return config;
+        }
     }
 }

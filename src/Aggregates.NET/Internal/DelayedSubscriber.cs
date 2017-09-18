@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -99,7 +98,7 @@ namespace Aggregates.Internal
 
         private static void Threaded(object state)
         {
-            var container = TinyIoCContainer.Current;
+            var container = Configuration.Settings.Container;
 
             var metrics = container.Resolve<IMetrics>();
             var consumer = container.Resolve<IEventStoreConsumer>();

@@ -1,4 +1,4 @@
-﻿using Aggregates.DI;
+﻿using Aggregates.Contracts;
 using NServiceBus;
 using System;
 using System.Collections.Generic;
@@ -10,12 +10,12 @@ namespace Aggregates.Extensions
     {
         public static IDomainUnitOfWork Entities(this IMessageHandlerContext context)
         {
-            var container = context.Extensions.Get<TinyIoCContainer>();
+            var container = context.Extensions.Get<IContainer>();
             return container.Resolve<IDomainUnitOfWork>();
         }
         public static IUnitOfWork UnitOfWork(this IMessageHandlerContext context)
         {
-            var container = context.Extensions.Get<TinyIoCContainer>();
+            var container = context.Extensions.Get<IContainer>();
             return container.Resolve<IUnitOfWork>();
         }
     }

@@ -1,5 +1,4 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -16,7 +15,7 @@ namespace Aggregates.Internal
 
         private readonly TParent _parent;
 
-        public PocoRepository(TParent parent, TinyIoCContainer container) : base(container)
+        public PocoRepository(TParent parent, IContainer container) : base(container)
         {
             _parent = parent;
         }
@@ -55,7 +54,7 @@ namespace Aggregates.Internal
         private static readonly ILog Logger = LogProvider.GetLogger("PocoRepository");
 
         protected readonly IDictionary<Tuple<string, Id, Id[]>, Tuple<long, T, string>> Tracked = new Dictionary<Tuple<string, Id, Id[]>, Tuple<long, T, string>>();
-        protected readonly TinyIoCContainer _container;
+        protected readonly IContainer _container;
 
         private readonly IStorePocos _store;
         private readonly IMessageSerializer _serializer;
@@ -66,7 +65,7 @@ namespace Aggregates.Internal
                 // Compares the stored serialized poco against the current to determine how many changed
                 Tracked.Values.Count(x => x.Item1 == -1 || _serializer.Serialize(x.Item2).AsString() != x.Item3);
 
-        public PocoRepository(TinyIoCContainer container)
+        public PocoRepository(IContainer container)
         {
             _container = container;
             _store = _container.Resolve<IStorePocos>();

@@ -12,7 +12,6 @@ using EventStore.ClientAPI.SystemData;
 using NUnit.Framework;
 using Newtonsoft.Json;
 using NServiceBus.Transport;
-using Aggregates.DI;
 
 namespace Aggregates.UnitTests.Common
 {
@@ -31,9 +30,12 @@ namespace Aggregates.UnitTests.Common
             _consumer = new Moq.Mock<IEventStoreConsumer>();
             _dispatcher = new Moq.Mock<IMessageDispatcher>();
 
-            TinyIoCContainer.Current.Register(_metrics.Object);
-            TinyIoCContainer.Current.Register(_consumer.Object);
-            TinyIoCContainer.Current.Register(_dispatcher.Object);
+            var fake = new FakeConfiguration();
+            fake.FakeContainer.Setup(x => x.Resolve<IMetrics>()).Returns(_metrics.Object);
+            fake.FakeContainer.Setup(x => x.Resolve<IEventStoreConsumer>()).Returns(_consumer.Object);
+            fake.FakeContainer.Setup(x => x.Resolve<IMessageDispatcher>()).Returns(_dispatcher.Object);
+
+            Configuration.Build(fake).Wait();
             
             _dispatcher.Setup(x => x.SendLocal(Moq.It.IsAny<IFullMessage[]>(), Moq.It.IsAny<IDictionary<string, string>>())).Returns(Task.CompletedTask);
 

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.DI;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -12,22 +11,22 @@ using Aggregates.Messages;
 
 namespace Aggregates.Internal
 {
-    delegate IResolveConflicts ResolverBuilder(TinyIoCContainer container, Type type);
+    delegate IResolveConflicts ResolverBuilder(IContainer container, Type type);
 
     class ConcurrencyStrategy : Enumeration<ConcurrencyStrategy, ConcurrencyConflict>
     {
         public static ConcurrencyStrategy Throw = new ConcurrencyStrategy(ConcurrencyConflict.Throw, "Throw", (b, _) => b.Resolve<ThrowConflictResolver>());
 
         public static ConcurrencyStrategy Ignore = new ConcurrencyStrategy(ConcurrencyConflict.Ignore, "Ignore",
-            (b, _) => new IgnoreConflictResolver(b.Resolve<IStoreEvents>(), b.Resolve<StreamIdGenerator>("StreamGenerator")));
+            (b, _) => new IgnoreConflictResolver(b.Resolve<IStoreEvents>(), Configuration.Settings.Generator));
 
         public static ConcurrencyStrategy Discard = new ConcurrencyStrategy(ConcurrencyConflict.Discard, "Discard", (b, _) => b.Resolve<DiscardConflictResolver>());
 
         public static ConcurrencyStrategy ResolveStrongly = new ConcurrencyStrategy(ConcurrencyConflict.ResolveStrongly, "ResolveStrongly",
-            (b, _) => new ResolveStronglyConflictResolver(b.Resolve<IStoreSnapshots>(), b.Resolve<IStoreEvents>(), b.Resolve<StreamIdGenerator>("StreamGenerator")));
+            (b, _) => new ResolveStronglyConflictResolver(b.Resolve<IStoreSnapshots>(), b.Resolve<IStoreEvents>(), Configuration.Settings.Generator));
 
         public static ConcurrencyStrategy ResolveWeakly = new ConcurrencyStrategy(ConcurrencyConflict.ResolveWeakly, "ResolveWeakly",
-            (b, _) => new ResolveWeaklyConflictResolver(b.Resolve<IStoreSnapshots>(), b.Resolve<IStoreEvents>(), b.Resolve<IDelayedChannel>(), b.Resolve<StreamIdGenerator>("StreamGenerator")));
+            (b, _) => new ResolveWeaklyConflictResolver(b.Resolve<IStoreSnapshots>(), b.Resolve<IStoreEvents>(), b.Resolve<IDelayedChannel>(), Configuration.Settings.Generator));
 
         public static ConcurrencyStrategy Custom = new ConcurrencyStrategy(ConcurrencyConflict.Custom, "Custom", (b, type) => (IResolveConflicts)b.Resolve(type));
 

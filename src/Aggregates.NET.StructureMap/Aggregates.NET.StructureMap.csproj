@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+   <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Aggregates</RootNamespace>
   </PropertyGroup>
 
@@ -13,4 +14,9 @@
     <ProjectReference Include="..\Aggregates.NET\Aggregates.NET.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs">
+      <Link>Properties\SharedAssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
 </Project>
