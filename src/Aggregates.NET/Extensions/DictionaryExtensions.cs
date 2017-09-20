@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Aggregates.Extensions
 {
@@ -11,6 +12,10 @@ namespace Aggregates.Extensions
             foreach (var item in second)
                 result[item.Key] = item.Value;
             return result;
+        }
+        public static string AsString<T, TU>(this IDictionary<T, TU> dict)
+        {
+            return "{ " + dict.Select(kv => $"({kv.Key}): [{kv.Value}]").Aggregate((cur, next) => $"{cur}, {next}") + " }";
         }
     }
 }

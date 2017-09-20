@@ -68,7 +68,10 @@ namespace Aggregates.UnitTests.Common
         private Moq.Mock<IMetrics> _metrics;
         private Moq.Mock<IStoreSnapshots> _snapshots;
         private Moq.Mock<IStoreEvents> _eventstore;
+        private Moq.Mock<IEventFactory> _factory;
+        private Moq.Mock<IDomainUnitOfWork> _uow;
         private Moq.Mock<IFullEvent> _event;
+        private Moq.Mock<IEventMapper> _mapper;
         private FakeResolver _resolver;
 
         [SetUp]
@@ -77,22 +80,28 @@ namespace Aggregates.UnitTests.Common
             _metrics = new Moq.Mock<IMetrics>();
             _snapshots = new Moq.Mock<IStoreSnapshots>();
             _eventstore = new Moq.Mock<IStoreEvents>();
+            _factory = new Moq.Mock<IEventFactory>();
+            _uow = new Moq.Mock<IDomainUnitOfWork>();
             _event = new Moq.Mock<IFullEvent>();
+            _mapper = new Moq.Mock<IEventMapper>();
+
+            _mapper.Setup(x => x.GetMappedTypeFor(typeof(FakeEvent))).Returns(typeof(FakeEvent));
             _resolver = new FakeResolver();
 
             var fake = new FakeConfiguration();
+            fake.FakeContainer.Setup(x => x.Resolve<IEventMapper>()).Returns(_mapper.Object);
             fake.FakeContainer.Setup(x => x.Resolve<IMetrics>()).Returns(_metrics.Object);
             fake.FakeContainer.Setup(x => x.Resolve(typeof(FakeResolver))).Returns(_resolver);
             fake.FakeContainer.Setup(x => x.Resolve<IStoreSnapshots>()).Returns(_snapshots.Object);
             fake.FakeContainer.Setup(x => x.Resolve<IStoreEvents>()).Returns(_eventstore.Object);
 
-            Configuration.Build(fake).Wait();
-                        
+            Configuration.Settings = fake;
+
             _snapshots.Setup(x => x.GetSnapshot<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>()))
                 .Returns(Task.FromResult((ISnapshot)null));
 
             _event.Setup(x => x.Event).Returns(new FakeEvent());
-            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(Configuration.Settings.Container);
+            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(_metrics.Object, _eventstore.Object, _snapshots.Object, _factory.Object, _uow.Object);
         }
 
         [Test]

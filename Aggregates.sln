@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src\Samples\Hello
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Language", "src\Samples\HelloWorld\Language\Language.csproj", "{90AF1086-5FC3-4997-ABDE-13049503C3C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Events", "src\Samples\HelloWorld\Events\Events.csproj", "{17ECD709-6746-4D75-8573-E3A8D0793A57}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "src\Samples\HelloWorld\Client\Client.csproj", "{17ECD709-6746-4D75-8573-E3A8D0793A57}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregates.NET.StructureMap", "src\Aggregates.NET.StructureMap\Aggregates.NET.StructureMap.csproj", "{672EB778-D80B-4D77-8C02-FF7BCD96BA54}"
 EndProject

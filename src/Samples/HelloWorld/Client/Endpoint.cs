@@ -1,4 +1,5 @@
 ﻿using Aggregates;
+using Aggregates.Extensions;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using Language;
@@ -42,7 +43,7 @@ namespace Client
 
         private static void Main(string[] args)
         {
-            LogManager.GlobalThreshold = LogLevel.Debug;
+            LogManager.GlobalThreshold = LogLevel.Warn;
 
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
             AppDomain.CurrentDomain.FirstChanceException += ExceptionTrapper;
@@ -63,8 +64,7 @@ namespace Client
 
 
             NServiceBus.Logging.LogManager.Use<NLogFactory>();
-            //EventStore.Common.Log.LogManager.SetLogFactory((name) => new EmbeddedLogger(name));
-            
+
             _container = new StructureMap.Container(x =>
             {
                 x.Scan(y =>
@@ -80,15 +80,33 @@ namespace Client
             var running = true;
 
             Console.WriteLine($"Use 'exit' to stop");
+            Console.SetCursorPosition(Console.CursorLeft, Console.WindowTop + Console.WindowHeight - 2);
+            Console.WriteLine("Please enter a message to send:");
             do
             {
-                Console.WriteLine("Please enter a message to send:");
                 var message = Console.ReadLine();
+
+                // clear input
+                var current = Console.CursorTop - 1;
+                Console.SetCursorPosition(0, Console.CursorTop - 1);
+                Console.Write(new string(' ', Console.WindowWidth));
+                Console.SetCursorPosition(0, current + 1);
+
                 if (message.ToUpper() == "EXIT")
                     running = false;
                 else
                 {
-                    bus.Send(new SayHello { Message = message });
+
+                    try
+                    {
+                        bus.Command("domain", new SayHello { Message = message }).Wait();
+                    }
+                    catch (AggregateException e)
+                    {
+                        var rejection = e.InnerException;
+
+                        Logger.Warn($"Command rejected due to: {rejection.Message}");
+                    }
                 }
 
             } while (running);
@@ -102,24 +120,23 @@ namespace Client
 
             var endpoint = "client";
 
+
             var config = new EndpointConfiguration(endpoint);
-            config.MakeInstanceUniquelyAddressable(Guid.NewGuid().ToString("N"));
 
             Logger.Info("Initializing Service Bus");
 
 
-            config.EnableInstallers();
-            config.LimitMessageProcessingConcurrencyTo(10);
             config.UseTransport<RabbitMQTransport>()
-                .UseConventionalRoutingTopology()
                 //.CallbackReceiverMaxConcurrency(4)
                 //.UseDirectRoutingTopology()
                 .ConnectionString("host=localhost;Username=guest;Password=guest")
+                .UseConventionalRoutingTopology()
                 .PrefetchMultiplier(5)
                 .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
+            config.SendFailedMessagesTo("error");
 
             config.UseSerialization<NewtonsoftSerializer>();
-            
+
             config.UsePersistence<InMemoryPersistence>();
             config.UseContainer<StructureMapBuilder>(c => c.ExistingContainer(_container));
 
@@ -136,10 +153,10 @@ namespace Client
             //config.EnableFeature<RoutedFeature>();
             config.DisableFeature<Sagas>();
 
+
             var client = await ConfigureStore();
 
-            await Aggregates.Configuration.Build(
-                new Aggregates.Configure()
+            await Aggregates.Configuration.Build(c => c
                     .StructureMap(_container)
                     .EventStore(new[] { client })
                     .NewtonsoftJson()
@@ -195,7 +212,7 @@ namespace Client
 
 
             await client.ConnectAsync();
-            
+
             return client;
         }
 

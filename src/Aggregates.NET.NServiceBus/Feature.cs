@@ -27,25 +27,15 @@ namespace Aggregates
             var settings = context.Settings;
             var container = Configuration.Settings.Container;
 
-            context.Container.ConfigureComponent<NSBUnitOfWork>(DependencyLifecycle.InstancePerUnitOfWork);
-            context.Container.ConfigureComponent<IRepositoryFactory>(() => container.Resolve<IRepositoryFactory>(), DependencyLifecycle.InstancePerCall);
-            context.Container.ConfigureComponent<IEventFactory>(() => container.Resolve<IEventFactory>(), DependencyLifecycle.InstancePerCall);
-            context.Container.ConfigureComponent<IProcessor>(() => container.Resolve<IProcessor>(), DependencyLifecycle.InstancePerCall);
-            context.Container.ConfigureComponent<IMetrics>(() => container.Resolve<IMetrics>(), DependencyLifecycle.InstancePerCall);
+            container.Register<IDomainUnitOfWork, NSBUnitOfWork>();
+            MutationManager.RegisterMutator("domain unit of work", typeof(IDomainUnitOfWork));
 
-            context.RegisterStartupTask(builder =>
-            {
-                // use the builder to register certian things in our IoC
-                var tiny = Configuration.Settings.Container;
+            //context.Container.ConfigureComponent<NSBUnitOfWork>(DependencyLifecycle.InstancePerUnitOfWork);
+            context.Container.ConfigureComponent<IEventFactory>((c) => new EventFactory(c.Build<IMessageCreator>()), DependencyLifecycle.InstancePerCall);
+            context.Container.ConfigureComponent<IMessageDispatcher>((c) => new Dispatcher(c.Build<IMetrics>(), c.Build<IMessageSerializer>(), c.Build<IMessageSession>(), c.Build<IEventMapper>()), DependencyLifecycle.InstancePerCall);
+            context.Container.ConfigureComponent<IMessaging>((c) => new NServiceBusMessaging(c.Build<MessageHandlerRegistry>(), c.Build<MessageMetadataRegistry>()), DependencyLifecycle.InstancePerCall);
+            context.Container.ConfigureComponent<IEventMapper>((c) => new EventMapper(c.Build<IMessageMapper>()), DependencyLifecycle.InstancePerCall);
 
-                tiny.Register<NSBUnitOfWork>((c) => builder.Build<NSBUnitOfWork>());
-                tiny.Register<IEventFactory>((c) => new EventFactory(builder.Build<IMessageCreator>()));
-                tiny.Register<IMessageDispatcher>((c) => new Dispatcher(c.Resolve<IMetrics>(), c.Resolve<IMessageSerializer>(), c.Resolve<IMessageSession>()));
-                tiny.Register<IEventMapper>((c) => new EventMapper(builder.Build<IMessageMapper>()));
-                tiny.Register<IMessaging>((c) => new NServiceBusMessaging(builder.Build<MessageHandlerRegistry>(), builder.Build<MessageMetadataRegistry>()));
-
-                return new EndpointRunner(context.Settings.InstanceSpecificQueue(), Configuration.Settings.StartupTasks, Configuration.Settings.ShutdownTasks);
-            });
 
             context.Pipeline.Register(
                 b => new ExceptionRejector(b.Build<IMetrics>(), settings.Get<int>("Retries")),
@@ -64,6 +54,7 @@ namespace Aggregates
             foreach (var type in types.Where(IsQueryHandler))
                 container.Register(type);
 
+            context.Pipeline.Register<CommandAcceptorRegistration>();
             context.Pipeline.Register<UowRegistration>();
             context.Pipeline.Register<MutateIncomingRegistration>();
             context.Pipeline.Register<MutateOutgoingRegistration>();
@@ -73,9 +64,11 @@ namespace Aggregates
 
             // bulk invoke only possible with consumer feature because it uses the eventstore as a sink when overloaded
             context.Pipeline.Replace("InvokeHandlers", (b) =>
-                new BulkInvokeHandlerTerminator(container.Resolve<IMetrics>(), b.Build<IMessageMapper>()),
+                new BulkInvokeHandlerTerminator(container.Resolve<IMetrics>(), b.Build<IEventMapper>()),
                 "Replaces default invoke handlers with one that supports our custom delayed invoker");
 
+
+            context.RegisterStartupTask(builder => new EndpointRunner(context.Settings.InstanceSpecificQueue(), Configuration.Settings, Configuration.Settings.StartupTasks, Configuration.Settings.ShutdownTasks));
         }
         private static bool IsQueryHandler(Type type)
         {
@@ -93,12 +86,14 @@ namespace Aggregates
     {
         private static readonly ILog Logger = LogProvider.GetLogger("EndpointRunner");
         private readonly String _instanceQueue;
-        private readonly IEnumerable<Func<Task>> _startupTasks;
-        private readonly IEnumerable<Func<Task>> _shutdownTasks;
+        private readonly Configure _config;
+        private readonly IEnumerable<Func<Configure, Task>> _startupTasks;
+        private readonly IEnumerable<Func<Configure, Task>> _shutdownTasks;
 
-        public EndpointRunner(String instanceQueue, IEnumerable<Func<Task>> startupTasks, IEnumerable<Func<Task>> shutdownTasks)
+        public EndpointRunner(String instanceQueue, Configure config, IEnumerable<Func<Configure, Task>> startupTasks, IEnumerable<Func<Configure, Task>> shutdownTasks)
         {
             _instanceQueue = instanceQueue;
+            _config = config;
             _startupTasks = startupTasks;
             _shutdownTasks = shutdownTasks;
         }
@@ -118,7 +113,7 @@ namespace Aggregates
             }).ConfigureAwait(false);
 
             foreach (var task in _startupTasks)
-                await task();
+                await task(_config);
         }
         protected override async Task OnStop(IMessageSession session)
         {
@@ -130,7 +125,7 @@ namespace Aggregates
             }).ConfigureAwait(false);
 
             foreach (var task in _shutdownTasks)
-                await task();
+                await task(_config);
         }
     }
 }

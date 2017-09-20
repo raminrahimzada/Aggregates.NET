@@ -65,9 +65,6 @@ namespace Domain
             NServiceBus.Logging.LogManager.Use<NLogFactory>();
             //EventStore.Common.Log.LogManager.SetLogFactory((name) => new EmbeddedLogger(name));
 
-            // Give event store time to start
-            Thread.Sleep(TimeSpan.FromSeconds(10));
-
             _container = new StructureMap.Container(x =>
             {
                 x.Scan(y =>
@@ -80,21 +77,13 @@ namespace Domain
 
             var bus = InitBus().Result;
 
-            var running = true;
-            
-            Console.WriteLine($"Use 'exit' to stop");
-            do
+            Console.WriteLine("Press CTRL+C to exit...");
+            Console.CancelKeyPress += (sender, eArgs) =>
             {
-                Console.WriteLine("Please enter a message to send:");
-                var message = Console.ReadLine();
-                if (message.ToUpper() == "EXIT")
-                    running = false;
-                else
-                {
-                    bus.Send(new SayHello { Message = message });
-                }
-
-            } while (running);
+                QuitEvent.Set();
+                eArgs.Cancel = true;
+            };
+            QuitEvent.WaitOne();
 
             bus.Stop().Wait();
         }
@@ -106,20 +95,18 @@ namespace Domain
             var endpoint = "domain";
 
             var config = new EndpointConfiguration(endpoint);
-            config.MakeInstanceUniquelyAddressable(Guid.NewGuid().ToString("N"));
 
             Logger.Info("Initializing Service Bus");
 
 
-            config.EnableInstallers();
-            config.LimitMessageProcessingConcurrencyTo(10);
             config.UseTransport<RabbitMQTransport>()
-                .UseConventionalRoutingTopology()
                 //.CallbackReceiverMaxConcurrency(4)
                 //.UseDirectRoutingTopology()
                 .ConnectionString("host=localhost;Username=guest;Password=guest")
+                .UseConventionalRoutingTopology()
                 .PrefetchMultiplier(5)
                 .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
+            config.SendFailedMessagesTo("error");
 
             config.UseSerialization<NewtonsoftSerializer>();
 
@@ -142,8 +129,7 @@ namespace Domain
 
             var client = await ConfigureStore();
 
-            await Aggregates.Configuration.Build(
-                new Aggregates.Configure()
+            await Aggregates.Configuration.Build(c => c
                     .StructureMap(_container)
                     .EventStore(new[] { client })
                     .NewtonsoftJson()

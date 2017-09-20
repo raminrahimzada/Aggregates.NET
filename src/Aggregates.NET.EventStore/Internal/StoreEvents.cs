@@ -93,7 +93,7 @@ namespace Aggregates.Internal
 
                 if (descriptor.Compressed)
                     data = data.Decompress();
-
+                
                 var @event = _serializer.Deserialize(e.Event.EventType, data);
 
                 // Special case if event was written without a version - substitue the position from store
@@ -237,7 +237,6 @@ namespace Aggregates.Internal
         public Task<long> WriteEvents(string stream, IFullEvent[] events,
             IDictionary<string, string> commitHeaders, long? expectedVersion = null)
         {
-
             Logger.Write(LogLevel.Debug, () => $"Writing {events.Count()} events to stream id [{stream}].  Expected version: {expectedVersion}");
             
             var translatedEvents = events.Select(e =>
@@ -356,7 +355,7 @@ namespace Aggregates.Internal
 
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
 
-            Logger.Write(LogLevel.Debug, () => $"Writing metadata to stream [{stream}] [ {nameof(maxCount)}: {maxCount}, {nameof(maxAge)}: {maxAge}, {nameof(cacheControl)}: {cacheControl}, {nameof(custom)}: {JsonConvert.SerializeObject(custom)} ]");
+            Logger.Write(LogLevel.Debug, () => $"Writing metadata to stream [{stream}] [ {nameof(maxCount)}: {maxCount}, {nameof(maxAge)}: {maxAge}, {nameof(cacheControl)}: {cacheControl}, {nameof(custom)}: {custom.AsString()} ]");
 
             var existing = await _clients[shard].GetStreamMetadataAsync(stream).ConfigureAwait(false);
 

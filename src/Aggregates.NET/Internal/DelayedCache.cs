@@ -88,7 +88,7 @@ namespace Aggregates.Internal
         {
             // If cache grows larger than 150% of max cache size, pause all processing until flush finished
             while (Interlocked.CompareExchange(ref _tooLarge, 1, 1) == 1)
-                await Task.Delay(10).ConfigureAwait(false);
+                await Task.Delay(50).ConfigureAwait(false);
 
             // Anything without a key bypasses memory cache
             if (string.IsNullOrEmpty(key))
@@ -99,7 +99,7 @@ namespace Aggregates.Internal
                     {
                         EntityType = "DELAY",
                         StreamType = StreamTypes.Delayed,
-                        Bucket = Assembly.GetEntryAssembly().FullName,
+                        Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
                         StreamId = channel,
                         Timestamp = DateTime.UtcNow,
                         Headers = new Dictionary<string, string>()
@@ -110,7 +110,7 @@ namespace Aggregates.Internal
                 {
                     var streamName = _streamGen(typeof(DelayedCache),
                         $"{_endpoint}.{StreamTypes.Delayed}",
-                        Assembly.GetEntryAssembly().FullName, channel, new Id[] { });
+                        Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN", channel, new Id[] { });
                     await _store.WriteEvents(streamName, translatedEvents, null).ConfigureAwait(false);
                     return;
                 }
@@ -258,7 +258,7 @@ namespace Aggregates.Internal
                     {
                         EntityType = "DELAY",
                         StreamType = $"{_endpoint}.{StreamTypes.Delayed}",
-                        Bucket = Assembly.GetEntryAssembly().FullName,
+                        Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
                         StreamId = expired.Item1,
                         Timestamp = DateTime.UtcNow,
                         Headers = new Dictionary<string, string>()
@@ -280,7 +280,7 @@ namespace Aggregates.Internal
                             // it doesn't matter whats in the streamname, the category projection will queue it for execution anyway
                             // and a lot of writers to a single stream makes eventstore slow
                             var streamName = _streamGen(typeof(DelayedCache),
-                                $"{_endpoint}.{StreamTypes.Delayed}", Assembly.GetEntryAssembly().FullName,
+                                $"{_endpoint}.{StreamTypes.Delayed}", Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
                                 $"{expired.Item1}.{expired.Item2}", new Id[] { });
                     await _store.WriteEvents(streamName, translatedEvents, null).ConfigureAwait(false);
                     Interlocked.Add(ref totalFlushed, messages.Length);
@@ -341,7 +341,7 @@ namespace Aggregates.Internal
                             {
                                 EntityType = "DELAY",
                                 StreamType = $"{_endpoint}.{StreamTypes.Delayed}",
-                                Bucket = Assembly.GetEntryAssembly().FullName,
+                                Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
                                 StreamId = expired.Item1,
                                 Timestamp = DateTime.UtcNow,
                                 Headers = new Dictionary<string, string>()
@@ -360,7 +360,7 @@ namespace Aggregates.Internal
 
                             var streamName = _streamGen(typeof(DelayedCache),
                             $"{_endpoint}.{StreamTypes.Delayed}",
-                            Assembly.GetEntryAssembly().FullName,
+                            Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
                             $"{expired.Item1}.{expired.Item2}", new Id[] { });
 
                             await _store.WriteEvents(streamName, translatedEvents, null).ConfigureAwait(false);

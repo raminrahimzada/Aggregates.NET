@@ -8,10 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="NLog" Version="5.0.0-beta10" />
-    <PackageReference Include="NServiceBus" Version="7.0.0-beta0001" />
+    <PackageReference Include="NServiceBus" Version="7.0.0-beta0004" />
     <PackageReference Include="NServiceBus.Newtonsoft.Json" Version="2.0.0-beta0001" />
     <PackageReference Include="NServiceBus.NLog" Version="3.0.0-beta0001" />
-    <PackageReference Include="NServiceBus.RabbitMQ" Version="5.0.0-beta0029" />
+    <PackageReference Include="NServiceBus.RabbitMQ" Version="5.0.0-beta30-0009" />
     <PackageReference Include="NServiceBus.StructureMap" Version="7.0.0-beta0001" />
   </ItemGroup>
 
