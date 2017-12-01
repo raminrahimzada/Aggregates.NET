@@ -34,12 +34,11 @@ namespace Aggregates.UnitTests.Common
 
         class FakeEntity : Aggregates.Entity<FakeEntity, FakeState>
         {
-            public FakeEntity(IEventFactory factory, IStoreEvents store)
+            public FakeEntity(IEventFactory factory, IStoreEvents store, IOobWriter oobWriter)
             {
-                Id = "test";
-                State = new FakeState();
                 (this as INeedEventFactory).EventFactory = factory;
                 (this as INeedStore).Store = store;
+                (this as INeedStore).OobWriter = oobWriter;
             }
             
         }
@@ -47,6 +46,7 @@ namespace Aggregates.UnitTests.Common
         private Moq.Mock<IDomainUnitOfWork> _uow;
         private Moq.Mock<IEventFactory> _factory;
         private Moq.Mock<IStoreEvents> _eventstore;
+        private Moq.Mock<IOobWriter> _oobWriter;
         private Moq.Mock<IEventMapper> _mapper;
         private FakeEntity _entity;
 
@@ -58,6 +58,7 @@ namespace Aggregates.UnitTests.Common
             _uow = new Moq.Mock<IDomainUnitOfWork>();
             _factory = new Moq.Mock<IEventFactory>();
             _eventstore = new Moq.Mock<IStoreEvents>();
+            _oobWriter = new Moq.Mock<IOobWriter>();
             _mapper = new Moq.Mock<IEventMapper>();
 
             _mapper.Setup(x => x.GetMappedTypeFor(typeof(Test))).Returns(typeof(Test));
@@ -65,7 +66,8 @@ namespace Aggregates.UnitTests.Common
             fake.FakeContainer.Setup(x => x.Resolve<IEventMapper>()).Returns(_mapper.Object);
             Configuration.Settings = fake;
 
-            _entity = new FakeEntity(_factory.Object, _eventstore.Object);
+            _entity = new FakeEntity(_factory.Object, _eventstore.Object, _oobWriter.Object);
+            (_entity as IEntity<FakeState>).Instantiate(new FakeState());
         }
         
 
@@ -88,7 +90,7 @@ namespace Aggregates.UnitTests.Common
             
             await _entity.GetEvents(0, 1, oob: "test").ConfigureAwait(false);
 
-            _eventstore.Verify(x => x.GetEvents<FakeEntity>("OOB-test", Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()), Moq.Times.Once);
+            _oobWriter.Verify(x => x.GetEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), "test", Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()), Moq.Times.Once);
         }
         [Test]
         public async Task events_size()
@@ -120,12 +122,7 @@ namespace Aggregates.UnitTests.Common
 
             await _entity.GetEventsBackwards(0, 1, oob: "test").ConfigureAwait(false);
 
-            _eventstore.Verify(x => x.GetEventsBackwards<FakeEntity>("OOB-test", Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()), Moq.Times.Once);
-        }
-        [Test]
-        public void get_hash_code()
-        {
-            Assert.AreEqual(new Id("test").GetHashCode(), _entity.GetHashCode());
+            _oobWriter.Verify(x => x.GetEventsBackwards<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), "test", Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()), Moq.Times.Once);
         }
 
         [Test]

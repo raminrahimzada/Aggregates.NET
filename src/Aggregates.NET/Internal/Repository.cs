@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -15,14 +16,14 @@ using AggregateException = System.AggregateException;
 
 namespace Aggregates.Internal
 {
-    class Repository<TParent, TEntity, TState> : Repository<TEntity, TState>, IRepository<TParent, TEntity> where TParent : IEntity where TEntity : Entity<TEntity, TParent, TState> where TState : IState, new()
+    class Repository<TEntity, TState, TParent> : Repository<TEntity, TState>, IRepository<TEntity, TParent> where TParent : IEntity where TEntity : Entity<TEntity, TState, TParent> where TState : class, IState, new()
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Repository");
 
         private readonly TParent _parent;
 
-        public Repository(TParent parent, IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IEventFactory factory, IDomainUnitOfWork uow)
-            : base(metrics, store, snapshots, factory, uow)
+        public Repository(TParent parent, IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow)
+            : base(metrics, store, snapshots, oobStore, factory, uow)
         {
             _parent = parent;
         }
@@ -43,7 +44,11 @@ namespace Aggregates.Internal
             var cacheId = $"{_parent.Bucket}.{_parent.BuildParentsString()}.{id}";
             TEntity root;
             if (!Tracked.TryGetValue(cacheId, out root))
-                Tracked[cacheId] = root = await GetUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
+            {
+                root = await GetUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
+                if (!Tracked.TryAdd(cacheId, root))
+                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+            }
 
             return root;
         }
@@ -54,7 +59,11 @@ namespace Aggregates.Internal
 
             TEntity root;
             if (!Tracked.TryGetValue(cacheId, out root))
-                Tracked[cacheId] = root = await NewUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
+            {
+                root = await NewUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
+                if (!Tracked.TryAdd(cacheId, root))
+                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+            }
 
             return root;
         }
@@ -77,17 +86,18 @@ namespace Aggregates.Internal
             return entity;
         }
     }
-    class Repository<TEntity, TState> : IRepository<TEntity>, IRepository where TEntity : Entity<TEntity, TState> where TState : IState, new()
+    class Repository<TEntity, TState> : IRepository<TEntity>, IRepository where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Repository");
         private static readonly IEntityFactory<TEntity> Factory = EntityFactory.For<TEntity>();
 
         private static OptimisticConcurrencyAttribute _conflictResolution;
 
-        protected readonly IDictionary<string, TEntity> Tracked = new Dictionary<string, TEntity>();
+        protected readonly ConcurrentDictionary<string, TEntity> Tracked = new ConcurrentDictionary<string, TEntity>();
         protected readonly IMetrics _metrics;
         private readonly IStoreEvents _eventstore;
         private readonly IStoreSnapshots _snapstore;
+        private readonly IOobWriter _oobStore;
         private readonly IEventFactory _factory;
         protected readonly IDomainUnitOfWork _uow;
 
@@ -95,11 +105,13 @@ namespace Aggregates.Internal
 
         public int ChangedStreams => Tracked.Count(x => x.Value.Dirty);
 
-        public Repository(IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IEventFactory factory, IDomainUnitOfWork uow)
+        // Todo: too many operations on this class, make a "EntityWriter" contract which does event, oob, and snapshot writing
+        public Repository(IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow)
         {
             _metrics = metrics;
             _eventstore = store;
             _snapstore = snapshots;
+            _oobStore = oobStore;
             _factory = factory;
             _uow = uow;
 
@@ -127,16 +139,18 @@ namespace Aggregates.Internal
 
             await Tracked.Values
                 .ToArray()
+                .Where(x => x.Dirty)
                 .WhenAllAsync(async (tracked) =>
                 {
                     var state = tracked.State;
 
+                    var domainEvents = tracked.Uncommitted.Where(x => x.Descriptor.StreamType == StreamTypes.Domain).ToArray();
+                    var oobEvents = tracked.Uncommitted.Where(x => x.Descriptor.StreamType == StreamTypes.OOB).ToArray();
+
                     try
                     {
-                        await _eventstore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, tracked.Uncommitted, commitHeaders, tracked.Version - 1).ConfigureAwait(false);
-
-                        if (tracked.Dirty && state.ShouldSnapshot())
-                            await _snapstore.WriteSnapshots<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, tracked.Version, state, commitHeaders).ConfigureAwait(false);
+                        if(domainEvents.Any())
+                            await _eventstore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, domainEvents, commitHeaders, tracked.Version).ConfigureAwait(false);
                     }
                     catch (VersionException e)
                     {
@@ -145,7 +159,7 @@ namespace Aggregates.Internal
 
                         _metrics.Mark("Conflicts", Unit.Items);
                         // If we expected no stream, no reason to try to resolve the conflict
-                        if (tracked.Version == 0)
+                        if (tracked.Version == EntityFactory.NewEntityVersion)
                         {
                             Logger.Warn(
                                 $"New stream [{tracked.Id}] entity {tracked.GetType().FullName} already exists in store");
@@ -155,26 +169,21 @@ namespace Aggregates.Internal
 
                         try
                         {
-                            var uncommitted = tracked.Uncommitted;
                             // make new clean entity
                             var clean = await GetUntracked(tracked.Bucket, tracked.Id, tracked.Parents).ConfigureAwait(false);
 
                             Logger.Write(LogLevel.Debug,
                                     () => $"Attempting to resolve conflict with strategy {_conflictResolution.Conflict}");
                             var strategy = _conflictResolution.Conflict.Build(Configuration.Settings.Container, _conflictResolution.Resolver);
-                            await strategy.Resolve<TEntity, TState>(clean, uncommitted, commitId,
-                                        commitHeaders).ConfigureAwait(false);
+                            await strategy.Resolve<TEntity, TState>(clean, domainEvents, commitId, commitHeaders).ConfigureAwait(false);
 
                             Logger.WriteFormat(LogLevel.Info,
-                                "Stream [{0}] entity {1} version {2} had version conflicts with store - successfully resolved",
-                                tracked.Id, tracked.GetType().FullName, state.Version);
+                                $"Stream [{tracked.Id}] entity {tracked.GetType().FullName} version {state.Version} had version conflicts with store - successfully resolved");
                         }
                         catch (AbandonConflictException abandon)
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
-                            Logger.WriteFormat(LogLevel.Error,
-                                "Stream [{0}] entity {1} has version conflicts with store - abandoning resolution",
-                                tracked.Id, tracked.GetType().FullName);
+                            Logger.Error(e, $"Stream [{tracked.Id}] entity {tracked.GetType().FullName} has version conflicts with store - abandoning resolution");
                             throw new ConflictResolutionFailedException(
                                 $"Aborted conflict resolution for stream [{tracked.Id}] entity {tracked.GetType().FullName}",
                                 abandon);
@@ -182,9 +191,7 @@ namespace Aggregates.Internal
                         catch (Exception ex)
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
-                            Logger.WriteFormat(LogLevel.Error,
-                                "Stream [{0}] entity {1} has version conflicts with store - FAILED to resolve due to: {3}: {2}",
-                                tracked.Id, tracked.GetType().FullName, ex.Message, ex.GetType().Name);
+                            Logger.Error(e, $"Stream [{tracked.Id}] entity {tracked.GetType().FullName} has version conflicts with store - FAILED to resolve due to: {ex.GetType().Name}: {ex.Message}");
                             throw new ConflictResolutionFailedException(
                                 $"Failed to resolve conflict for stream [{tracked.Id}] entity {tracked.GetType().FullName} due to exception",
                                 ex);
@@ -193,9 +200,7 @@ namespace Aggregates.Internal
                     }
                     catch (PersistenceException e)
                     {
-                        Logger.WriteFormat(LogLevel.Warn,
-                            "Failed to commit events to store for stream: [{0}] bucket [{1}] Exception: {3}: {2}",
-                            tracked.Id, tracked.Bucket, e.Message, e.GetType().Name);
+                        Logger.Warn(e, $"Failed to commit events to store for stream: [{tracked.Id}] bucket [{tracked.Bucket}] Exception: {e.GetType().Name}: {e.Message}");
                         _metrics.Mark("Event Write Errors", Unit.Items);
                         throw;
                     }
@@ -208,6 +213,25 @@ namespace Aggregates.Internal
                         // I was throwing this, but if this happens it means the events for this message have already been committed.  Possibly as a partial message failure earlier. 
                         // Im changing to just discard the changes, perhaps can take a deeper look later if this ever bites me on the ass
                         //throw;
+                    }
+
+                    try
+                    {
+                        if (oobEvents.Any())
+                            await _oobStore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, oobEvents, commitHeaders).ConfigureAwait(false);
+
+                        if (state.ShouldSnapshot())
+                        {
+                            // Notify the entity and state that we are taking a snapshot
+                            (tracked as IEntity<TState>).Snapshotting();
+                            state.Snapshotting();
+                            await _snapstore.WriteSnapshots<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, tracked.Version,
+                                    state, commitHeaders).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Warn(e, $"Stream [{tracked.Id}] entity {tracked.GetType().FullName} failed to commit oob or snapshot. {e.GetType().Name} - {e.Message}");
                     }
                 });
 
@@ -257,7 +281,11 @@ namespace Aggregates.Internal
             var cacheId = $"{bucket}.{id}";
             TEntity root;
             if (!Tracked.TryGetValue(cacheId, out root))
-                Tracked[cacheId] = root = await GetUntracked(bucket, id).ConfigureAwait(false);
+            {
+                root = await GetUntracked(bucket, id).ConfigureAwait(false);
+                if (!Tracked.TryAdd(cacheId, root))
+                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+            }
 
             return root;
         }
@@ -274,6 +302,7 @@ namespace Aggregates.Internal
             (entity as INeedDomainUow).Uow = _uow;
             (entity as INeedEventFactory).EventFactory = _factory;
             (entity as INeedStore).Store = _eventstore;
+            (entity as INeedStore).OobWriter = _oobStore;
 
             Logger.Write(LogLevel.Debug, () => $"Hydrated entity id [{id}] in bucket [{bucket}] for type {typeof(TEntity).FullName} to version {entity.Version}");
             return entity;
@@ -289,7 +318,11 @@ namespace Aggregates.Internal
             TEntity root;
             var cacheId = $"{bucket}.{id}";
             if (!Tracked.TryGetValue(cacheId, out root))
-                Tracked[cacheId] = root = await NewUntracked(bucket, id).ConfigureAwait(false);
+            {
+                root = await NewUntracked(bucket, id).ConfigureAwait(false);
+                if (!Tracked.TryAdd(cacheId, root))
+                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+            }
             return root;
         }
         protected virtual Task<TEntity> NewUntracked(string bucket, Id id, Id[] parents = null)
@@ -301,6 +334,7 @@ namespace Aggregates.Internal
             (entity as INeedDomainUow).Uow = _uow;
             (entity as INeedEventFactory).EventFactory = _factory;
             (entity as INeedStore).Store = _eventstore;
+            (entity as INeedStore).OobWriter = _oobStore;
 
             return Task.FromResult(entity);
         }

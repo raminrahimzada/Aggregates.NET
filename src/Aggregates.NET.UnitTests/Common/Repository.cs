@@ -8,6 +8,7 @@ using Aggregates.Exceptions;
 using Aggregates.Contracts;
 using Aggregates.Attributes;
 using Aggregates.Messages;
+using Aggregates.Internal;
 
 namespace Aggregates.UnitTests.Common
 {
@@ -41,11 +42,7 @@ namespace Aggregates.UnitTests.Common
             public bool TestTakeSnapshot { get; set; }
 
             private void Handle(FakeEvent e) { }
-
-            protected override void RestoreSnapshot(FakeState state)
-            {
-            }
-
+            
             protected override bool ShouldSnapshot()
             {
                 return TestTakeSnapshot;
@@ -55,7 +52,6 @@ namespace Aggregates.UnitTests.Common
         class FakeEntity : Entity<FakeEntity, FakeState>
         {
             private FakeEntity() { }
-
             public string Foo { get; set; }
 
         }
@@ -68,6 +64,7 @@ namespace Aggregates.UnitTests.Common
         private Moq.Mock<IMetrics> _metrics;
         private Moq.Mock<IStoreSnapshots> _snapshots;
         private Moq.Mock<IStoreEvents> _eventstore;
+        private Moq.Mock<IOobWriter> _oobStore;
         private Moq.Mock<IEventFactory> _factory;
         private Moq.Mock<IDomainUnitOfWork> _uow;
         private Moq.Mock<IFullEvent> _event;
@@ -80,6 +77,7 @@ namespace Aggregates.UnitTests.Common
             _metrics = new Moq.Mock<IMetrics>();
             _snapshots = new Moq.Mock<IStoreSnapshots>();
             _eventstore = new Moq.Mock<IStoreEvents>();
+            _oobStore = new Moq.Mock<IOobWriter>();
             _factory = new Moq.Mock<IEventFactory>();
             _uow = new Moq.Mock<IDomainUnitOfWork>();
             _event = new Moq.Mock<IFullEvent>();
@@ -101,7 +99,7 @@ namespace Aggregates.UnitTests.Common
                 .Returns(Task.FromResult((ISnapshot)null));
 
             _event.Setup(x => x.Event).Returns(new FakeEvent());
-            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(_metrics.Object, _eventstore.Object, _snapshots.Object, _factory.Object, _uow.Object);
+            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(_metrics.Object, _eventstore.Object, _snapshots.Object, _oobStore.Object, _factory.Object, _uow.Object);
         }
 
         [Test]
@@ -181,7 +179,7 @@ namespace Aggregates.UnitTests.Common
 
             var entity = await _repository.New("test");
 
-            Assert.AreEqual(0, entity.Version);
+            Assert.AreEqual(EntityFactory.NewEntityVersion, entity.Version);
             _eventstore.Verify(x => x.GetEvents<FakeEntity>(Moq.It.IsAny<string>(), new Id("test"), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()), Moq.Times.Never);
         }
         [Test]
@@ -191,7 +189,7 @@ namespace Aggregates.UnitTests.Common
 
             var entity = await _repository.New("test", "test");
 
-            Assert.AreEqual(0, entity.Version);
+            Assert.AreEqual(EntityFactory.NewEntityVersion, entity.Version);
             _eventstore.Verify(x => x.GetEvents<FakeEntity>("test", new Id("test"), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()), Moq.Times.Never);
         }
 
@@ -264,6 +262,8 @@ namespace Aggregates.UnitTests.Common
                 .Returns(Task.FromResult(new IFullEvent[] { _event.Object }));
 
             var entity = await _repository.Get("test");
+            // make entity dirty
+            (entity as IEntity<FakeState>).Apply(new FakeEvent());
 
             _eventstore.Setup(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string,string>>(), Moq.It.IsAny<long?>()))
                 .Returns(Task.FromResult(0L));
@@ -271,7 +271,23 @@ namespace Aggregates.UnitTests.Common
             await (_repository as IRepository).Commit(Guid.NewGuid(), new Dictionary<string, string>());
 
             _eventstore.Verify(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()), Moq.Times.Once);
-                        
+
+        }
+        [Test]
+        public async Task commit_stream_not_dirty()
+        {
+            _eventstore.Setup(x => x.GetEvents<FakeEntity>(Moq.It.IsAny<string>(), new Id("test"), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()))
+                .Returns(Task.FromResult(new IFullEvent[] { _event.Object }));
+
+            var entity = await _repository.Get("test");
+
+            _eventstore.Setup(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()))
+                .Returns(Task.FromResult(0L));
+
+            await (_repository as IRepository).Commit(Guid.NewGuid(), new Dictionary<string, string>());
+
+            _eventstore.Verify(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()), Moq.Times.Never);
+
         }
 
         [Test]
@@ -315,6 +331,8 @@ namespace Aggregates.UnitTests.Common
                 .Throws(new VersionException("test"));
 
             var entity = await _repository.New("test");
+            // make entity dirty
+            (entity as IEntity<FakeState>).Apply(new FakeEvent());
 
             Assert.ThrowsAsync<ConflictResolutionFailedException>(() =>
                 (_repository as IRepository).Commit(Guid.NewGuid(), new Dictionary<string, string>()));
@@ -427,6 +445,27 @@ namespace Aggregates.UnitTests.Common
             _eventstore.Verify(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()), Moq.Times.Once);
             
         }
+        [Test]
+        public async Task commit_oob_events_handled()
+        {
+            _eventstore.Setup(x => x.GetEvents<FakeEntity>(Moq.It.IsAny<string>(), new Id("test"), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long?>(), Moq.It.IsAny<int?>()))
+                .Returns(Task.FromResult(new IFullEvent[] { _event.Object }));
 
+            var entity = await _repository.Get("test");
+            // make entity dirty
+            (entity as IEntity<FakeState>).Apply(new FakeEvent());
+            (entity as IEntity<FakeState>).Raise(new FakeEvent(), "test");
+
+            _eventstore.Setup(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()))
+                .Returns(Task.FromResult(0L));
+            _oobStore.Setup(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>()))
+                .Returns(Task.CompletedTask);
+
+            await (_repository as IRepository).Commit(Guid.NewGuid(), new Dictionary<string, string>());
+
+            _eventstore.Verify(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()), Moq.Times.Once);
+
+            _oobStore.Verify(x => x.WriteEvents<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Once);
+        }
     }
 }

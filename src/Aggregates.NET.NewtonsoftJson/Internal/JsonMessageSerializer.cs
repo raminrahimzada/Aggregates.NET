@@ -1,4 +1,5 @@
 ﻿using Aggregates.Contracts;
+using Aggregates.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -12,50 +13,52 @@ namespace Aggregates.Internal
     // https://github.com/Particular/NServiceBus.Newtonsoft.Json/blob/develop/src/NServiceBus.Newtonsoft.Json/JsonMessageSerializer.cs
     class JsonMessageSerializer : IMessageSerializer
     {
+        private static readonly ILog Logger = LogProvider.GetLogger("JsonMessageSerializer");
+
         IEventMapper messageMapper;
         Func<Stream, JsonReader> readerCreator;
         Func<Stream, JsonWriter> writerCreator;
         NewtonSerializer jsonSerializer;
 
         public JsonMessageSerializer(
-            IEventMapper messageMapper,
-            Func<Stream, JsonReader> readerCreator,
-            Func<Stream, JsonWriter> writerCreator,
-            JsonSerializerSettings settings,
-            string contentType)
+            IEventMapper messageMapper)
         {
             this.messageMapper = messageMapper;
 
-            settings = settings ?? new JsonSerializerSettings
+            var settings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
-                Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter(), new IdJsonConverter() }
+                Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter(), new IdJsonConverter() },
+                Error = new EventHandler<Newtonsoft.Json.Serialization.ErrorEventArgs>(HandleError),
+                ContractResolver = new PrivateSetterContractResolver(),
+                //TraceWriter = new TraceWriter(),
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                NullValueHandling = NullValueHandling.Include
             };
 
-            this.writerCreator = writerCreator ?? (stream =>
+            this.writerCreator = (stream =>
             {
                 var streamWriter = new StreamWriter(stream, Encoding.UTF8);
                 return new JsonTextWriter(streamWriter)
                 {
-                    Formatting = Formatting.None
+                    // better for displaying
+                    Formatting = Formatting.Indented
                 };
             });
 
-            this.readerCreator = readerCreator ?? (stream =>
+            this.readerCreator = (stream =>
             {
                 var streamReader = new StreamReader(stream, Encoding.UTF8);
                 return new JsonTextReader(streamReader);
             });
 
-            if (contentType == null)
-            {
-                ContentType = "Json";
-            }
-            else
-            {
-                ContentType = contentType;
-            }
+            ContentType = "Json";
             jsonSerializer = NewtonSerializer.Create(settings);
+        }
+
+        private static void HandleError(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
+        {
+            throw args.ErrorContext.Error;
         }
 
         public void Serialize(object message, Stream stream)

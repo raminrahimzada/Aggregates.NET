@@ -43,10 +43,13 @@ namespace Aggregates.Internal
 
         protected override async Task Terminate(IInvokeHandlerContext context)
         {
+
             IDelayedChannel channel = null;
             try
             {
-                channel = context.Builder.Build<IDelayedChannel>();
+                IContainer container;
+                if (context.Extensions.TryGet<IContainer>(out container))
+                    channel = container.Resolve<IDelayedChannel>();
             }
             // Catch in case IDelayedChannel isn't registered which shouldn't happen unless a user registered Consumer without GetEventStore
             catch (Exception) { }
@@ -66,9 +69,7 @@ namespace Aggregates.Internal
             bool contains = false;
             lock (Lock) contains = IsNotDelayed.Contains(channelKey);
 
-            var contextChannelKey = "";
-            if (context.Headers.ContainsKey(Defaults.ChannelKey))
-                contextChannelKey = context.Headers[Defaults.ChannelKey];
+            context.Extensions.TryGet(Defaults.ChannelKey, out string contextChannelKey);
 
             // Special case for when we are bulk processing messages from DelayedSubscriber, simply process it and return dont check for more bulk
             if (channel == null || contains || contextChannelKey == channelKey)
@@ -78,8 +79,12 @@ namespace Aggregates.Internal
                 return;
             }
             // If we are bulk processing and the above check fails it means the current message handler shouldn't be called
+            // because if contextChannelKey is set we are using delayed bulk SendLocal
+            // which should only execute the message on the handlers that were marked delayed, the other handlers were already invoked when the message
+            // originally came in
             if (!string.IsNullOrEmpty(contextChannelKey))
                 return;
+            
 
             if (IsDelayed.ContainsKey(channelKey))
             {

@@ -12,11 +12,11 @@ namespace Aggregates
     {
         public static Configure NewtonsoftJson(this Configure config)
         {
-            config.SetupTasks.Add((c) =>
+            config.RegistrationTasks.Add((c) =>
             {
                 var container = c.Container;
                                 
-                container.RegisterSingleton<IMessageSerializer>((factory) => new JsonMessageSerializer(factory.Resolve<IEventMapper>(), null, null, null, null));
+                container.Register<IMessageSerializer>((factory) => new JsonMessageSerializer(factory.Resolve<IEventMapper>()), Lifestyle.Singleton);
 
                 return Task.CompletedTask;
             });

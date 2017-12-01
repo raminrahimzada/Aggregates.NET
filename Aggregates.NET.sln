@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+VisualStudioVersion = 15.0.27004.2008
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET", "src\Aggregates.NET\Aggregates.NET.csproj", "{B9A11078-E76E-487E-BA87-C15C184411E6}"
 EndProject
@@ -14,14 +14,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET.UnitTests", "src\Aggregates.NET.UnitTests\Aggregates.NET.UnitTests.csproj", "{6E02FE12-034E-4703-92F1-A0706A14F702}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{78BFD874-663A-44A5-8DF1-88ED20750147}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HelloWorld", "HelloWorld", "{F49C94C7-DE5C-44FC-8E89-2AA96DFDF2FB}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src\Samples\HelloWorld\Domain\Domain.csproj", "{B233D6C2-E1B5-4709-A88C-BD46CC34F992}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Language", "src\Samples\HelloWorld\Language\Language.csproj", "{90AF1086-5FC3-4997-ABDE-13049503C3C9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "src\Samples\HelloWorld\Client\Client.csproj", "{17ECD709-6746-4D75-8573-E3A8D0793A57}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregates.NET.StructureMap", "src\Aggregates.NET.StructureMap\Aggregates.NET.StructureMap.csproj", "{672EB778-D80B-4D77-8C02-FF7BCD96BA54}"
 EndProject
@@ -51,18 +43,6 @@ Global
 		{6E02FE12-034E-4703-92F1-A0706A14F702}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E02FE12-034E-4703-92F1-A0706A14F702}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E02FE12-034E-4703-92F1-A0706A14F702}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B233D6C2-E1B5-4709-A88C-BD46CC34F992}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B233D6C2-E1B5-4709-A88C-BD46CC34F992}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B233D6C2-E1B5-4709-A88C-BD46CC34F992}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B233D6C2-E1B5-4709-A88C-BD46CC34F992}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90AF1086-5FC3-4997-ABDE-13049503C3C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90AF1086-5FC3-4997-ABDE-13049503C3C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90AF1086-5FC3-4997-ABDE-13049503C3C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{90AF1086-5FC3-4997-ABDE-13049503C3C9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{17ECD709-6746-4D75-8573-E3A8D0793A57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{17ECD709-6746-4D75-8573-E3A8D0793A57}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{17ECD709-6746-4D75-8573-E3A8D0793A57}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{17ECD709-6746-4D75-8573-E3A8D0793A57}.Release|Any CPU.Build.0 = Release|Any CPU
 		{672EB778-D80B-4D77-8C02-FF7BCD96BA54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{672EB778-D80B-4D77-8C02-FF7BCD96BA54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{672EB778-D80B-4D77-8C02-FF7BCD96BA54}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -70,12 +50,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{F49C94C7-DE5C-44FC-8E89-2AA96DFDF2FB} = {78BFD874-663A-44A5-8DF1-88ED20750147}
-		{B233D6C2-E1B5-4709-A88C-BD46CC34F992} = {F49C94C7-DE5C-44FC-8E89-2AA96DFDF2FB}
-		{90AF1086-5FC3-4997-ABDE-13049503C3C9} = {F49C94C7-DE5C-44FC-8E89-2AA96DFDF2FB}
-		{17ECD709-6746-4D75-8573-E3A8D0793A57} = {F49C94C7-DE5C-44FC-8E89-2AA96DFDF2FB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {743EB920-E480-4A2C-B96E-5B3745783AB8}

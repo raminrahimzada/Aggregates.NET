@@ -3,18 +3,21 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using Aggregates.Contracts;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Aggregates.Extensions
 {
     static class StoreExtensions
     {
+        public static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        
         public static byte[] AsByteArray(this string json)
         {
-            return Encoding.UTF8.GetBytes(json);
+            return Utf8NoBom.GetBytes(json);
         }
         public static string AsString(this byte[] bytes)
         {
-            return Encoding.UTF8.GetString(bytes);
+            return Utf8NoBom.GetString(bytes);
         }
         public static byte[] Compress(this byte[] bytes)
         {
@@ -22,7 +25,7 @@ namespace Aggregates.Extensions
             {
                 using (var zip = new GZipStream(stream, CompressionMode.Compress))
                 {
-                    using (var writer = new BinaryWriter(zip, Encoding.UTF8))
+                    using (var writer = new BinaryWriter(zip, Utf8NoBom))
                     {
                         writer.Write(bytes.Length);
                         writer.Write(bytes, 0, bytes.Length);
@@ -37,7 +40,7 @@ namespace Aggregates.Extensions
             {
                 using (var gz = new GZipStream(stream, CompressionMode.Decompress))
                 {
-                    using (var reader = new BinaryReader(gz, Encoding.UTF8))
+                    using (var reader = new BinaryReader(gz, Utf8NoBom))
                     {
                         var length = reader.ReadInt32();
                         return reader.ReadBytes(length);
@@ -78,7 +81,7 @@ namespace Aggregates.Extensions
                     throw new ArgumentException("serialized data too long");
 
                 stream.Position = 0;
-                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                using (var reader = new BinaryReader(stream, Utf8NoBom))
                 {
                     return reader.ReadBytes((int)stream.Length);
                 }

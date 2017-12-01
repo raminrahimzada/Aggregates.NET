@@ -318,7 +318,7 @@ namespace Aggregates.Internal
             callback(e.Event.EventStreamId, e.Event.EventNumber, new FullEvent
             {
                 Descriptor = descriptor,
-                Event = payload as IEvent,
+                Event = payload,
                 EventId = e.Event.EventId
             });
         }
@@ -353,7 +353,6 @@ namespace Aggregates.Internal
 
             foreach (var connection in _clients)
             {
-
                 var manager = new ProjectionsManager(connection.Settings.Log,
                     new IPEndPoint(connection.Settings.GossipSeeds[0].EndPoint.Address,
                         connection.Settings.ExternalGossipPort), TimeSpan.FromSeconds(30));

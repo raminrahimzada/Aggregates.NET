@@ -12,10 +12,86 @@ using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
+
     class DelayedCache : IDelayedCache, IDisposable
     {
+        class CacheKey
+        {
+            public CacheKey(string channel, string key)
+            {
+                Channel = channel;
+                Key = key;
+            }
+            public string Channel { get; set; }
+            public string Key { get; set; }
+
+            public class EqualityComparer : IEqualityComparer<CacheKey>
+            {
+
+                public bool Equals(CacheKey x, CacheKey y)
+                {
+                    return x.Channel == y.Channel && x.Key == y.Key;
+                }
+
+                public int GetHashCode(CacheKey x)
+                {
+                    return (x?.Channel?.GetHashCode() ?? 1) ^ (x?.Key?.GetHashCode() ?? 1);
+                }
+
+            }
+        }
+        class CachedList
+        {
+            private object _lock { get; set; }
+            private Queue<IDelayedMessage> _messages;
+
+            public long Created { get; private set; }
+            public long Pulled { get; private set; }
+
+            public int Count => _messages.Count;
+
+            public CachedList()
+            {
+                _lock = new object();
+                _messages = new Queue<IDelayedMessage>();
+                Created = DateTime.UtcNow.Ticks;
+                Pulled = DateTime.UtcNow.Ticks;
+            }
+
+            public void AddRange(IDelayedMessage[] messages)
+            {
+                lock (_lock)
+                {
+                    foreach (var m in messages)
+                        _messages.Enqueue(m);
+                }
+            }
+            public IDelayedMessage[] Dequeue(int? count)
+            {
+                Pulled = DateTime.UtcNow.Ticks;
+
+                count = count ?? int.MaxValue;
+
+                var discovered = new List<IDelayedMessage>();
+                lock (_lock)
+                {
+                    try
+                    {
+                        while (count > 0)
+                        {
+                            discovered.Add(_messages.Dequeue());
+                            count--;
+                        }
+                    }
+                    catch (InvalidOperationException) { }
+                }
+
+                return discovered.ToArray();
+            }
+        }
+
         private static readonly ILog Logger = LogProvider.GetLogger("DelayedCache");
-        
+
 
         private readonly IMetrics _metrics;
         private readonly IStoreEvents _store;
@@ -28,10 +104,11 @@ namespace Aggregates.Internal
         private readonly Thread _thread;
         private readonly CancellationTokenSource _cts;
 
-        //                                          Channel  key          Last Pull   Stored Objects
-        private readonly ConcurrentDictionary<Tuple<string, string>, Tuple<DateTime, List<IDelayedMessage>>> _memCache;
+        private readonly object _cacheLock;
+        private readonly Dictionary<CacheKey, CachedList> _memCache;
+        private readonly Random _rand;
 
-        private int _tooLarge = 0;
+        private int _tooLarge;
         private bool _disposed;
 
         public DelayedCache(IMetrics metrics, IStoreEvents store, TimeSpan flushInterval, string endpoint, int maxSize, int flushSize, TimeSpan delayedExpiration, StreamIdGenerator streamGen)
@@ -45,7 +122,10 @@ namespace Aggregates.Internal
             _expiration = delayedExpiration;
             _streamGen = streamGen;
             _cts = new CancellationTokenSource();
-            _memCache = new ConcurrentDictionary<Tuple<string, string>, Tuple<DateTime, List<IDelayedMessage>>>();
+
+            _cacheLock = new object();
+            _memCache = new Dictionary<CacheKey, CachedList>(new CacheKey.EqualityComparer());
+            _rand = new Random();
 
             _thread = new Thread(Threaded)
             { IsBackground = true, Name = $"Delayed Cache Thread" };
@@ -66,8 +146,8 @@ namespace Aggregates.Internal
                 {
                     cache._cts.Token.ThrowIfCancellationRequested();
 
-                    Thread.Sleep(cache._flushInterval);
-                    cache.Flush().Wait();
+                    Task.Delay(cache._flushInterval, cache._cts.Token).Wait();
+                    cache.Flush().Wait(cache._cts.Token);
                 }
             }
             catch { }
@@ -98,11 +178,17 @@ namespace Aggregates.Internal
                     Descriptor = new EventDescriptor
                     {
                         EntityType = "DELAY",
-                        StreamType = StreamTypes.Delayed,
+                        StreamType = $"{_endpoint}.{StreamTypes.Delayed}",
                         Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
                         StreamId = channel,
                         Timestamp = DateTime.UtcNow,
                         Headers = new Dictionary<string, string>()
+                        {
+                            ["Expired"] = "true",
+                            ["FlushTime"] = DateTime.UtcNow.ToString("s"),
+                            ["Instance"] = Defaults.Instance.ToString(),
+                            ["Machine"] = Environment.MachineName,
+                        }
                     },
                     Event = x,
                 }).ToArray();
@@ -121,55 +207,50 @@ namespace Aggregates.Internal
                 }
             }
 
-            var cacheKey = new Tuple<string, string>(channel, key);
-            _memCache.AddOrUpdate(cacheKey,
-                           (k) =>
-                                   new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, messages.ToList()),
-                           (k, existing) =>
-                           {
-                               existing.Item2.AddRange(messages);
-
-                               return new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, existing.Item2);
-                           }
-                       );
-
+            addToMemCache(channel, key, messages);
         }
 
+        private void addToMemCache(string channel, string key, IDelayedMessage[] messages)
+        {
+
+            var cacheKey = new CacheKey(channel, key);
+            CachedList list;
+            lock (_cacheLock)
+            {
+                if (!_memCache.TryGetValue(cacheKey, out list))
+                    _memCache[cacheKey] = list = new CachedList();
+            }
+
+            list.AddRange(messages);
+        }
 
         public Task<IDelayedMessage[]> Pull(string channel, string key = null, int? max = null)
         {
-            Logger.Write(LogLevel.Debug, () => $"Pulling delayed channel [{channel}] key [{key}] max [{max}]");
-
             var discovered = pullFromMemCache(channel, key, max);
-
-            // Check empty key store too
-            if (!string.IsNullOrEmpty(key))
+            
+            // Check empty key store too, 10% of the time
+            if (_rand.Next(10) == 0 && !string.IsNullOrEmpty(key))
             {
                 var nonSpecific = pullFromMemCache(channel, null, max);
                 discovered = discovered.Concat(nonSpecific).ToArray();
             }
 
-            Logger.Write(LogLevel.Info, () => $"Pulled {discovered.Length} from delayed channel [{channel}] key [{key}]");
+            Logger.Write(LogLevel.Debug, () => $"Pulled {discovered.Length} from delayed channel [{channel}] key [{key}] max [{max}]");
             return Task.FromResult(discovered);
         }
 
         public Task<TimeSpan?> Age(string channel, string key)
         {
-            Logger.Write(LogLevel.Debug, () => $"Getting age of delayed channel [{channel}] key [{key}]");
 
             var specificAge = TimeSpan.Zero;
 
             // Get age from memcache
-            var specificKey = new Tuple<string, string>(channel, key);
-            Tuple<DateTime, List<IDelayedMessage>> temp;
+            var specificKey = new CacheKey(channel, key);
+            CachedList temp;
             if (_memCache.TryGetValue(specificKey, out temp))
-                specificAge = DateTime.UtcNow - temp.Item1;
-
-            Tuple<DateTime, List<IDelayedMessage>> temp2;
-            var channelKey = new Tuple<string, string>(channel, null);
-            if (_memCache.TryGetValue(channelKey, out temp2) && (DateTime.UtcNow - temp2.Item1) > specificAge)
-                specificAge = DateTime.UtcNow - temp2.Item1;
-
+                specificAge = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - temp.Pulled);
+            Logger.Write(LogLevel.Debug, () => $"Age of delayed channel [{channel}] key [{key}] is {specificAge.TotalMilliseconds}");
+            
             return Task.FromResult<TimeSpan?>(specificAge);
         }
 
@@ -179,56 +260,38 @@ namespace Aggregates.Internal
 
             var specificSize = 0;
             // Get size from memcache
-            var specificKey = new Tuple<string, string>(channel, key);
-            Tuple<DateTime, List<IDelayedMessage>> temp;
+            var specificKey = new CacheKey(channel, key);
+            CachedList temp;
             if (_memCache.TryGetValue(specificKey, out temp))
-                specificSize = temp.Item2.Count;
-
-            Tuple<DateTime, List<IDelayedMessage>> temp2;
-            var channelKey = new Tuple<string, string>(channel, null);
-            if (_memCache.TryGetValue(channelKey, out temp2))
-                specificSize += temp2.Item2.Count;
-
+                specificSize = temp.Count;
+            
             return Task.FromResult(specificSize);
         }
 
         private IDelayedMessage[] pullFromMemCache(string channel, string key = null, int? max = null)
         {
-            var cacheKey = new Tuple<string, string>(channel, key);
+            var cacheKey = new CacheKey(channel, key);
 
-            Tuple<DateTime, List<IDelayedMessage>> fromCache;
             // Check memcache even if key == null because messages failing to save to ES are put in memcache
-            if (!_memCache.TryRemove(cacheKey, out fromCache))
-                fromCache = null;
-
-            List<IDelayedMessage> discovered = new List<IDelayedMessage>();
-            if (fromCache != null)
+            var messages = new IDelayedMessage[] { };
+            lock (_cacheLock)
             {
-                discovered = fromCache.Item2.GetRange(0, Math.Min(max ?? int.MaxValue, fromCache.Item2.Count)).ToList();
-                if (max.HasValue)
-                    fromCache.Item2.RemoveRange(0, Math.Min(max.Value, fromCache.Item2.Count));
-                else
-                    fromCache.Item2.Clear();
-            }
-            // Add back into memcache if Max was used and some elements remain
-            if (fromCache != null && fromCache.Item2.Any())
-            {
-                _memCache.AddOrUpdate(cacheKey,
-                    (_) =>
-                            new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, fromCache.Item2),
-                    (_, existing) =>
-                    {
-                        fromCache.Item2.AddRange(existing.Item2);
+                if (_memCache.TryGetValue(cacheKey, out var fromCache))
+                    _memCache.Remove(cacheKey);
 
-                        return new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, fromCache.Item2);
-                    });
+                if (fromCache == null)
+                    return messages;
+
+                messages = fromCache.Dequeue(max);
+                if (fromCache.Count != 0)
+                    _memCache[cacheKey] = fromCache;
             }
-            return discovered.ToArray();
+            return messages;
         }
 
         private async Task Flush()
         {
-            var memCacheTotalSize = _memCache.Values.Sum(x => x.Item2.Count);
+            var memCacheTotalSize = _memCache.Values.Sum(x => x.Count);
             _metrics.Update("Delayed Cache Size", Unit.Items, memCacheTotalSize);
 
             Logger.Write(LogLevel.Info,
@@ -238,19 +301,19 @@ namespace Aggregates.Internal
 
             // A list of channels who have expired or have more than 1/5 the max total cache size
             var expiredSpecificChannels =
-                _memCache.Where(x => (DateTime.UtcNow - x.Value.Item1) > _expiration)
+                _memCache.Where(x => TimeSpan.FromTicks(DateTime.UtcNow.Ticks - x.Value.Pulled) > _expiration)
                     .Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5))
                     .ToArray();
 
             await expiredSpecificChannels.StartEachAsync(3, async (expired) =>
             {
-                var messages = pullFromMemCache(expired.Item1, expired.Item2, max: _flushSize);
+                var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 
                 if (!messages.Any())
                     return;
 
                 Logger.Write(LogLevel.Info,
-                    () => $"Flushing {messages.Length} expired messages from channel {expired.Item1} key {expired.Item2}");
+                    () => $"Flushing {messages.Length} expired messages from channel {expired.Channel} key {expired.Key}");
 
                 var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                 {
@@ -259,7 +322,7 @@ namespace Aggregates.Internal
                         EntityType = "DELAY",
                         StreamType = $"{_endpoint}.{StreamTypes.Delayed}",
                         Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
-                        StreamId = expired.Item1,
+                        StreamId = $"{expired.Channel}.{expired.Key}",
                         Timestamp = DateTime.UtcNow,
                         Headers = new Dictionary<string, string>()
                         {
@@ -273,15 +336,15 @@ namespace Aggregates.Internal
                 }).ToArray();
                 try
                 {
-                            // Todo: might be a good idea to have a lock here so while writing to eventstore no new events can pile up
+                    // Todo: might be a good idea to have a lock here so while writing to eventstore no new events can pile up
 
 
-                            // Stream name to contain the channel, specific key, and the instance id
-                            // it doesn't matter whats in the streamname, the category projection will queue it for execution anyway
-                            // and a lot of writers to a single stream makes eventstore slow
-                            var streamName = _streamGen(typeof(DelayedCache),
-                                $"{_endpoint}.{StreamTypes.Delayed}", Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
-                                $"{expired.Item1}.{expired.Item2}", new Id[] { });
+                    // Stream name to contain the channel, specific key, and the instance id
+                    // it doesn't matter whats in the streamname, the category projection will queue it for execution anyway
+                    // and a lot of writers to a single stream makes eventstore slow
+                    var streamName = _streamGen(typeof(DelayedCache),
+                        $"{_endpoint}.{StreamTypes.Delayed}", Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
+                        $"{expired.Channel}.{expired.Key}", new Id[] { });
                     await _store.WriteEvents(streamName, translatedEvents, null).ConfigureAwait(false);
                     Interlocked.Add(ref totalFlushed, messages.Length);
                     Interlocked.Add(ref memCacheTotalSize, -messages.Length);
@@ -290,18 +353,10 @@ namespace Aggregates.Internal
                 catch (Exception e)
                 {
                     Logger.Write(LogLevel.Warn,
-                        () => $"Failed to write to channel [{expired.Item1}].  Exception: {e.GetType().Name}: {e.Message}");
+                        () => $"Failed to write to channel [{expired.Channel}] key [{expired.Key}].  Exception: {e.GetType().Name}: {e.Message}");
 
-                            // Failed to write to ES - put object back in memcache
-                            _memCache.AddOrUpdate(expired,
-                                (key) =>
-                                    new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, messages.ToList()),
-                                (key, existing) =>
-                                {
-                                    existing.Item2.AddRange(messages);
-
-                                    return new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, existing.Item2);
-                                });
+                    // Failed to write to ES - put object back in memcache
+                    addToMemCache(expired.Channel, expired.Key, messages);
 
                 }
             }).ConfigureAwait(false);
@@ -324,17 +379,17 @@ namespace Aggregates.Internal
                     }
 
                     // Flush the largest channels
-                    var toFlush = _memCache.Where(x => x.Value.Item2.Count > _flushSize || (x.Value.Item2.Count > (_maxSize / 5))).Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5)).ToArray();
+                    var toFlush = _memCache.Where(x => x.Value.Count > _flushSize || (x.Value.Count > (_maxSize / 5))).Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5)).ToArray();
                     // If no large channels, take some of the oldest
                     if (!toFlush.Any())
-                        toFlush = _memCache.OrderBy(x => x.Value.Item1).Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5)).ToArray();
+                        toFlush = _memCache.OrderBy(x => x.Value.Pulled).Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5)).ToArray();
 
                     await toFlush.StartEachAsync(3, async (expired) =>
                     {
-                        var messages = pullFromMemCache(expired.Item1, expired.Item2, max: _flushSize);
+                        var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 
-                        Logger.Write(LogLevel.Info,
-                            () => $"Flushing {messages.Length} messages from large channel {expired.Item1} key {expired.Item2}");
+                        Logger.Write(LogLevel.Warn,
+                            () => $"Flushing {messages.Length} messages from large channel [{expired.Channel}] key [{expired.Key}]");
                         var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                         {
                             Descriptor = new EventDescriptor
@@ -342,7 +397,7 @@ namespace Aggregates.Internal
                                 EntityType = "DELAY",
                                 StreamType = $"{_endpoint}.{StreamTypes.Delayed}",
                                 Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
-                                StreamId = expired.Item1,
+                                StreamId = $"{expired.Channel}.{expired.Key}",
                                 Timestamp = DateTime.UtcNow,
                                 Headers = new Dictionary<string, string>()
                                 {
@@ -361,7 +416,7 @@ namespace Aggregates.Internal
                             var streamName = _streamGen(typeof(DelayedCache),
                             $"{_endpoint}.{StreamTypes.Delayed}",
                             Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
-                            $"{expired.Item1}.{expired.Item2}", new Id[] { });
+                            $"{expired.Channel}.{expired.Key}", new Id[] { });
 
                             await _store.WriteEvents(streamName, translatedEvents, null).ConfigureAwait(false);
                             Interlocked.Add(ref totalFlushed, messages.Length);
@@ -371,18 +426,10 @@ namespace Aggregates.Internal
                         {
                             limit--;
                             Logger.Write(LogLevel.Warn,
-                                () => $"Failed to write to channel [{expired.Item1}].  Exception: {e.GetType().Name}: {e.Message}");
+                                () => $"Failed to write to channel [{expired.Channel}] key [{expired.Key}].  Exception: {e.GetType().Name}: {e.Message}");
 
                             // Failed to write to ES - put object back in memcache
-                            _memCache.AddOrUpdate(expired,
-                                (key) =>
-                                    new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, messages.ToList()),
-                                (key, existing) =>
-                                {
-                                    existing.Item2.AddRange(messages);
-
-                                    return new Tuple<DateTime, List<IDelayedMessage>>(DateTime.UtcNow, existing.Item2);
-                                });
+                            addToMemCache(expired.Channel, expired.Key, messages);
                             throw;
                         }
 

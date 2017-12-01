@@ -10,6 +10,7 @@ namespace Aggregates.Internal
 {
     static class EntityFactory
     {
+        public static readonly long NewEntityVersion = -1;
         private static readonly ConcurrentDictionary<Type, object> Factories = new ConcurrentDictionary<Type, object>();
 
         public static IEntityFactory<TEntity> For<TEntity>() where TEntity : IEntity
@@ -29,9 +30,10 @@ namespace Aggregates.Internal
         }
     }
 
-    class EntityFactory<TEntity, TState> : IEntityFactory<TEntity> where TEntity : Entity<TEntity, TState> where TState : IState, new()
+    class EntityFactory<TEntity, TState> : IEntityFactory<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
     {
-        readonly Func<TEntity> _factory;
+
+        private readonly Func<TEntity> _factory;
 
         public EntityFactory()
         {
@@ -40,23 +42,33 @@ namespace Aggregates.Internal
 
         public TEntity Create(string bucket, Id id, Id[] parents = null, IFullEvent[] events = null, IState snapshot = null)
         {
-            var entity = _factory();
-            var state = new TState();
+            // Todo: Can use a simple duck type helper incase snapshot type != TState due to refactor or something
+            if (snapshot != null && !(snapshot is TState))
+                throw new ArgumentException(
+                    $"Snapshot type {snapshot.GetType().Name} doesn't match {typeof(TState).Name}");
 
-            if (snapshot != null)
-                state.RestoreSnapshot(snapshot);
+            var snapshotState = snapshot as TState;
 
-            if(events != null)
+            var state = snapshotState?.Copy<TState>() ?? new TState() { Version = EntityFactory.NewEntityVersion };
+            state.Id = id;
+            state.Bucket = bucket;
+
+            state.Parents = parents;
+            state.Snapshot = snapshotState;
+
+            if (snapshotState != null)
+                state.SnapshotRestored();
+
+            if (events != null && events.Length > 0)
+            {
                 for (var i = 0; i < events.Length; i++)
                     state.Apply(events[i].Event as IEvent);
+            }
 
-            entity.Id = id;
-            entity.State = state;
-            entity.Bucket = bucket;
+            var entity = _factory();
+            (entity as IEntity<TState>).Instantiate(state);
+
             
-            entity.Parents = parents;
-            entity.Version = state.Version;
-
             return entity;
         }
         

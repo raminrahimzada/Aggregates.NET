@@ -5,77 +5,106 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
+using Aggregates.Exceptions;
 using Aggregates.Internal;
 using Aggregates.Logging;
 using Aggregates.Messages;
 
 namespace Aggregates
 {
-    public abstract class Entity<TThis, TParent, TState> : Entity<TThis, TState>, IChildEntity<TParent> where TParent : IEntity where TThis : Entity<TThis, TParent, TState> where TState : IState, new()
+    public abstract class Entity<TThis, TState, TParent> : Entity<TThis, TState>, IChildEntity<TParent> where TParent : IEntity where TThis : Entity<TThis, TState, TParent> where TState : class, IState, new()
     {
         TParent IChildEntity<TParent>.Parent => Parent;
 
         public TParent Parent { get; internal set; }
     }
 
-    public abstract class Entity<TThis, TState> : IEntity<TState>, IHaveEntities<TThis>, INeedDomainUow, INeedEventFactory, INeedStore where TThis : Entity<TThis, TState> where TState : IState, new()
+    public abstract class Entity<TThis, TState> : IEntity<TState>, IHaveEntities<TThis>, INeedDomainUow, INeedEventFactory, INeedStore where TThis : Entity<TThis, TState> where TState : class, IState, new()
     {
         private static readonly ILog Logger = LogProvider.GetLogger(typeof(TThis).Name);
 
-        public Id Id { get; internal set; }
-        public string Bucket { get; internal set; }
-        public Id[] Parents { get; internal set; }
-        public long Version { get; internal set; }
+        public Id Id { get; private set; }
+        public string Bucket { get; private set; }
+        public Id[] Parents { get; private set; }
+        public long Version { get; private set; }
+        public TState State { get; private set; }
 
         public bool Dirty => Uncommitted.Any();
 
         public IFullEvent[] Uncommitted => _uncommitted.ToArray();
 
-        public TState State { get; internal set; }
 
         private readonly IList<IFullEvent> _uncommitted = new List<IFullEvent>();
 
         private IDomainUnitOfWork Uow => (this as INeedDomainUow).Uow;
         private IEventFactory Factory => (this as INeedEventFactory).EventFactory;
         private IStoreEvents Store => (this as INeedStore).Store;
+        private IOobWriter OobWriter => (this as INeedStore).OobWriter;
         IDomainUnitOfWork INeedDomainUow.Uow { get; set; }
         IEventFactory INeedEventFactory.EventFactory { get; set; }
         IStoreEvents INeedStore.Store { get; set; }
+        IOobWriter INeedStore.OobWriter { get; set; }
 
-
-        public IRepository<TThis, TEntity> For<TEntity>() where TEntity : IChildEntity<TThis>
+        void IEntity<TState>.Instantiate(TState state)
         {
-            return Uow.For<TThis, TEntity>(this as TThis);
+            Id = state.Id;
+            Bucket = state.Bucket;
+            Parents = state.Parents;
+            Version = state.Version;
+            State = state;
+
+            Instantiate();
         }
-        public IPocoRepository<TThis, T> Poco<T>() where T : class, new()
+
+        void IEntity<TState>.Snapshotting()
         {
-            return Uow.Poco<TThis, T>(this as TThis);
+            Snapshotting();
+        }
+        /// <summary>
+        /// Allows the entity to perform any kind of initialization they may need to do (rare)
+        /// </summary>
+        protected virtual void Instantiate()
+        {
+        }
+
+        /// <summary>
+        /// Allows the entity to inject things into a serialized state object before its saved
+        /// </summary>
+        protected virtual void Snapshotting()
+        {
+        }
+
+
+        public IRepository<TEntity, TThis> For<TEntity>() where TEntity : IChildEntity<TThis>
+        {
+            return Uow.For<TEntity, TThis>(this as TThis);
+        }
+        public IPocoRepository<T, TThis> Poco<T>() where T : class, new()
+        {
+            return Uow.Poco<T, TThis>(this as TThis);
         }
         public Task<long> GetSize(string oob = null)
         {
-            var bucket = Bucket;
             if (!string.IsNullOrEmpty(oob))
-                bucket = $"OOB-{oob}";
+                return OobWriter.GetSize<TThis>(Bucket, Id, Parents, oob);
 
-            return Store.Size<TThis>(bucket, Id, Parents);
+            return Store.Size<TThis>(Bucket, Id, Parents);
         }
 
         public Task<IFullEvent[]> GetEvents(long start, int count, string oob = null)
         {
-            var bucket = Bucket;
             if (!string.IsNullOrEmpty(oob))
-                bucket = $"OOB-{oob}";
+                return OobWriter.GetEvents<TThis>(Bucket, Id, Parents, oob, start, count);
 
-            return Store.GetEvents<TThis>(bucket, Id, Parents, start, count);
+            return Store.GetEvents<TThis>(Bucket, Id, Parents, start, count);
         }
 
         public Task<IFullEvent[]> GetEventsBackwards(long start, int count, string oob = null)
         {
-            var bucket = Bucket;
             if (!string.IsNullOrEmpty(oob))
-                bucket = $"OOB-{oob}";
+                return OobWriter.GetEventsBackwards<TThis>(Bucket, Id, Parents, oob, start, count);
 
-            return Store.GetEventsBackwards<TThis>(bucket, Id, Parents, start, count);
+            return Store.GetEventsBackwards<TThis>(Bucket, Id, Parents, start, count);
         }
 
         void IEntity<TState>.Conflict(IEvent @event)
@@ -136,7 +165,7 @@ namespace Aggregates
             (this as IEntity<TState>).Apply(instance);
         }
 
-        protected void Raise<TEvent>(Action<TEvent> @event, string id, bool transient = false, int? daysToLive = null) where TEvent : IEvent
+        protected void Raise<TEvent>(Action<TEvent> @event, string id, bool transient = true, int? daysToLive = null) where TEvent : IEvent
         {
             var instance = Factory.Create(@event);
 

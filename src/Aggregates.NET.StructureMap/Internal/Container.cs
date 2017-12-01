@@ -14,57 +14,53 @@ namespace Aggregates.Internal
             _container = container;
         }
 
-
-        public void RegisterSingleton<TInterface>(TInterface instance, string name = null) where TInterface : class
+        public void Dispose()
         {
-            _container.Configure(x =>
+            _container.Dispose();
+        }
+
+        private StructureMap.Pipeline.ILifecycle ConvertLifestyle(Contracts.Lifestyle lifestyle)
+        {
+            switch (lifestyle)
             {
-                var use = x.For<TInterface>().Use(instance).Singleton();
-                if (!string.IsNullOrEmpty(name))
-                    use.Named(name);
-            });
+                case Contracts.Lifestyle.PerInstance:
+                    return new StructureMap.Pipeline.TransientLifecycle();
+                case Contracts.Lifestyle.Singleton:
+                    return new StructureMap.Pipeline.SingletonLifecycle();
+                case Contracts.Lifestyle.UnitOfWork:
+                    // Transients are singletons in child containers
+                    return new StructureMap.Pipeline.TransientLifecycle();
+            }
+            throw new ArgumentException($"Unknown lifestyle {lifestyle}");
         }
 
-        public void RegisterSingleton<TInterface>(Func<IContainer, TInterface> factory, string name = null) where TInterface : class
+        public void Register(Type concrete, Contracts.Lifestyle lifestyle)
         {
-            _container.Configure(x =>
-            {
-                var use = x.For<TInterface>().Use(y => factory(this)).Singleton();
-                if (!string.IsNullOrEmpty(name))
-                    use.Named(name);
-            });
+            _container.Configure(x => x.For(concrete).Use(concrete).SetLifecycleTo(ConvertLifestyle(lifestyle)));
         }
-        public void RegisterSingleton<TInterface, TConcrete>(string name = null) where TInterface : class where TConcrete : class, TInterface
+        public void Register<TInterface>(TInterface instance, Contracts.Lifestyle lifestyle) where TInterface : class
         {
-            _container.Configure(x =>
-            {
-                var use = x.For<TInterface>().Use<TConcrete>().Singleton();
-                if (!string.IsNullOrEmpty(name))
-                    use.Named(name);
-            });
+            _container.Configure(x => x.For<TInterface>().Use(instance).SetLifecycleTo(ConvertLifestyle(lifestyle)));
         }
 
-        public void Register(Type concrete)
-        {
-            _container.Configure(x => x.For(concrete).Use(concrete));
-        }
-
-        public void Register<TInterface>(Func<IContainer, TInterface> factory, string name = null) where TInterface : class
+        public void Register<TInterface>(Func<IContainer, TInterface> factory, Contracts.Lifestyle lifestyle, string name = null) where TInterface : class
         {
             _container.Configure(x =>
             {
                 var use = x.For<TInterface>().Use(y => factory(this));
                 if (!string.IsNullOrEmpty(name))
                     use.Named(name);
+                use.SetLifecycleTo(ConvertLifestyle(lifestyle));
             });
         }
-        public void Register<TInterface, TConcrete>(string name = null) where TInterface : class where TConcrete : class, TInterface
+        public void Register<TInterface, TConcrete>(Contracts.Lifestyle lifestyle, string name = null) where TInterface : class where TConcrete : class, TInterface
         {
             _container.Configure(x =>
             {
                 var use = x.For<TInterface>().Use<TConcrete>();
                 if (!string.IsNullOrEmpty(name))
                     use.Named(name);
+                use.SetLifecycleTo(ConvertLifestyle(lifestyle));
             });
         }
 
@@ -79,6 +75,14 @@ namespace Aggregates.Internal
         public IEnumerable<TResolve> ResolveAll<TResolve>() where TResolve : class
         {
             return _container.GetAllInstances<TResolve>();
+        }
+        public object TryResolve(Type resolve)
+        {
+            return _container.TryGetInstance(resolve);
+        }
+        public TResolve TryResolve<TResolve>() where TResolve : class
+        {
+            return _container.TryGetInstance<TResolve>();
         }
 
         public IContainer GetChildContainer()
