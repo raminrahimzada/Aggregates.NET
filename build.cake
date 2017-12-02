@@ -60,7 +60,9 @@ Setup(context =>
     Information("IsRunningOnWindows: " + parameters.IsRunningOnWindows);
     Information("IsRunningOnVSTS: " + parameters.IsRunningOnVSTS);
     Information("IsReleaseBuild: " + parameters.IsReleaseBuild);
-    Information("ShouldPublish: " + parameters.ShouldPublish);
+    Information("IsMaster: " + parameters.IsMaster);
+    Information("IsPullRequest: " + parameters.IsPullRequest);
+    Information("BuildNumber: " + parameters.BuildNumber);
 
     // Increase verbosity?
     if(parameters.IsReleaseBuild && (context.Log.Verbosity != Verbosity.Diagnostic)) {
