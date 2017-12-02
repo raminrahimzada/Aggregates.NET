@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../Common.props"/>
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-   <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-   <RootNamespace>Aggregates</RootNamespace>
+    <RootNamespace>Aggregates</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <IsPackable>true</IsPackable>
+    <Title>Aggregates.NET.NServiceBus</Title>
+    <Description>NServiceBus support for Aggregates.NET</Description>
   </PropertyGroup>
 
   <ItemGroup>

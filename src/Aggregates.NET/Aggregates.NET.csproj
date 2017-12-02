@@ -1,14 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../Common.props"/>
 
   <PropertyGroup>
+    <DefineConstants>NETSTANDARD2_0;LIBLOG_PORTABLE</DefineConstants>
     <TargetFramework>netstandard2.0</TargetFramework>
-   <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-   <RootNamespace>Aggregates</RootNamespace>
+    <RootNamespace>Aggregates</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <IsPackable>true</IsPackable>
+    <Title>Aggregates.NET</Title>
+    <Description>ES/CQRS framework for NServiceBus and EventStore</Description>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;NETSTANDARD2_0;LIBLOG_PORTABLE;TINYIOC_INTERNAL</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\SharedAssemblyInfo.cs">

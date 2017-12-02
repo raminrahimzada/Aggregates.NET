@@ -1,30 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
+  <Import Project="../Common.props"/>
   <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-   <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Aggregates.UnitTests</RootNamespace>
-    <ApplicationIcon />
-    <StartupObject />
+    <TargetFramework>net462</TargetFramework>
+    <RootNamespace>Aggregates</RootNamespace>
+    
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Moq" Version="4.7.99" />
-    <PackageReference Include="NUnit" Version="3.8.1" />
+    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.0.3-rc" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="Moq" Version="4.7.145" />
+    <PackageReference Include="MSTest.TestAdapter" Version="1.2.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="NUnit" Version="3.9.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Aggregates.NET.EventStore\Aggregates.NET.EventStore.csproj" />
     <ProjectReference Include="..\Aggregates.NET.NewtonsoftJson\Aggregates.NET.NewtonsoftJson.csproj" />
     <ProjectReference Include="..\Aggregates.NET.NServiceBus\Aggregates.NET.NServiceBus.csproj" />
+    <ProjectReference Include="..\Aggregates.NET.StructureMap\Aggregates.NET.StructureMap.csproj" />
     <ProjectReference Include="..\Aggregates.NET\Aggregates.NET.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\SharedAssemblyInfo.cs">
-      <Link>Properties\SharedAssemblyInfo.cs</Link>
-    </Compile>
   </ItemGroup>
 
 </Project>

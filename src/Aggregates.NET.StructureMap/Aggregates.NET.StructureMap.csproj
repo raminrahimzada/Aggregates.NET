@@ -1,13 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../Common.props"/>
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-   <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Aggregates</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    
+    <IsPackable>true</IsPackable>
+    <Title>Aggregates.NET.StructureMap</Title>
+    <Description>StructureMap support for Aggregates.NET</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="StructureMap" Version="4.5.2" />
+    <PackageReference Include="StructureMap" Version="4.5.3" />
   </ItemGroup>
 
   <ItemGroup>
