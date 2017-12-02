@@ -204,16 +204,16 @@ Task("Upload-Test-Coverage")
     .Does(() =>
 {
     // Resolve the API key.
-    var token = EnvironmentVariable("COVERALLS_TOKEN");
-    if (string.IsNullOrEmpty(token))
-    {
-        throw new Exception("The COVERALLS_TOKEN environment variable is not defined.");
-    }
+//    var token = EnvironmentVariable("COVERALLS_TOKEN");
+//    if (string.IsNullOrEmpty(token))
+//    {
+//        throw new Exception("The COVERALLS_TOKEN environment variable is not defined.");
+//    }
 
-    CoverallsIo(parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"), new CoverallsIoSettings()
-    {
-        RepoToken = token
-    });
+//    CoverallsIo(parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"), new CoverallsIoSettings()
+//    {
+//        RepoToken = token
+//    });
 });
 
 Task("Copy-Files")

@@ -21,12 +21,15 @@ public class BuildParameters
     public BuildPaths Paths { get; private set; }
     public BuildPackages Packages { get; private set; }
     public int BuildNumber { get; private set; }
+    public string Branch { get; private set; }
+    public bool IsMaster { get; private set; }
+    public bool IsPullRequest { get; private set; }
 
     public bool ShouldPublish
     {
         get
         {
-            return !IsLocalBuild && IsReleaseBuild;
+            return !IsLocalBuild && IsReleaseBuild && IsMaster && !IsPullRequest;
         }
     }
 
@@ -74,10 +77,17 @@ public class BuildParameters
         var buildSystem = context.BuildSystem();
 
         var buildNumber = 0;
-        if(buildSystem.AppVeyor.IsRunningOnAppVeyor)
+        var branch = "";
+        var pr = false;
+        if(buildSystem.AppVeyor.IsRunningOnAppVeyor) {
             buildNumber = buildSystem.AppVeyor.Environment.Build.Number;
-        if(buildSystem.TFBuild.IsRunningOnVSTS)
+            branch = buildSystem.AppVeyor.Environment.Repository.Branch;
+            pr = buildSystem.AppVeyor.Environment.PullRequest.IsPullRequest;
+        }
+        if(buildSystem.TFBuild.IsRunningOnVSTS) {
             buildNumber = buildSystem.TFBuild.Environment.Build.Id;
+            branch = buildSystem.TFBuild.Environment.Repository.Branch;
+        }
 
 
         return new BuildParameters {
@@ -92,7 +102,10 @@ public class BuildParameters
             GitHub = BuildCredentials.GetGitHubCredentials(context),
             Artifactory = BuildCredentials.GetArtifactoryCredentials(context, buildSystem.IsLocalBuild),
             IsReleaseBuild = IsReleasing(target),
-            BuildNumber = buildNumber
+            BuildNumber = buildNumber,
+            Branch = branch,
+            IsMaster = StringComparer.OrdinalIgnoreCase.Equals("master", branch),
+            IsPullRequest = pr
         };
     }
 
