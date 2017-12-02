@@ -150,13 +150,9 @@ Task("Run-Unit-Tests")
     .Does(() =>
 {
     EnsureDirectoryExists(parameters.Paths.Directories.TestResultsDir);
-    
-    Action<ICakeContext> testAction = tool => {
-
-        tool.NUnit3("./src/**/bin/" + parameters.Configuration + "/**/*Tests.dll",
+    NUnit3("./src/**/bin/" + parameters.Configuration + "/**/*Tests.dll",
                 new NUnit3Settings
                 {
-                    Framework = "net-4.5",
                     Timeout = 600000,
                     ShadowCopy = false,
                     NoHeader = true,
@@ -165,19 +161,35 @@ Task("Run-Unit-Tests")
                     OutputFile = parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./TestOutput.txt"),
                     NoResults = true
                 });
-    };
+    
+//      Action<ICakeContext> testAction = tool => {
 
-    OpenCover(testAction,
-        parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"),
-        new OpenCoverSettings {
-            ReturnTargetCodeOffset = 0,
-        }
-        .WithFilter("+[Aggregates.NET*]*")
-        .WithFilter("-[*Tests*]*")
-        .ExcludeByAttribute("*.ExcludeFromCodeCoverage*")
-        .ExcludeByFile("*/*Designer.cs"));
+//        tool.NUnit3("./src/**/bin/" + parameters.Configuration + "/**/*Tests.dll",
+//                new NUnit3Settings
+//                {
+//                    Timeout = 600000,
+//                    ShadowCopy = false,
+//                    NoHeader = true,
+//                    NoColor = true,
+//                    DisposeRunners = true,
+//                    OutputFile = parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./TestOutput.txt"),
+//                    NoResults = true
+//                });
+//    };
 
-    ReportGenerator(parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"), parameters.Paths.Directories.TestResultsDir);
+//    OpenCover(testAction,
+//        parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"),
+//        new OpenCoverSettings {
+//            ReturnTargetCodeOffset = 0,
+//            ArgumentCustomization = aggs => aggs.Append("-register")
+//        }
+//        .WithFilter("+[Aggregates.NET*]*")
+//        .WithFilter("-[*Tests*]*")
+//        .ExcludeByAttribute("*.ExcludeFromCodeCoverage*")
+//        .ExcludeByFile("*/*Designer.cs"));
+
+//    ReportGenerator(parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"), parameters.Paths.Directories.TestResultsDir);
+
 }).ReportError(exception =>
 {
     // var apiApprovals = GetFiles("./**/ApiApprovalTests.*");
@@ -277,7 +289,7 @@ Task("Publish-NuGet")
         throw new InvalidOperationException("Could not resolve NuGet API key.");
     }
 
-    if(parameters.ShouldPublishToArtifactory){
+    if(parameters.ShouldPublishToArtifactory) {
 
         var username = parameters.Artifactory.UserName;
         var password = parameters.Artifactory.Password;
