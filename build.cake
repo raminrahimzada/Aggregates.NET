@@ -3,6 +3,8 @@
 #addin "nuget:?package=Cake.Coveralls&version=0.7.0"
 #addin "nuget:?package=Cake.Powershell&version=0.4.3"
 #addin "nuget:?package=Cake.Incubator&version=1.6.0"
+#addin "nuget:?package=Cake.Docker&version=0.8.2"
+#addin "nuget:?package=Cake.Curl&version=2.0.0"
 
 // Install tools.
 #tool "nuget:?package=GitReleaseManager&version=0.6.0"
@@ -56,7 +58,6 @@ Setup(context =>
     Information("IsLocalBuild: " + parameters.IsLocalBuild);
     Information("IsRunningOnUnix: " + parameters.IsRunningOnUnix);
     Information("IsRunningOnWindows: " + parameters.IsRunningOnWindows);
-    Information("IsRunningOnGoCD: " + parameters.IsRunningOnGoCD);
     Information("IsRunningOnVSTS: " + parameters.IsRunningOnVSTS);
     Information("IsReleaseBuild: " + parameters.IsReleaseBuild);
     Information("ShouldPublish: " + parameters.ShouldPublish);
@@ -109,6 +110,7 @@ Task("Restore-NuGet-Packages")
 {
     DotNetCoreRestore(parameters.Solution.FullPath, new DotNetCoreRestoreSettings()
                 {
+                    ConfigFile = new FilePath("./build/nuget.config"),
                     ArgumentCustomization = aggs => aggs.Append(GetDotNetCoreArgsVersions(parameters.Version))
                 });
 

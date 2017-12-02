@@ -11,7 +11,6 @@ public class BuildParameters
     public bool IsLocalBuild { get; private set; }
     public bool IsRunningOnUnix { get; private set; }
     public bool IsRunningOnWindows { get; private set; }
-    public bool IsRunningOnGoCD { get; private set; }
     public bool IsRunningOnVSTS { get; private set; }
     public bool IsRunningOnAppVeyor { get; private set; }
     public bool IsReleaseBuild { get; private set; }
@@ -36,7 +35,7 @@ public class BuildParameters
     {
         get
         {
-            return (IsRunningOnGoCD || IsRunningOnVSTS)  && ShouldPublish;
+            return IsRunningOnVSTS  && ShouldPublish;
         }
     }
 
@@ -48,10 +47,12 @@ public class BuildParameters
         Paths = BuildPaths.GetPaths(context, Configuration, Version.SemVersion);
 
         Packages = BuildPackages.GetPackages(
-			Paths.Directories.ArtifactsBin,
+            context,
+            IsRunningOnWindows,
+            Version,
+            Paths.Directories.ArtifactsBin,
             Paths.Directories.NugetRoot,
-            Version.SemVersion,
-            IsRunningOnWindows
+            Paths.Files.Projects
             );
     }
 
@@ -73,8 +74,6 @@ public class BuildParameters
         var buildSystem = context.BuildSystem();
 
         var buildNumber = 0;
-        if(buildSystem.GoCD.IsRunningOnGoCD)
-            buildNumber = buildSystem.GoCD.Environment.Pipeline.Counter;
         if(buildSystem.AppVeyor.IsRunningOnAppVeyor)
             buildNumber = buildSystem.AppVeyor.Environment.Build.Number;
         if(buildSystem.TFBuild.IsRunningOnVSTS)
@@ -88,7 +87,6 @@ public class BuildParameters
             IsLocalBuild = buildSystem.IsLocalBuild,
             IsRunningOnUnix = context.IsRunningOnUnix(),
             IsRunningOnWindows = context.IsRunningOnWindows(),
-            IsRunningOnGoCD = buildSystem.GoCD.IsRunningOnGoCD,
             IsRunningOnVSTS = buildSystem.TFBuild.IsRunningOnVSTS,
             IsRunningOnAppVeyor = buildSystem.AppVeyor.IsRunningOnAppVeyor,
             GitHub = BuildCredentials.GetGitHubCredentials(context),
@@ -101,7 +99,7 @@ public class BuildParameters
 
     private static bool IsReleasing(string target)
     {
-        var targets = new [] { "GoCD", "AppVeyor", "VSTS-Publish", "Publish", "Publish-NuGet" };
+        var targets = new [] { "AppVeyor", "VSTS-Publish", "Publish", "Publish-NuGet" };
         return targets.Any(t => StringComparer.OrdinalIgnoreCase.Equals(t, target));
     }
 
