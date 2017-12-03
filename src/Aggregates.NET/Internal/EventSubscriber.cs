@@ -205,7 +205,8 @@ when({{
             }
             catch(Exception e)
             {
-                Logger.Error($"Event subscriber thread terminated due to exception: {e.GetType()}: {e.Message}\n{e.AsString()}");
+                if(!(e is OperationCanceledException))
+                    Logger.Error($"Event subscriber thread terminated due to exception: {e.GetType()}: {e.Message}\n{e.AsString()}");
             }
         }
         

@@ -26,7 +26,7 @@ namespace Domain
         private static IContainer _container;
         private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
         {
-            Log.Logger.Fatal("<{EventId:l}> Unhandled exception {Exception}", "Unhandled", e.ExceptionObject);
+            Log.Fatal("<{EventId:l}> Unhandled exception {Exception}", "Unhandled", e.ExceptionObject);
             Console.WriteLine("");
             Console.WriteLine("FATAL ERROR - Press return to close...");
             Console.ReadLine();
@@ -82,12 +82,10 @@ namespace Domain
             var endpoint = "domain";
 
             var config = new EndpointConfiguration(endpoint);
+
+
+            Log.Information("<{EventId:l}> Initializing Service Bus", "Init");
             
-
-            Log.Logger.Information("<{EventId:l}> Initializing Service Bus", "Init");
-
-            config.LicensePath("C:/License.xml");
-
             var transport = config.UseTransport<RabbitMQTransport>()
                 .UseConventionalRoutingTopology()
                 .ConnectionString("host=localhost;Username=guest;Password=guest")

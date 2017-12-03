@@ -12,6 +12,14 @@ namespace Aggregates
 {
     public static class NSBConfigure
     {
+
+        public static bool IsMessage(Type type)
+        {
+            if (type.Name == "SaidHello")
+                Console.Write("he");
+            return typeof(Messages.IMessage).IsAssignableFrom(type);
+        }
+
         public static Configure NServiceBus(this Configure config, EndpointConfiguration endpointConfig)
         {
 
@@ -23,8 +31,8 @@ namespace Aggregates
 
             conventions.DefiningCommandsAs(type => typeof(Messages.ICommand).IsAssignableFrom(type));
             conventions.DefiningEventsAs(type => typeof(Messages.IEvent).IsAssignableFrom(type));
-            conventions.DefiningMessagesAs(type => typeof(Messages.IMessage).IsAssignableFrom(type));
-
+            conventions.DefiningMessagesAs(IsMessage);
+            
             endpointConfig.AssemblyScanner().ScanAppDomainAssemblies = true;
             endpointConfig.EnableCallbacks();
             endpointConfig.EnableInstallers();

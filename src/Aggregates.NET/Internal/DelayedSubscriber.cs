@@ -186,7 +186,8 @@ namespace Aggregates.Internal
             }
             catch(Exception e)
             {
-                Logger.Error($"Delayed subscriber thread terminated due to exception: {e.GetType()}: {e.Message}\n{e.AsString()}");
+                if (!(e is OperationCanceledException))
+                    Logger.Error($"Delayed subscriber thread terminated due to exception: {e.GetType()}: {e.Message}\n{e.AsString()}");
             }
 
         }

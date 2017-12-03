@@ -54,7 +54,7 @@ namespace Aggregates.UnitTests.Common
             _consumer.Setup(
                 x =>
                     x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>())).Returns(Task.FromResult(true));
 
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -64,7 +64,7 @@ namespace Aggregates.UnitTests.Common
             _consumer.Verify(
                 x =>
                     x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>()), Moq.Times.Once);
         }
 
@@ -72,13 +72,13 @@ namespace Aggregates.UnitTests.Common
         public async Task gets_snapshot()
         {
 
-            Action<string, long, IFullEvent> eventCb = null;
+            Func<string, long, IFullEvent, Task> eventCb = null;
             _consumer.Setup(
                     x =>
                         x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()))
-                .Callback<string, CancellationToken, Action<string, long, IFullEvent>, Func<Task>>(
+                .Callback<string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
                     (stream, token, onEvent, onDisconnect) =>
                     {
                         eventCb = onEvent;
@@ -98,7 +98,7 @@ namespace Aggregates.UnitTests.Common
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
             message.Setup(x => x.Event).Returns(memento.Object);
-            eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
 
             var read = await _subscriber.Retreive("test").ConfigureAwait(false);
             Assert.AreEqual(1, read.Payload.Version);
@@ -121,13 +121,13 @@ namespace Aggregates.UnitTests.Common
         [Test]
         public async Task new_snapshot_replaces_old()
         {
-            Action<string, long, IFullEvent> eventCb = null;
+            Func<string, long, IFullEvent, Task> eventCb = null;
             _consumer.Setup(
                     x =>
                         x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()))
-                .Callback<string, CancellationToken, Action<string, long, IFullEvent>, Func<Task>>(
+                .Callback<string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
                     (stream, token, onEvent, onDisconnect) =>
                     {
                         eventCb = onEvent;
@@ -149,9 +149,9 @@ namespace Aggregates.UnitTests.Common
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
             message.Setup(x => x.Event).Returns(memento.Object);
-            eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
             message.Setup(x => x.Event).Returns(memento2.Object);
-            eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
 
             var snapshot = await _subscriber.Retreive("test").ConfigureAwait(false);
             Assert.AreEqual(2, snapshot.Payload.Version);
@@ -168,9 +168,9 @@ namespace Aggregates.UnitTests.Common
             _consumer.Setup(
                     x =>
                         x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()))
-                .Callback<string, CancellationToken, Action<string, long, IFullEvent>, Func<Task>>(
+                .Callback<string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
                     (stream, token, onEvent, onDisconnect) =>
                     {
                         disconnect = onDisconnect;
@@ -184,7 +184,7 @@ namespace Aggregates.UnitTests.Common
             _consumer.Verify(
                 x =>
                     x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()), Moq.Times.Once);
 
             Assert.NotNull(disconnect);
@@ -194,7 +194,7 @@ namespace Aggregates.UnitTests.Common
             _consumer.Verify(
                 x =>
                     x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()), Moq.Times.Exactly(2));
 
         }

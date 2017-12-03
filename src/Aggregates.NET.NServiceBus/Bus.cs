@@ -37,12 +37,17 @@ namespace Aggregates
             // the transport receiver.
             try
             {
+                var receiveComponent = Instance.GetType()
+                        .GetField("receiveComponent", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetValue(Instance);
+
+
                 var receivers = (
                     (IEnumerable)
                     // ReSharper disable once PossibleNullReferenceException
-                    Instance.GetType()
+                    receiveComponent.GetType()
                         .GetField("receivers", BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetValue(Instance)).Cast<object>();
+                        .GetValue(receiveComponent)).Cast<object>();
                 object main = null;
                 foreach (var receiver in receivers)
                 {

@@ -28,7 +28,7 @@ namespace Client
 
         private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
         {
-            Log.Logger.Fatal("<{EventId:l}> Unhandled exception {Exception}", "Unhandled", e.ExceptionObject);
+            Log.Fatal("<{EventId:l}> Unhandled exception {Exception}", "Unhandled", e.ExceptionObject);
             Console.WriteLine("");
             Console.WriteLine("FATAL ERROR - Press return to close...");
             Console.ReadLine();
@@ -95,7 +95,7 @@ namespace Client
                     {
                         var rejection = e.InnerException;
 
-                        Log.Logger.Warning("<{EventId:l}> Command rejected due to: {Message}", "Rejection", rejection.Message);
+                        Log.Warning("<{EventId:l}> Command rejected due to: {Message}", "Rejection", rejection.Message);
                     }
                 }
 
@@ -111,13 +111,11 @@ namespace Client
 
             var config = new EndpointConfiguration(endpoint);
 
-            Log.Logger.Information("<{EventId:l}> Initializing Service Bus", "Init");
-
-            config.LicensePath("C:/License.xml");
-
+            Log.Information("<{EventId:l}> Initializing Service Bus", "Init");
+            
             var transport = config.UseTransport<RabbitMQTransport>()
                 .UseConventionalRoutingTopology()
-                .ConnectionString("host=10.0.0.211;Username=admin;Password=admin")
+                .ConnectionString("host=localhost;Username=guest;Password=guest")
                 .PrefetchMultiplier(5)
                 .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
             config.SendFailedMessagesTo("error");
@@ -127,7 +125,7 @@ namespace Client
             config.UsePersistence<InMemoryPersistence>();
             config.UseContainer<StructureMapBuilder>(c => c.ExistingContainer(_container));
 
-            if (Log.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
             {
                 ////config.EnableCriticalTimePerformanceCounter();
                 config.Pipeline.Register(

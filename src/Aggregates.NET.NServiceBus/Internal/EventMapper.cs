@@ -22,6 +22,10 @@ namespace Aggregates.Internal
             while (!Bus.BusOnline)
                 Thread.Sleep(100);
 
+            // Due to https://github.com/Particular/NServiceBus/issues/5092
+            // Mapper is lazy initiated from messages received via the transport
+            // because EventStore delivers events directly we need to "populate" message mapper ourselves
+            _mapper.Initialize(new[] { type });
             return _mapper.GetMappedTypeFor(type);
         }
     }

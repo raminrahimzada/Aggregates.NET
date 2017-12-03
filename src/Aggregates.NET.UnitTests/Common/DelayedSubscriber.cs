@@ -67,7 +67,7 @@ namespace Aggregates.UnitTests.Common
                 x =>
                     x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                         Moq.It.IsAny<string>(),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>())).Returns(Task.FromResult(true));
 
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -78,7 +78,7 @@ namespace Aggregates.UnitTests.Common
                 x =>
                     x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                         Moq.It.IsAny<string>(),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>()), Moq.Times.Once);
         }
 
@@ -86,14 +86,14 @@ namespace Aggregates.UnitTests.Common
         public async Task delayed_event_gets_processed()
         {
 
-            Action<string, long, IFullEvent> eventCb = null;
+            Func<string, long, IFullEvent, Task> eventCb = null;
             _consumer.Setup(
                     x =>
                         x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                             Moq.It.IsAny<string>(),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()))
-                .Callback<string, string, CancellationToken, Action<string, long, IFullEvent>, Func<Task>>(
+                .Callback<string, string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
                     (stream, group, token, onEvent, onDisconnect) =>
                     {
                         eventCb = onEvent;
@@ -110,7 +110,7 @@ namespace Aggregates.UnitTests.Common
 
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
-            eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
 
 
             Assert.That(() =>
@@ -365,14 +365,14 @@ namespace Aggregates.UnitTests.Common
         public async Task multiple_events_same_stream_in_bulk()
         {
 
-            Action<string, long, IFullEvent> eventCb = null;
+            Func<string, long, IFullEvent, Task> eventCb = null;
             _consumer.Setup(
                     x =>
                         x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                             Moq.It.IsAny<string>(),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()))
-                .Callback<string, string, CancellationToken, Action<string, long, IFullEvent>, Func<Task>>(
+                .Callback<string, string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
                     (stream, group, token, onEvent, onDisconnect) =>
                     {
                         eventCb = onEvent;
@@ -389,10 +389,10 @@ namespace Aggregates.UnitTests.Common
 
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
-            eventCb("test", 0, message.Object);
-            eventCb("test", 0, message.Object);
-            eventCb("test", 0, message.Object);
-            eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
+            await eventCb("test", 0, message.Object);
 
 
             Assert.That(() =>
@@ -417,14 +417,14 @@ namespace Aggregates.UnitTests.Common
         public async Task multiple_events_different_stream_not_bulk()
         {
 
-            Action<string, long, IFullEvent> eventCb = null;
+            Func<string, long, IFullEvent, Task> eventCb = null;
             _consumer.Setup(
                     x =>
                         x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                             Moq.It.IsAny<string>(),
-                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                             Moq.It.IsAny<Func<Task>>()))
-                .Callback<string, string, CancellationToken, Action<string, long, IFullEvent>, Func<Task>>(
+                .Callback<string, string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
                     (stream, group, token, onEvent, onDisconnect) =>
                     {
                         eventCb = onEvent;
@@ -441,10 +441,10 @@ namespace Aggregates.UnitTests.Common
 
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
-            eventCb("test1", 0, message.Object);
-            eventCb("test2", 0, message.Object);
-            eventCb("test3", 0, message.Object);
-            eventCb("test4", 0, message.Object);
+            await eventCb("test1", 0, message.Object);
+            await eventCb("test2", 0, message.Object);
+            await eventCb("test3", 0, message.Object);
+            await eventCb("test4", 0, message.Object);
 
             Assert.That(() =>
             {
@@ -472,9 +472,9 @@ namespace Aggregates.UnitTests.Common
                 x =>
                     x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                         Moq.It.IsAny<string>(),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>()))
-                        .Callback<string, string, CancellationToken, Action<string,long,IFullEvent>, Func<Task>>((stream, group, token, onEvent, dis) => disconnect=dis)
+                        .Callback<string, string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>((stream, group, token, onEvent, dis) => disconnect=dis)
                         .Returns(Task.FromResult(true));
 
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -485,7 +485,7 @@ namespace Aggregates.UnitTests.Common
                 x =>
                     x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                         Moq.It.IsAny<string>(),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>()), Moq.Times.Once);
 
             Assert.NotNull(disconnect);
@@ -496,7 +496,7 @@ namespace Aggregates.UnitTests.Common
                 x =>
                     x.ConnectRoundRobinPersistentSubscription(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Delayed)),
                         Moq.It.IsAny<string>(),
-                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Action<string, long, IFullEvent>>(),
+                        Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
                         Moq.It.IsAny<Func<Task>>()), Moq.Times.Exactly(2));
 
         }

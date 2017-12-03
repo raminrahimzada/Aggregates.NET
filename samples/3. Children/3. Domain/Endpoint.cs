@@ -2,11 +2,12 @@
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using Language;
-using NLog;
 using NServiceBus;
 using NServiceBus.Features;
 using NServiceBus.Pipeline;
+using NServiceBus.Serilog;
 using RabbitMQ.Client;
+using Serilog;
 using StructureMap;
 using System;
 using System.Collections.Generic;
@@ -23,12 +24,9 @@ namespace Domain
     {
         static readonly ManualResetEvent QuitEvent = new ManualResetEvent(false);
         private static IContainer _container;
-        private static readonly NLog.ILogger Logger = LogManager.GetLogger("Domain");
-
         private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
         {
-            Logger.Fatal(e.ExceptionObject);
-            Console.WriteLine(e.ExceptionObject.ToString());
+            Log.Fatal("<{EventId:l}> Unhandled exception {Exception}", "Unhandled", e.ExceptionObject);
             Console.WriteLine("");
             Console.WriteLine("FATAL ERROR - Press return to close...");
             Console.ReadLine();
@@ -42,29 +40,20 @@ namespace Domain
 
         private static void Main(string[] args)
         {
-            LogManager.GlobalThreshold = LogLevel.Debug;
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Warning()
+               .WriteTo.Console(outputTemplate: "[{Level}] {Message}{NewLine}{Exception}")
+               .CreateLogger();
+
 
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionTrapper;
             AppDomain.CurrentDomain.FirstChanceException += ExceptionTrapper;
 
 
             ServicePointManager.UseNagleAlgorithm = false;
-            var conf = NLog.Config.ConfigurationItemFactory.Default;
 
-            var logging = new NLog.Config.LoggingConfiguration();
+            NServiceBus.Logging.LogManager.Use<SerilogFactory>();
 
-            var consoleTarget = new NLog.Targets.ColoredConsoleTarget();
-            consoleTarget.Layout = "${date:universalTime=true:format=yyyy-MM-dd HH:mm:ss.fff} ${level:padding=-5:uppercase=true} ${logger:padding=-20:fixedLength=true} - ${message}";
-
-            logging.AddTarget("console", consoleTarget);
-            logging.AddRule(LogLevel.Debug, LogLevel.Fatal, consoleTarget);
-
-            LogManager.Configuration = logging;
-
-
-            NServiceBus.Logging.LogManager.Use<NLogFactory>();
-            //EventStore.Common.Log.LogManager.SetLogFactory((name) => new EmbeddedLogger(name));
-            
             _container = new StructureMap.Container(x =>
             {
                 x.Scan(y =>
@@ -74,7 +63,6 @@ namespace Domain
                     y.WithDefaultConventions();
                 });
             });
-
             var bus = InitBus().Result;
             
             Console.WriteLine("Press CTRL+C to exit...");
@@ -90,15 +78,13 @@ namespace Domain
 
         private static async Task<IEndpointInstance> InitBus()
         {
-            NServiceBus.Logging.LogManager.Use<NLogFactory>();
-
             var endpoint = "domain";
 
             var config = new EndpointConfiguration(endpoint);
 
-            Logger.Info("Initializing Service Bus");
+            Log.Information("<{EventId:l}> Initializing Service Bus", "Init");
 
-            
+
             config.UseTransport<RabbitMQTransport>()
                 //.CallbackReceiverMaxConcurrency(4)
                 //.UseDirectRoutingTopology()
@@ -112,7 +98,7 @@ namespace Domain
             config.UsePersistence<InMemoryPersistence>();
             config.UseContainer<StructureMapBuilder>(c => c.ExistingContainer(_container));
 
-            if (Logger.IsDebugEnabled)
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
             {
                 ////config.EnableCriticalTimePerformanceCounter();
                 config.Pipeline.Register(
@@ -194,9 +180,9 @@ namespace Domain
         public override Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
 
-            Log.Debug("Received message '{0}'.\n" +
-                            "ToString() of the message yields: {1}\n" +
-                            "Message headers:\n{2}",
+            Log.Debug("<{EventId:l}> Received message '{MessageType}'.\n" +
+                            "ToString() of the message yields: {MessageBody}\n" +
+                            "Message headers:\n{MessageHeaders}", "Incoming",
                             context.Message.MessageType != null ? context.Message.MessageType.AssemblyQualifiedName : "unknown",
                 context.Message.Instance,
                 string.Join(", ", context.MessageHeaders.Select(h => h.Key + ":" + h.Value).ToArray()));
@@ -206,6 +192,5 @@ namespace Domain
 
         }
 
-        static readonly NLog.ILogger Log = LogManager.GetCurrentClassLogger();
     }
 }
