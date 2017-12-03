@@ -138,12 +138,13 @@ when({{
             return _consumer.ConnectPinnedPersistentSubscription(stream, group, _cancelation.Token, onEvent, () => Reconnect(stream, group));
         }
 
-        private void onEvent(string stream, long position, IFullEvent e)
+        private Task onEvent(string stream, long position, IFullEvent e)
         {
             _metrics.Increment("Events Queued", Unit.Event);
 
             var bucket = Math.Abs(stream.GetHashCode() % _concurrency);
             _waitingEvents[bucket].Add(new Tuple<string, long, IFullEvent>(stream, position, e));
+            return Task.CompletedTask;
         }
 
 

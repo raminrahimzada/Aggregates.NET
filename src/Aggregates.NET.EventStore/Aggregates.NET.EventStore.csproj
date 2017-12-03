@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="../Common.props"/>
+  <Import Project="../Common.props" />
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.0.2-rc" />
+    <PackageReference Include="EventStore.ClientAPI.NetCore" Version="4.0.3-rc" />
   </ItemGroup>
 
   <ItemGroup>

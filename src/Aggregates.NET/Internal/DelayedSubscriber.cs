@@ -86,7 +86,7 @@ namespace Aggregates.Internal
             return _consumer.ConnectRoundRobinPersistentSubscription(stream, group, _cancelation.Token, onEvent, () => Reconnect(stream, group));
         }
 
-        private void onEvent(string stream, long position, IFullEvent e)
+        private Task onEvent(string stream, long position, IFullEvent e)
         {
             _metrics.Increment("Delayed Queued", Unit.Event);
             WaitingEvents.AddOrUpdate(stream, (key) => new LinkedList<Tuple<long, IFullEvent>>( new[]{ new Tuple<long, IFullEvent>(position, e)}.AsEnumerable()), (key, existing) =>
@@ -94,6 +94,7 @@ namespace Aggregates.Internal
                   existing.AddLast(new Tuple<long, IFullEvent>(position, e));
                   return existing;
               });
+            return Task.CompletedTask;
         }
 
         private static void Threaded(object state)

@@ -110,7 +110,7 @@ namespace Aggregates.Internal
             return _consumer.SubscribeToStreamEnd(stream, _cancelation.Token, onEvent, () => Reconnect(stream));
         }
 
-        private void onEvent(string stream, long position, IFullEvent e)
+        private Task onEvent(string stream, long position, IFullEvent e)
         {
             var snapshot = new Snapshot
             {
@@ -132,6 +132,7 @@ namespace Aggregates.Internal
                 TruncateBefore[key] = position;
                 return new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot);
             });
+            return Task.CompletedTask;
         }
 
         public Task<ISnapshot> Retreive(string stream)

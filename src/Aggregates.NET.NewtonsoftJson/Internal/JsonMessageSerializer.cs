@@ -13,6 +13,7 @@ namespace Aggregates.Internal
     // https://github.com/Particular/NServiceBus.Newtonsoft.Json/blob/develop/src/NServiceBus.Newtonsoft.Json/JsonMessageSerializer.cs
     class JsonMessageSerializer : IMessageSerializer
     {
+        public static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         private static readonly ILog Logger = LogProvider.GetLogger("JsonMessageSerializer");
 
         IEventMapper messageMapper;
@@ -38,7 +39,7 @@ namespace Aggregates.Internal
 
             this.writerCreator = (stream =>
             {
-                var streamWriter = new StreamWriter(stream, Encoding.UTF8);
+                var streamWriter = new StreamWriter(stream, Utf8NoBom);
                 return new JsonTextWriter(streamWriter)
                 {
                     // better for displaying
@@ -48,7 +49,7 @@ namespace Aggregates.Internal
 
             this.readerCreator = (stream =>
             {
-                var streamReader = new StreamReader(stream, Encoding.UTF8);
+                var streamReader = new StreamReader(stream, Utf8NoBom);
                 return new JsonTextReader(streamReader);
             });
 
