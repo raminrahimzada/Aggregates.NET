@@ -83,13 +83,7 @@ namespace Domain
 
             Log.Information("<{EventId:l}> Initializing Service Bus", "Init");
 
-
-            config.UseTransport<RabbitMQTransport>()
-                //.CallbackReceiverMaxConcurrency(4)
-                //.UseDirectRoutingTopology()
-                .ConnectionString("host=localhost;Username=guest;Password=guest")
-                .PrefetchMultiplier(5)
-                .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
+            config.UseTransport<LearningTransport>();
             config.SendFailedMessagesTo("error");
 
             config.UseSerialization<NewtonsoftSerializer>();

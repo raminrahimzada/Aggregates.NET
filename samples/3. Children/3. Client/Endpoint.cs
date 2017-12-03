@@ -71,7 +71,7 @@ namespace Client
 
             Console.WriteLine($"Use 'exit' to stop");
             Console.SetCursorPosition(Console.CursorLeft, Console.WindowTop + Console.WindowHeight - 2);
-            Console.WriteLine("Please enter a message to send - to get previous messages use \"previous\":");
+            Console.WriteLine("Please enter a message to send:");
             do
             {
                 var message = Console.ReadLine();
@@ -112,12 +112,7 @@ namespace Client
             Log.Information("<{EventId:l}> Initializing Service Bus", "Init");
 
 
-            config.UseTransport<RabbitMQTransport>()
-                //.CallbackReceiverMaxConcurrency(4)
-                //.UseDirectRoutingTopology()
-                .ConnectionString("host=localhost;Username=guest;Password=guest")
-                .PrefetchMultiplier(5)
-                .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
+            config.UseTransport<LearningTransport>();
             config.SendFailedMessagesTo("error");
 
             config.UseSerialization<NewtonsoftSerializer>();

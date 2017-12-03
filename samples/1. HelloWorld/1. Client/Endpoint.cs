@@ -112,12 +112,8 @@ namespace Client
             var config = new EndpointConfiguration(endpoint);
 
             Log.Information("<{EventId:l}> Initializing Service Bus", "Init");
-            
-            var transport = config.UseTransport<RabbitMQTransport>()
-                .UseConventionalRoutingTopology()
-                .ConnectionString("host=localhost;Username=guest;Password=guest")
-                .PrefetchMultiplier(5)
-                .TimeToWaitBeforeTriggeringCircuitBreaker(TimeSpan.FromSeconds(30));
+
+            config.UseTransport<LearningTransport>();
             config.SendFailedMessagesTo("error");
 
             config.UseSerialization<NewtonsoftSerializer>();
