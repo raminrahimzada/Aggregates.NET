@@ -38,7 +38,8 @@ public class BuildParameters
     {
         get
         {
-            return IsRunningOnVSTS  && ShouldPublish;
+            // Can publish pre-release to artifactory
+            return IsRunningOnVSTS  && !IsLocalBuild && IsReleaseBuild && !IsPullRequest;
         }
     }
 
