@@ -281,20 +281,11 @@ Task("Create-NuGet-Packages")
 
 });
 
-
-Task("Publish-NuGet")
+Task("Publish-Artifactory")
     .IsDependentOn("Create-NuGet-Packages")
-    .WithCriteria(() => parameters.ShouldPublish)
+    .WithCriteria(() => parameters.ShouldPublishToArtifactory)
     .Does(() =>
-{
-    // Resolve the API key.
-    var apiKey = EnvironmentVariable("NUGET_API_KEY");
-    if(string.IsNullOrEmpty(apiKey) && !parameters.ShouldPublishToArtifactory) {
-        throw new InvalidOperationException("Could not resolve NuGet API key.");
-    }
-
-    if(parameters.ShouldPublishToArtifactory) {
-
+    {
         var username = parameters.Artifactory.UserName;
         var password = parameters.Artifactory.Password;
 
@@ -308,7 +299,36 @@ Task("Publish-NuGet")
             Console.Write("Artifactory Password: ");
             password = Console.ReadLine();
         }
-        apiKey = string.Concat(username, ":", password);
+        var apiKey = string.Concat(username, ":", password);
+        
+
+        // Resolve the API url.
+        var apiUrl = EnvironmentVariable("ARTIFACTORY_NUGET_URL");
+        if(string.IsNullOrEmpty(apiUrl)) {
+            throw new InvalidOperationException("Could not resolve Artifactory NuGet API url.");
+        }
+
+        foreach(var package in parameters.Packages.Nuget)
+        {
+            Information("Publish nuget to artifactory: " + package.PackagePath);
+            var packageDir = string.Concat(apiUrl, "/", package.Id);
+
+            // Push the package.
+            NuGetPush(package.PackagePath, new NuGetPushSettings {
+              ApiKey = apiKey,
+              Source = packageDir
+            });
+        }
+    });
+Task("Publish-NuGet")
+    .IsDependentOn("Create-NuGet-Packages")
+    .WithCriteria(() => parameters.ShouldPublish)
+    .Does(() =>
+{
+    // Resolve the API key.
+    var apiKey = EnvironmentVariable("NUGET_API_KEY");
+    if(string.IsNullOrEmpty(apiKey)) {
+        throw new InvalidOperationException("Could not resolve NuGet API key.");
     }
 
     // Resolve the API url.
@@ -321,8 +341,6 @@ Task("Publish-NuGet")
     {
 		Information("Publish nuget: " + package.PackagePath);
         var packageDir = apiUrl;
-        if(parameters.ShouldPublishToArtifactory)
-            packageDir = string.Concat(apiUrl, "/", package.Id);
 
 		// Push the package.
 		NuGetPush(package.PackagePath, new NuGetPushSettings {
@@ -375,12 +393,14 @@ Task("Default")
 
 Task("AppVeyor")
   .IsDependentOn("Upload-AppVeyor-Artifacts")
-  .IsDependentOn("Publish-NuGet");
+  .IsDependentOn("Publish-NuGet")
+  .IsDependentOn("Publish-Artifactory");
 
 Task("VSTS")
   .IsDependentOn("Create-VSTS-Artifacts");
 Task("VSTS-Publish")
-  .IsDependentOn("Publish-Nuget");
+  .IsDependentOn("Publish-Nuget")
+  .IsDependentOn("Publish-Artifactory");
 
 //////////////////////////////////////////////////////////////////////
 // EXECUTION
