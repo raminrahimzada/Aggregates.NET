@@ -14,7 +14,7 @@ public class BuildPackages
         IEnumerable<ProjectInfo> projects)
     {
 
-		var nugets = projects.Where(x => x.OutputType == "Library").Select(project => new BuildPackage(
+		var nugets = projects.Where(x => x.OutputType == "Library" && !x.AssemblyName.EndsWith("Tests")).Select(project => new BuildPackage(
             project.AssemblyName,
             nugetDir.CombineWithFilePath(string.Concat(project.AssemblyName, ".", version.NuGet, ".nupkg"))
         ));
