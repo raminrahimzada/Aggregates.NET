@@ -77,6 +77,8 @@ public class BuildParameters
         var target = context.Argument("target", "Default");
         var buildSystem = context.BuildSystem();
 
+        var isVSTS = buildSystem.TFBuild.IsRunningOnVSTS || buildSystem.TFBuild.IsRunningOnTFS;
+
         var buildNumber = 0;
         var branch = "";
         var pr = false;
@@ -85,7 +87,7 @@ public class BuildParameters
             branch = buildSystem.AppVeyor.Environment.Repository.Branch;
             pr = buildSystem.AppVeyor.Environment.PullRequest.IsPullRequest;
         }
-        if(buildSystem.TFBuild.IsRunningOnVSTS) {
+        if(isVSTS) {
             buildNumber = buildSystem.TFBuild.Environment.Build.Id;
             branch = buildSystem.TFBuild.Environment.Repository.Branch;
         }
@@ -98,7 +100,7 @@ public class BuildParameters
             IsLocalBuild = buildSystem.IsLocalBuild,
             IsRunningOnUnix = context.IsRunningOnUnix(),
             IsRunningOnWindows = context.IsRunningOnWindows(),
-            IsRunningOnVSTS = buildSystem.TFBuild.IsRunningOnVSTS,
+            IsRunningOnVSTS = isVSTS,
             IsRunningOnAppVeyor = buildSystem.AppVeyor.IsRunningOnAppVeyor,
             GitHub = BuildCredentials.GetGitHubCredentials(context),
             Artifactory = BuildCredentials.GetArtifactoryCredentials(context, buildSystem.IsLocalBuild),
