@@ -18,11 +18,13 @@ public class BuildVersion
         var gitversion = context.GitVersion(new GitVersionSettings {
             UpdateAssemblyInfoFilePath = "./src/SharedAssemblyInfo.cs",
             UpdateAssemblyInfo = !parameters.IsLocalBuild,
-            OutputType = GitVersionOutput.Json
+            OutputType = GitVersionOutput.Json,
         });
 
         string version = string.Concat(gitversion.Major, ".", gitversion.Minor);
-        string nuget = gitversion.NuGetVersion;
+        string nuget = version;
+        if(!parameters.IsMaster) 
+            nuget += "-" + parameters.Branch;
         string semVersion = string.Concat(version, ".", gitversion.BuildMetaData, ".", parameters.BuildNumber);
         string milestone = string.Concat("v", version);
         string sha = gitversion.Sha;
