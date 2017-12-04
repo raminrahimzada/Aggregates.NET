@@ -25,8 +25,10 @@ public class BuildVersion
         string semVersion = string.Concat(version, ".", gitversion.BuildMetaData, ".", parameters.BuildNumber);
         string milestone = string.Concat("v", version);
         string sha = gitversion.Sha;
-        
+
         string nuget = semVersion;
+        // tag nont master branches with pre-release 
+        // gitversion in the future will support something similar
         if(!parameters.IsMaster) 
             nuget += "-" + parameters.Branch;
 

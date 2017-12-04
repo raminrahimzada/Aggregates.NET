@@ -52,6 +52,13 @@ Setup(context =>
     Information("==============================================");
     Information("==============================================");
 
+    Information("Calculated Semantic Version: {0} sha: {1}", semVersion, sha.Substring(0,8));
+    Information("Calculated NuGet Version: {0}", nuget);
+    Information("Informational Version: {0}", gitversion.InformationalVersion);
+
+    Information("==============================================");
+    Information("==============================================");
+
     Information("Solution: " + parameters.Solution);
     Information("Target: " + parameters.Target);
     Information("Configuration: " + parameters.Configuration);
@@ -60,8 +67,8 @@ Setup(context =>
     Information("IsRunningOnWindows: " + parameters.IsRunningOnWindows);
     Information("IsRunningOnVSTS: " + parameters.IsRunningOnVSTS);
     Information("IsReleaseBuild: " + parameters.IsReleaseBuild);
-    Information("IsMaster: " + parameters.IsMaster);
     Information("IsPullRequest: " + parameters.IsPullRequest);
+    Information("IsMaster: " + parameters.IsMaster + " Branch: " + parameters.Branch);
     Information("BuildNumber: " + parameters.BuildNumber);
 
     // Increase verbosity?
