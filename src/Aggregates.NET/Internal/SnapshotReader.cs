@@ -121,8 +121,8 @@ namespace Aggregates.Internal
                 Version = e.Descriptor.Version,
                 Payload = e.Event as IState
             };
-
-            Logger.Write(LogLevel.Debug, () => $"Got snapshot of stream id [{snapshot.StreamId}] bucket [{snapshot.Bucket}] entity [{snapshot.EntityType}] version {snapshot.Version}");
+            
+            Logger.DebugEvent("GotSnapshot", "[{Stream}] bucket [{Bucket}] entity [{EntityType}] version {Version}", snapshot.StreamId, snapshot.Bucket, snapshot.EntityType, snapshot.Version);
             Snapshots.AddOrUpdate(stream, (key) =>
             {
                 _metrics.Increment("Snapshots Stored", Unit.Items);

@@ -33,7 +33,7 @@ namespace Aggregates.Internal
 
         public void Trace(TraceLevel level, string message, Exception ex)
         {
-            Logger.Write(getLogLevel(level), ex == null ? message : $"{message}\n{ex.AsString()}");
+            Logger.LogEvent(getLogLevel(level), "Trace", ex, message);
         }
 
         private LogLevel getLogLevel(TraceLevel level)

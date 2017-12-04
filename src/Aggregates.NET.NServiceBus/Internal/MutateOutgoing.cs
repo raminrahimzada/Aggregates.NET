@@ -40,8 +40,7 @@ namespace Aggregates.Internal
                 var mutator = (IMutate)container.TryResolve(type);
                 if (mutator == null)
                     continue;
-
-                Logger.Write(LogLevel.Debug, () => $"Mutating outgoing message {context.Message.MessageType.FullName} with mutator {type.FullName}");
+                
                 mutated = mutator.MutateOutgoing(mutated);
             }
             

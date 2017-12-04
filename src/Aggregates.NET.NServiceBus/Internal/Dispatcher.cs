@@ -32,8 +32,6 @@ namespace Aggregates.Internal
 
         public Task Publish(IFullMessage message, IDictionary<string, string> headers = null)
         {
-            Logger.Write(LogLevel.Debug, () => $"Publishing message of type [{message.Message.GetType().FullName}]");
-
             var options = new PublishOptions();
             if (headers != null)
                 foreach (var header in message.Headers.Merge(headers))
@@ -51,8 +49,6 @@ namespace Aggregates.Internal
 
         public Task Send(IFullMessage message, string destination, IDictionary<string, string> headers = null)
         {
-            Logger.Write(LogLevel.Debug, () => $"Sending message of type [{message.Message.GetType().FullName}]");
-
             var options = new SendOptions();
             options.SetDestination(destination);
 
@@ -73,8 +69,6 @@ namespace Aggregates.Internal
 
         public async Task SendLocal(IFullMessage message, IDictionary<string, string> headers = null)
         {
-            Logger.Write(LogLevel.Debug, () => $"Sending local message of type [{message.Message.GetType().FullName}]");
-
             while (!Bus.BusOnline)
                 await Task.Delay(100).ConfigureAwait(false);
 
@@ -153,8 +147,6 @@ namespace Aggregates.Internal
 
         public async Task SendLocal(IFullMessage[] messages, IDictionary<string, string> headers = null)
         {
-            Logger.Write(LogLevel.Debug, () => $"Sending {messages.Length} bulk local messages");
-
             while (!Bus.BusOnline)
                 await Task.Delay(100).ConfigureAwait(false);
 

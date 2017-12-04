@@ -50,7 +50,6 @@ namespace Aggregates.Internal
 
             var sliceStart = start ?? StreamPosition.Start;
             StreamEventsSlice current;
-            Logger.Write(LogLevel.Debug, () => $"Reading events from stream [{stream}] starting at {sliceStart}");
 
             var events = new List<ResolvedEvent>();
             using (var ctx = _metrics.Begin("EventStore Read Time"))
@@ -64,25 +63,19 @@ namespace Aggregates.Internal
                     current =
                         await _clients[shard].ReadStreamEventsForwardAsync(stream, sliceStart, readsize, false)
                             .ConfigureAwait(false);
-
-                    Logger.Write(LogLevel.Debug,
-                        () => $"Read {current.Events.Length} events from position {sliceStart}. Status: {current.Status} LastEventNumber: {current.LastEventNumber} NextEventNumber: {current.NextEventNumber}");
-
+                    
                     events.AddRange(current.Events);
                     sliceStart = current.NextEventNumber;
                 } while (!current.IsEndOfStream && (!count.HasValue || (events.Count != count.Value)));
 
                 if (ctx.Elapsed > TimeSpan.FromSeconds(1))
-                    SlowLogger.Write(LogLevel.Warn, () => $"Reading {events.Count} events of total size {events.Sum(x => x.Event.Data.Length)} from stream [{stream}] took {ctx.Elapsed.TotalSeconds} seconds!");
-                Logger.Write(LogLevel.Info, () => $"Reading {events.Count} events of total size {events.Sum(x => x.Event.Data.Length)} from stream [{stream}] took {ctx.Elapsed.TotalMilliseconds} ms");
+                    SlowLogger.InfoEvent("SlowRead", "{Events} events size {Size} stream [{Stream}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
+                Logger.InfoEvent("Read", "{Events} events size {Size} stream [{Stream}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
             }
-            Logger.Write(LogLevel.Debug, () => $"Finished reading {events.Count} events from stream [{stream}]");
 
             if (current.Status == SliceReadStatus.StreamNotFound)
-            {
-                Logger.Write(LogLevel.Info, () => $"Stream [{stream}] does not exist!");
                 throw new NotFoundException($"Stream [{stream}] does not exist!");
-            }
+            
 
             var translatedEvents = events.Select(e =>
             {
@@ -107,8 +100,7 @@ namespace Aggregates.Internal
                     EventId = e.Event.EventId
                 };
             }).ToArray();
-
-            Logger.Write(LogLevel.Info, () => $"Read {translatedEvents.Length} events from stream [{stream}]");
+            
             return translatedEvents;
         }
 
@@ -121,7 +113,6 @@ namespace Aggregates.Internal
             var sliceStart = StreamPosition.End;
 
             StreamEventsSlice current;
-            Logger.Write(LogLevel.Debug, () => $"Reading events from stream [{stream}] starting at {sliceStart}");
             if (start.HasValue || count == 1)
             {
                 // Interesting, ReadStreamEventsBackwardAsync's [start] parameter marks start from begining of stream, not an offset from the end.
@@ -136,9 +127,6 @@ namespace Aggregates.Internal
 
             if (!count.HasValue || count > 1)
             {
-                Logger.Write(LogLevel.Debug,
-                    () => $"Reading events backwards from stream [{stream}] starting at {sliceStart}");
-
                 using (var ctx = _metrics.Begin("EventStore Read Time"))
                 {
                     do
@@ -148,27 +136,21 @@ namespace Aggregates.Internal
                         current =
                             await _clients[shard].ReadStreamEventsBackwardAsync(stream, sliceStart, take, false)
                                 .ConfigureAwait(false);
-
-                        Logger.Write(LogLevel.Debug,
-                            () =>
-                                $"Read backwards {current.Events.Length} events from position {sliceStart}. Status: {current.Status} LastEventNumber: {current.LastEventNumber} NextEventNumber: {current.NextEventNumber}");
-
+                        
                         events.AddRange(current.Events);
 
                         sliceStart = current.NextEventNumber;
                     } while (!current.IsEndOfStream);
 
+
                     if (ctx.Elapsed > TimeSpan.FromSeconds(1))
-                        SlowLogger.Write(LogLevel.Warn, () => $"Reading {events.Count} events of total size {events.Sum(x => x.Event.Data.Length)} from stream [{stream}] took {ctx.Elapsed.TotalSeconds} seconds!");
-                    Logger.Write(LogLevel.Info, () => $"Reading {events.Count} events of total size {events.Sum(x => x.Event.Data.Length)} from stream [{stream}] took {ctx.Elapsed.TotalMilliseconds} ms!");
+                        SlowLogger.InfoEvent("SlowBackwardsRead", "{Events} events size {Size} stream [{Stream}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
+                    Logger.InfoEvent("BackwardsRead", "{Events} events size {Size} stream [{Stream}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
                 }
-                Logger.Write(LogLevel.Debug, () => $"Finished reading {events.Count} events backward from stream [{stream}]");
 
                 if (current.Status == SliceReadStatus.StreamNotFound)
-                {
-                    Logger.Write(LogLevel.Info, () => $"Stream [{stream}] does not exist!");
                     throw new NotFoundException($"Stream [{stream}] does not exist!");
-                }
+                
             }
 
             var translatedEvents = events.Select(e =>
@@ -195,8 +177,7 @@ namespace Aggregates.Internal
                     EventId = e.Event.EventId
                 };
             }).ToArray();
-
-            Logger.Write(LogLevel.Info, () => $"Read {translatedEvents.Length} events backwards from stream [{stream}]");
+            
             return translatedEvents;
         }
         public Task<IFullEvent[]> GetEventsBackwards<TEntity>(string bucket, Id streamId, Id[] parents, long? start = null, int? count = null) where TEntity : IEntity
@@ -220,12 +201,12 @@ namespace Aggregates.Internal
 
         public async Task<long> Size(string stream)
         {
-            Logger.Write(LogLevel.Debug, () => $"Getting the size of stream {stream}");
-
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
 
             var result = await _clients[shard].ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1, false).ConfigureAwait(false);
-            return result.Status == SliceReadStatus.Success ? result.NextEventNumber : 0;
+            var size = result.Status == SliceReadStatus.Success ? result.NextEventNumber : 0;
+            Logger.DebugEvent("Size", "[{Stream}] size {Size}", stream, size);
+            return size;
 
         }
         public Task<long> Size<TEntity>(string bucket, Id streamId, Id[] parents) where TEntity : IEntity
@@ -237,7 +218,6 @@ namespace Aggregates.Internal
         public Task<long> WriteEvents(string stream, IFullEvent[] events,
             IDictionary<string, string> commitHeaders, long? expectedVersion = null)
         {
-            Logger.Write(LogLevel.Debug, () => $"Writing {events.Count()} events to stream id [{stream}].  Expected version: {expectedVersion}");
 
             var translatedEvents = events.Select(e =>
             {
@@ -304,7 +284,7 @@ namespace Aggregates.Internal
                 }
                 catch (WrongExpectedVersionException e)
                 {
-                    throw new VersionException($"We expected version {expectedVersion ?? ExpectedVersion.Any}", e);
+                    throw new VersionException(e.Message, e);
                 }
                 catch (CannotEstablishConnectionException e)
                 {
@@ -324,8 +304,8 @@ namespace Aggregates.Internal
                 }
 
                 if (ctx.Elapsed > TimeSpan.FromSeconds(1))
-                    SlowLogger.Write(LogLevel.Warn, () => $"Writing {events.Count()} events of total size {events.Sum(x => x.Data.Length)} to stream [{stream}] version {expectedVersion} took {ctx.Elapsed.TotalSeconds} seconds!");
-                Logger.Write(LogLevel.Debug, () => $"Writing {events.Count()} events of total size {events.Sum(x => x.Data.Length)} to stream [{stream}] version {expectedVersion} took {ctx.Elapsed.TotalMilliseconds} ms");
+                    SlowLogger.DebugEvent("SlowWrite", "{Events} events size {Size} stream [{Stream}] version {ExpectedVersion} took {Milliseconds}", events.Count(), events.Sum(x => x.Data.Length), stream, expectedVersion, ctx.Elapsed.TotalMilliseconds);
+                Logger.DebugEvent("Write", "{Events} events size {Size} stream [{Stream}] version {ExpectedVersion} took {Milliseconds}", events.Count(), events.Sum(x => x.Data.Length), stream, expectedVersion, ctx.Elapsed.TotalMilliseconds);
             }
             return nextVersion;
         }
@@ -337,7 +317,7 @@ namespace Aggregates.Internal
 
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
 
-            Logger.Write(LogLevel.Debug, () => $"Writing metadata to stream [{stream}] [ {nameof(maxCount)}: {maxCount}, {nameof(maxAge)}: {maxAge}, {nameof(cacheControl)}: {cacheControl}, {nameof(custom)}: {custom.AsString()} ]");
+            Logger.DebugEvent("Metadata", "Metadata to stream [{Stream}] [ MaxCount: {MaxCount}, MaxAge: {MaxAge}, CacheControl: {CacheControl}, Custom: {Custom} ]", stream, maxCount, maxAge, cacheControl, custom.AsString());
 
             var existing = await _clients[shard].GetStreamMetadataAsync(stream).ConfigureAwait(false);
 
@@ -369,25 +349,32 @@ namespace Aggregates.Internal
 
             try
             {
-                Logger.Write(LogLevel.Debug, () => $"Writing metadata to stream [{stream}] version {existing.MetastreamVersion} ");
-                await _clients[shard].SetStreamMetadataAsync(stream, existing.MetastreamVersion, metadata).ConfigureAwait(false);
+                try
+                {
+                    await _clients[shard].SetStreamMetadataAsync(stream, existing.MetastreamVersion, metadata).ConfigureAwait(false);
 
+                }
+                catch (WrongExpectedVersionException e)
+                {
+                    throw new VersionException(e.Message, e);
+                }
+                catch (CannotEstablishConnectionException e)
+                {
+                    throw new PersistenceException(e.Message, e);
+                }
+                catch (OperationTimedOutException e)
+                {
+                    throw new PersistenceException(e.Message, e);
+                }
+                catch (EventStoreConnectionException e)
+                {
+                    throw new PersistenceException(e.Message, e);
+                }
             }
-            catch (WrongExpectedVersionException e)
+            catch (Exception ex)
             {
-                throw new VersionException(e.Message, e);
-            }
-            catch (CannotEstablishConnectionException e)
-            {
-                throw new PersistenceException(e.Message, e);
-            }
-            catch (OperationTimedOutException e)
-            {
-                throw new PersistenceException(e.Message, e);
-            }
-            catch (EventStoreConnectionException e)
-            {
-                throw new PersistenceException(e.Message, e);
+                Logger.WarnEvent("MetadataFailure", ex, "{ExceptionType} - {ExceptionMessage}", ex.GetType().Name, ex.Message);
+                throw;
             }
         }
 
@@ -401,15 +388,10 @@ namespace Aggregates.Internal
         public async Task<string> GetMetadata(string stream, string key)
         {
             var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
-            Logger.Write(LogLevel.Debug, () => $"Getting metadata '{key}' from stream [{stream}]");
 
             var existing = await _clients[shard].GetStreamMetadataAsync(stream).ConfigureAwait(false);
-
-            if (existing.StreamMetadata == null)
-                Logger.Write(LogLevel.Debug, () => $"No metadata exists for stream [{stream}]");
-
-            Logger.Write(LogLevel.Debug,
-                () => $"Read metadata from stream [{stream}] - {existing.StreamMetadata?.AsJsonString()}");
+            
+            Logger.DebugEvent("Read", "Metadata stream [{Stream}] {Metadata}", stream, existing.StreamMetadata?.AsJsonString());
             string property = "";
             if (!existing.StreamMetadata?.TryGetValue(key, out property) ?? false)
                 property = "";

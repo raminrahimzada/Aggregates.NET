@@ -202,8 +202,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception e)
                 {
-                    Logger.Write(LogLevel.Warn,
-                        () => $"Failed to write to channel [{channel}].  Exception: {e.GetType().Name}: {e.Message}");
+                    Logger.WarnEvent("WriteFailure", e, "Write to [{Channel}] failed: {ExceptionType} - {ExceptionMessage}", channel, e.GetType().Name, e.Message);
                 }
             }
 
@@ -234,8 +233,8 @@ namespace Aggregates.Internal
                 var nonSpecific = pullFromMemCache(channel, null, max);
                 discovered = discovered.Concat(nonSpecific).ToArray();
             }
-
-            Logger.Write(LogLevel.Debug, () => $"Pulled {discovered.Length} from delayed channel [{channel}] key [{key}] max [{max}]");
+            
+            Logger.DebugEvent("Pull", "{Messages} from channel [{Channel}] key [{Key}]", discovered.Length, channel, key);
             return Task.FromResult(discovered);
         }
 
@@ -249,22 +248,22 @@ namespace Aggregates.Internal
             CachedList temp;
             if (_memCache.TryGetValue(specificKey, out temp))
                 specificAge = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - temp.Pulled);
-            Logger.Write(LogLevel.Debug, () => $"Age of delayed channel [{channel}] key [{key}] is {specificAge.TotalMilliseconds}");
             
+            Logger.DebugEvent("Age", "{Age} ms channel [{Channel}] key [{Key}]", specificAge.TotalMilliseconds, channel, key);
+
             return Task.FromResult<TimeSpan?>(specificAge);
         }
 
         public Task<int> Size(string channel, string key)
         {
-            Logger.Write(LogLevel.Debug, () => $"Getting size of delayed channel [{channel}] key [{key}]");
-
             var specificSize = 0;
             // Get size from memcache
             var specificKey = new CacheKey(channel, key);
             CachedList temp;
             if (_memCache.TryGetValue(specificKey, out temp))
                 specificSize = temp.Count;
-            
+
+            Logger.DebugEvent("Size", "{Size} channel [{Channel}] key [{Key}]", specificSize, channel, key);
             return Task.FromResult(specificSize);
         }
 
@@ -294,9 +293,7 @@ namespace Aggregates.Internal
             var memCacheTotalSize = _memCache.Values.Sum(x => x.Count);
             _metrics.Update("Delayed Cache Size", Unit.Items, memCacheTotalSize);
 
-            Logger.Write(LogLevel.Info,
-                () => $"Flushing expired delayed channels - cache size: {memCacheTotalSize} - total channels: {_memCache.Keys.Count}");
-
+            Logger.InfoEvent("Flush", "Cache Size: {CacheSize} Total Channels: {TotalChannels}", memCacheTotalSize, _memCache.Keys.Count);
             var totalFlushed = 0;
 
             // A list of channels who have expired or have more than 1/5 the max total cache size
@@ -312,8 +309,8 @@ namespace Aggregates.Internal
                 if (!messages.Any())
                     return;
 
-                Logger.Write(LogLevel.Info,
-                    () => $"Flushing {messages.Length} expired messages from channel {expired.Channel} key {expired.Key}");
+
+                Logger.InfoEvent("ExpiredFlush", "{Flush} messages channel [{Channel}] key [{Key}]", messages.Length, expired.Channel, expired.Key);
 
                 var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                 {
@@ -352,9 +349,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception e)
                 {
-                    Logger.Write(LogLevel.Warn,
-                        () => $"Failed to write to channel [{expired.Channel}] key [{expired.Key}].  Exception: {e.GetType().Name}: {e.Message}");
-
+                    Logger.WarnEvent("FlushFailure", e, "Channel [{Channel}] key [{Key}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
                     // Failed to write to ES - put object back in memcache
                     addToMemCache(expired.Channel, expired.Key, messages);
 
@@ -368,13 +363,9 @@ namespace Aggregates.Internal
                 var limit = 10;
                 while (memCacheTotalSize > _maxSize && limit > 0)
                 {
-                    Logger.Write(LogLevel.Info,
-                        () => $"Flushing too large delayed channels - cache size: {memCacheTotalSize} - total channels: {_memCache.Keys.Count}");
-
                     if (memCacheTotalSize > (_maxSize * 1.5))
                     {
-                        Logger.Write(LogLevel.Warn,
-                            () => $"Delay cache has grown too large - pausing message processing while we flush!");
+                        Logger.WarnEvent("TooLarge", "Pausing message processing");
                         Interlocked.CompareExchange(ref _tooLarge, 1, 0);
                     }
 
@@ -388,8 +379,8 @@ namespace Aggregates.Internal
                     {
                         var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 
-                        Logger.Write(LogLevel.Warn,
-                            () => $"Flushing {messages.Length} messages from large channel [{expired.Channel}] key [{expired.Key}]");
+                        Logger.WarnEvent("LargeFlush", "{Flush} messages channel [{Channel}] key [{Key}]", messages.Length, expired.Channel, expired.Key);
+
                         var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                         {
                             Descriptor = new EventDescriptor
@@ -425,9 +416,7 @@ namespace Aggregates.Internal
                         catch (Exception e)
                         {
                             limit--;
-                            Logger.Write(LogLevel.Warn,
-                                () => $"Failed to write to channel [{expired.Channel}] key [{expired.Key}].  Exception: {e.GetType().Name}: {e.Message}");
-
+                            Logger.WarnEvent("FlushFailure", e, "Channel [{Channel}] key [{Key}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
                             // Failed to write to ES - put object back in memcache
                             addToMemCache(expired.Channel, expired.Key, messages);
                             throw;
@@ -441,16 +430,14 @@ namespace Aggregates.Internal
             }
             catch (Exception e)
             {
-                var stackTrace = string.Join("\n", (e.StackTrace?.Split('\n').Take(10) ?? new string[] { }).AsEnumerable());
-                Logger.Write(LogLevel.Error,
-                    () => $"Caught exception: {e.GetType().Name}: {e.Message} while flushing cache messages\nStack: {stackTrace}");
+                Logger.ErrorEvent("FlushException", e, "{ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
             }
             finally
             {
                 Interlocked.CompareExchange(ref _tooLarge, 0, 1);
             }
-
-            Logger.Write(LogLevel.Info, () => $"Flushed {totalFlushed} expired delayed objects");
+            
+            Logger.InfoEvent("Flushed", "{Flushed} total");
         }
     }
 }

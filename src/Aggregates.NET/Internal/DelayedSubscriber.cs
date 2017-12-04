@@ -140,8 +140,7 @@ namespace Aggregates.Internal
                     {
                         Task.Run(async () =>
                         {
-                            Logger.Write(LogLevel.Info,
-                                () => $"Processing {flushedEvents.Count()} bulked events");
+                            Logger.InfoEvent("Processing", "{Messages} bulk events", flushedEvents.Count);
                             
                             metrics.Decrement("Delayed Queued", Unit.Event, flushedEvents.Count(x => x.Item2.Event != null));
                             
@@ -164,8 +163,6 @@ namespace Aggregates.Internal
                             // Same stream ids should modify the same models, processing this way reduces write collisions on commit
                             await dispatcher.SendLocal(messages.ToArray()).ConfigureAwait(false);
                             
-                            Logger.Write(LogLevel.Info,
-                                () => $"Finished processing {flushedEvents.Count()} bulked events");
                             foreach (var @event in flushedEvents)
                                     await consumer.Acknowledge(stream, @event.Item1, @event.Item2)
                                         .ConfigureAwait(false);
@@ -179,15 +176,14 @@ namespace Aggregates.Internal
                         
                         // If not a canceled exception, just write to log and continue
                         // we dont want some random unknown exception to kill the whole event loop
-                        Logger.Error(
-                            $"Received exception in delayed message thread: {e.GetType()}: {e.Message}\n{e.AsString()}");
+                        Logger.ErrorEvent("Exception", e, "From event thread: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
                     }
                 }
             }
             catch(Exception e)
             {
                 if (!(e is OperationCanceledException))
-                    Logger.Error($"Delayed subscriber thread terminated due to exception: {e.GetType()}: {e.Message}\n{e.AsString()}");
+                    Logger.ErrorEvent("Died", e, "Event thread closed: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
             }
 
         }

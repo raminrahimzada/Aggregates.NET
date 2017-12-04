@@ -32,7 +32,6 @@ namespace Aggregates.Internal
             if (_stage % 120 == 0)
             {
                 _stage = 0;
-                Logger.Write(LogLevel.Info, () => $"Clearing old cache attempt counters");
 
                 lock (Lock)
                 {
@@ -43,7 +42,6 @@ namespace Aggregates.Internal
 
             if (_stage % 60 == 0)
             {
-                Logger.Write(LogLevel.Info, () => $"Clearing {Expires2.Count} 5m cached keys");
                 lock (Lock)
                 {
                     foreach (var stream in Expires2)
@@ -53,7 +51,6 @@ namespace Aggregates.Internal
             }
             if (_stage % 12 == 0)
             {
-                Logger.Write(LogLevel.Info, () => $"Clearing {Expires1.Count} 1m cached keys");
                 lock (Lock)
                 {
                     foreach (var stream in Expires1)
@@ -64,7 +61,6 @@ namespace Aggregates.Internal
 
             if (_stage % 2 == 0)
             {
-                Logger.Write(LogLevel.Info, () => $"Clearing {Expires0.Count} 10s cached keys");
                 lock (Lock)
                 {
                     foreach (var stream in Expires0)
@@ -87,19 +83,19 @@ namespace Aggregates.Internal
                 if (Cachable.Contains(key) || expires10S || expires1M || expires5M)
                 {
                     if (!expires10S && !expires1M && !expires5M)
-                        Logger.Write(LogLevel.Debug, () => $"Caching item [{key}]");
+                        Logger.DebugEvent("Cache", "{Key}", key);
                     else if (expires10S)
                     {
-                        Logger.Write(LogLevel.Debug, () => $"Caching item [{key}] expires in 10s");
+                        Logger.DebugEvent("Cache", "{Key} for {Seconds}s", key, 10);
                         Expires0.Add(key);
                     }
                     else if (expires1M)
                     {
-                        Logger.Write(LogLevel.Debug, () => $"Caching item [{key}] expires in 1m");
+                        Logger.DebugEvent("Cache", "{Key} for {Seconds}s", key, 60);
                         Expires1.Add(key);
                     }else if (expires5M)
                     {
-                        Logger.Write(LogLevel.Debug, () => $"Caching item [{key}] expires in 5m");
+                        Logger.DebugEvent("Cache", "{Key} for {Seconds}s", key, 300);
                         Expires2.Add(key);
                     }
                     MemCache[key] = cached;
@@ -114,8 +110,7 @@ namespace Aggregates.Internal
                 
                 if (CacheAttempts[key].Item2 >= 20)
                 {
-                    Logger.Write(LogLevel.Info,
-                        () => $"Stream [{key}] has not been evicted recently, marking cachable for a few minutes");
+                    Logger.InfoEvent("Cachable", "{Key} is cachable now", key);
                     Cachable.Add(key);
                 }
             }
@@ -123,7 +118,7 @@ namespace Aggregates.Internal
         }
         public void Evict(string key)
         {
-            Logger.Write(LogLevel.Debug, () => $"Evicting item [{key}] from cache");
+            Logger.DebugEvent("Evict", "{Key}", key);
 
             lock (Lock)
             {
@@ -147,8 +142,6 @@ namespace Aggregates.Internal
                 if (!Cachable.Contains(key) || !MemCache.TryGetValue(key, out cached))
                     cached = null;
             }
-            if (cached == null)
-                Logger.Write(LogLevel.Debug, () => $"Item [{key}] is not in cache");
 
             return cached;
         }

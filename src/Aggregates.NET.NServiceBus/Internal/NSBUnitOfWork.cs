@@ -74,7 +74,6 @@ namespace Aggregates.Internal
 
             // Helpful log and gets CommitId into the dictionary
             var firstEventId = UnitOfWork.NextEventId(CommitId);
-            Logger.Write(LogLevel.Debug, () => $"Starting unit of work - first event id {firstEventId}");
 
             return command;
         }

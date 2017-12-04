@@ -42,7 +42,7 @@ namespace Aggregates.Internal
             {
                 // If this happens the callback for the message took too long (likely due to a timeout)
                 // normall NSB will report an exception for "No Handlers" - this will just log a warning and ignore
-                Logger.Write(LogLevel.Warn, $"Received overdue {context.Message.MessageType.Name} callback - your timeouts might be too short");
+                Logger.WarnEvent("Overdue", "Overdue Accept/Reject {MessageType} callback - your timeouts might be too short", context.Message.MessageType.Name);
                 return;
             }
 
@@ -59,26 +59,20 @@ namespace Aggregates.Internal
             // Set into the context because DI can be slow
             context.Extensions.Set(domainUOW);
             context.Extensions.Set(appUOW);
-
-            Logger.Write(LogLevel.Debug,
-                () => $"Starting UOW for message {context.MessageId} type {context.Message.MessageType.FullName}");
-
+            
             try
             {
                 _metrics.Increment("Messages Concurrent", Unit.Message);
                 using (_metrics.Begin("Message Duration"))
                 {
-
-                    Logger.Write(LogLevel.Debug, () => $"Running UOW.Begin for message {context.MessageId}");
+                    
                     await domainUOW.Begin().ConfigureAwait(false);
                     if (appUOW != null)
                         await appUOW.Begin().ConfigureAwait(false);
                     await delayed.Begin().ConfigureAwait(false);
                     
                     await next().ConfigureAwait(false);
-
-                    Logger.Write(LogLevel.Debug, () => $"Running UOW.End for message {context.MessageId}");
-
+                    
                     await domainUOW.End().ConfigureAwait(false);
                     if (appUOW != null)
                         await appUOW.End().ConfigureAwait(false);
@@ -88,15 +82,12 @@ namespace Aggregates.Internal
             }
             catch (Exception e)
             {
-                Logger.Info($"Caught exception '{e.GetType().FullName}' while executing message {context.MessageId} {context.Message.MessageType.FullName}", e);
-
+                Logger.InfoEvent("UOWError", e, "{MessageId} {MessageType}: {ExceptionType} - {ExceptionMessage}", context.MessageId, context.Message.MessageType.FullName, e.GetType().Name, e.Message);
                 _metrics.Mark("Message Errors", Unit.Errors);
                 var trailingExceptions = new List<Exception>();
 
                 try
                 {
-                    Logger.Write(LogLevel.Debug,
-                        () => $"Running UOW.End with exception [{e.GetType().Name}] for message {context.MessageId}");
                     // Todo: if one throws an exception (again) the others wont work.  Fix with a loop of some kind
                     await domainUOW.End(e).ConfigureAwait(false);
                     if (appUOW != null)

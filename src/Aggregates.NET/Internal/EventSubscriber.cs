@@ -185,9 +185,7 @@ when({{
                             };
 
                         dispatcher.SendLocal(message, headers).ConfigureAwait(false).GetAwaiter().GetResult();
-
-                        Logger.Write(LogLevel.Debug,
-                            () => $"Acknowledge event {@event.Item3.Descriptor.EventId} stream [{@event.Item1}] number {@event.Item2}");
+                        
                         consumer.Acknowledge(@event.Item1, @event.Item2, @event.Item3).ConfigureAwait(false)
                             .GetAwaiter().GetResult();
                     }
@@ -198,7 +196,7 @@ when({{
                         
                         // If not a canceled exception, just write to log and continue
                         // we dont want some random unknown exception to kill the whole event loop
-                        Logger.Error($"Received exception in main event thread: {e.GetType()}: {e.Message}\n{e.AsString()}");
+                        Logger.ErrorEvent("Exception", e, "From event thread: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
 
                     }
                 }
@@ -206,7 +204,7 @@ when({{
             catch(Exception e)
             {
                 if(!(e is OperationCanceledException))
-                    Logger.Error($"Event subscriber thread terminated due to exception: {e.GetType()}: {e.Message}\n{e.AsString()}");
+                    Logger.ErrorEvent("Died", e, "Event thread closed: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
             }
         }
         

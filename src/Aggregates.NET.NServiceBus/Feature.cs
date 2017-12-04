@@ -108,7 +108,7 @@ namespace Aggregates
         protected override async Task OnStart(IMessageSession session)
         {
 
-            Logger.Write(LogLevel.Info, "Starting endpoint");
+            Logger.InfoEvent("Startup", "Starting on {Queue}", _instanceQueue);
 
             await session.Publish<EndpointAlive>(x =>
             {
@@ -120,7 +120,7 @@ namespace Aggregates
         }
         protected override async Task OnStop(IMessageSession session)
         {
-            Logger.Write(LogLevel.Info, "Stopping endpoint");
+            Logger.InfoEvent("Shutdown", "Stopping on {Queue}", _instanceQueue);
             await session.Publish<EndpointDead>(x =>
             {
                 x.Endpoint = _instanceQueue;

@@ -38,9 +38,6 @@ namespace Aggregates.Internal
                 RetryRegistry.TryRemove(messageId, out retries);
                 context.Message.Headers[Defaults.Retries] = retries.ToString();
                 context.Extensions.Set(Defaults.Retries, retries);
-                if (retries > 0)
-                    Logger.WriteFormat(LogLevel.Info,
-                        $"Retrying message {context.MessageId} for the {retries}/{_retries} time");
 
                 await next().ConfigureAwait(false);
             }
@@ -54,8 +51,8 @@ namespace Aggregates.Internal
 
                 if (retries < _retries || _retries == -1)
                 {
-                    Logger.WriteFormat((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info,
-                        $"Message {context.MessageId} has faulted! {retries}/{_retries} times\nException: {e.GetType().FullName} {e.Message}\nBody: {Encoding.UTF8.GetString(context.Message.Body)}\nStack: {stackTrace}");
+                    Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "{MessageId} will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", context.MessageId, retries, _retries, e.GetType().Name, e.Message);
+                    
                     RetryRegistry.TryAdd(messageId, retries + 1);
 
                     // Don't let NSB do an immediate retry, put a small delay
@@ -69,10 +66,8 @@ namespace Aggregates.Internal
 
                 // At this point message is dead - should be moved to error queue, send message to client that their request was rejected due to error 
                 _metrics.Mark("Message Faults", Unit.Errors);
-
-                Logger.WriteFormat(LogLevel.Error,
-                    $"Message {context.MessageId} has failed after {retries} attempts!\nException: {e.GetType().FullName} {e.Message}\nBody: {Encoding.UTF8.GetString(context.Message.Body)}\nStack: {stackTrace}");
-
+                
+                Logger.ErrorEvent("Fault", e, "{MessageId} has failed {Retries}: {ExceptionType} - {ExceptionMessage}", context.MessageId, retries, _retries, e.GetType().Name, e.Message);
                 // Only need to reply if the client expects it
                 if (!context.Message.Headers.ContainsKey(Defaults.RequestResponse) ||
                     context.Message.Headers[Defaults.RequestResponse] != "1")
@@ -82,7 +77,7 @@ namespace Aggregates.Internal
                 var rejection = context.Builder.Build<Func<Exception, string, Error>>();
                 // Wrap exception in our object which is serializable
                 await context.Reply(rejection(e,
-                            $"Rejected message after {retries} attempts!\nPayload: {Encoding.UTF8.GetString(context.Message.Body)}"))
+                            $"Rejected message after {retries} attempts!"))
                         .ConfigureAwait(false);
 
                 // Should be the last throw for this message - if RecoveryPolicy is properly set the message will be sent over to error queue

@@ -34,23 +34,22 @@ namespace Aggregates.Internal
         public async Task<ISnapshot> GetSnapshot<T>(string bucket, Id streamId, Id[] parents) where T : IEntity
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
-            Logger.Write(LogLevel.Debug, () => $"Getting snapshot for stream [{streamName}]");
+
+            Logger.DebugEvent("Get", "[{Stream}]", streamName);
             if (_snapshots != null)
             {
                 var snapshot = await _snapshots.Retreive(streamName).ConfigureAwait(false);
                 if (snapshot != null)
                 {
                     _metrics.Mark("Snapshot Cache Hits", Unit.Items);
-                    Logger.Write(LogLevel.Debug,
-                        () => $"Found snapshot [{streamName}] version {snapshot.Version} from subscription");
+                    Logger.DebugEvent("Cached", "[{Stream}] version {Version}", streamName, snapshot.Version);
                     return snapshot;
                 }
             }
             _metrics.Mark("Snapshot Cache Misses", Unit.Items);
 
             // Check store directly (this might be a new instance which hasn't caught up to snapshot stream yet
-
-            Logger.Write(LogLevel.Debug, () => $"Checking for snapshot for stream [{streamName}] in store");
+            
 
             var read = await _store.GetEventsBackwards(streamName, StreamPosition.End, 1).ConfigureAwait(false);
 
@@ -66,11 +65,11 @@ namespace Aggregates.Internal
                     Version = @event.Descriptor.Version,
                     Payload = @event.Event as IState
                 };
-                Logger.Write(LogLevel.Debug, () => $"Found snapshot [{streamName}] version {snapshot.Version} from store");
+                Logger.DebugEvent("Read", "[{Stream}] version {Version}", streamName, snapshot.Version);
                 return snapshot;
             }
-
-            Logger.Write(LogLevel.Debug, () => $"Snapshot not found for stream [{streamName}]");
+            
+            Logger.DebugEvent("NotFound", "[{Stream}]", streamName);
             return null;
         }
 
@@ -78,7 +77,7 @@ namespace Aggregates.Internal
         public async Task WriteSnapshots<T>(string bucket, Id streamId, Id[] parents, long version, IState snapshot, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
-            Logger.Write(LogLevel.Debug, () => $"Writing snapshot to stream [{streamName}]");
+            Logger.DebugEvent("Write", "[{Stream}]", streamName);
 
             // We don't need snapshots to store the previous snapshot
             // ideally this field would be [JsonIgnore] but we have no dependency on json.net

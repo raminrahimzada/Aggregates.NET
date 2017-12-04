@@ -14,7 +14,6 @@ namespace Aggregates.Internal
     class JsonMessageSerializer : IMessageSerializer
     {
         public static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-        private static readonly ILog Logger = LogProvider.GetLogger("JsonMessageSerializer");
 
         IEventMapper messageMapper;
         Func<Stream, JsonReader> readerCreator;

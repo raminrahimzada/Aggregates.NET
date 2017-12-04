@@ -29,7 +29,7 @@ namespace Aggregates.Internal
             {
                 _metrics.Mark("Messages", Unit.Message, delayedMessages.Length);
 
-                Logger.Write(LogLevel.Debug, () => $"Bulk processing {delayedMessages.Length} messages, bulk id {context.MessageId}");
+                Logger.InfoEvent("Bulk", "Processing {Count}", delayedMessages.Length);
                 var index = 1;
                 var originalheaders = new Dictionary<string, string>(context.Headers);
 
@@ -43,13 +43,6 @@ namespace Aggregates.Internal
                             context.Headers[$"{Defaults.DelayedPrefixHeader}.{header.Key}"] = header.Value;
 
                         context.Headers[Defaults.LocalBulkHeader] = delayedMessages.Length.ToString();
-                        Logger.Write(LogLevel.Debug, () => $"Processing {index}/{delayedMessages.Length} message, bulk id {context.MessageId}");
-
-                        if (!x.Headers.ContainsKey(Defaults.ChannelKey))
-                        {
-                            Logger.Write(LogLevel.Warn, $"Received delayed message without a channel key: {context.Headers.AsString()}");
-                            continue;
-                        }
                         // Don't set on headers because headers are kept with the message through retries, could lead to unexpected results
                         context.Extensions.Set(Defaults.ChannelKey, x.Headers[Defaults.ChannelKey]);
 
