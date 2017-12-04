@@ -52,9 +52,8 @@ Setup(context =>
     Information("==============================================");
     Information("==============================================");
 
-    Information("Calculated Semantic Version: {0} sha: {1}", semVersion, sha.Substring(0,8));
-    Information("Calculated NuGet Version: {0}", nuget);
-    Information("Informational Version: {0}", gitversion.InformationalVersion);
+    Information("Calculated Semantic Version: {0} sha: {1}", parameters.Version.SemVersion, sha.Substring(0,8));
+    Information("Calculated NuGet Version: {0}", parameters.Version.NuGet);
 
     Information("==============================================");
     Information("==============================================");

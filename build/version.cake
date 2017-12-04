@@ -32,10 +32,6 @@ public class BuildVersion
         if(!parameters.IsMaster) 
             nuget += "-" + parameters.Branch;
 
-        context.Information("Calculated Semantic Version: {0} sha: {1}", semVersion, sha.Substring(0,8));
-        context.Information("Calculated NuGet Version: {0}", nuget);
-        context.Information("Informational Version: {0}", gitversion.InformationalVersion);
-
         return new BuildVersion
         {
             Version = version,
