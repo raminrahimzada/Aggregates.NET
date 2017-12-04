@@ -14,10 +14,12 @@ public class BuildPackages
         IEnumerable<ProjectInfo> projects)
     {
 
-		var nugets = projects.Where(x => x.OutputType == "Library" && !x.AssemblyName.EndsWith("Tests")).Select(project => new BuildPackage(
-            project.AssemblyName,
-            nugetDir.CombineWithFilePath(string.Concat(project.AssemblyName, ".", version.NuGet, ".nupkg"))
-        ));
+		var nugets = projects.Where(x => x.OutputType == "Library").Select(project =>
+            new BuildPackage(
+                id: project.AssemblyName,
+                projectPath: project.ProjectFile.FullPath,
+                packagePath: nugetDir.CombineWithFilePath(string.Concat(project.AssemblyName, ".", version.NuGet, ".nupkg"))
+            ));
 
         return new BuildPackages { 
 			Nuget = nugets
@@ -29,13 +31,16 @@ public class BuildPackages
 public class BuildPackage
 {
     public string Id { get; private set; }
+    public FilePath ProjectPath { get; private set; }
     public FilePath PackagePath { get; private set; }
 
     public BuildPackage(
         string id,
+        FilePath projectPath,
         FilePath packagePath)
     {
         Id = id;
+        ProjectPath = projectPath;
         PackagePath = packagePath;
     }
 }

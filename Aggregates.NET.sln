@@ -20,7 +20,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregates.NET.StructureMap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aggregates.NET.UnitTests", "src\Aggregates.NET.UnitTests\Aggregates.NET.UnitTests.csproj", "{0875C868-DF80-4647-9455-684BF6276051}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET.Simpleinjector", "src\Aggregates.NET.SimpleInjector\Aggregates.NET.Simpleinjector.csproj", "{4A6EE14F-F404-4594-A907-2C6F4D849104}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Aggregates.NET.SimpleInjector", "src\Aggregates.NET.SimpleInjector\Aggregates.NET.SimpleInjector.csproj", "{4A6EE14F-F404-4594-A907-2C6F4D849104}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. HelloWorld", "1. HelloWorld", "{271493CE-9EC4-4A48-92FB-DBF0B98D09B5}"
 	ProjectSection(SolutionItems) = preProject

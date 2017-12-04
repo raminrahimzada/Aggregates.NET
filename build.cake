@@ -76,6 +76,15 @@ Setup(context =>
         context.Log.Verbosity = Verbosity.Diagnostic;
     }
 
+    if(parameters.IsRunningOnVSTS) 
+    {
+        var commands = context.BuildSystem().TFBuild.Commands;
+        commands.UpdateBuildNumber(parameters.Version.SemVersion);
+        commands.AddBuildTag(parameters.Version.Sha.Substring(0,8));
+        commands.AddBuildTag(parameters.Version.SemVersion);
+        commands.AddBuildTag(parameters.Configuration);
+    }
+
     Information("Building version {0} {5} of {4} ({1}, {2}) using version {3} of Cake",
         parameters.Version.SemVersion,
         parameters.Configuration,
@@ -117,26 +126,14 @@ Task("Restore-NuGet-Packages")
     .Does(() =>
 {
     DotNetCoreRestore(parameters.Solution.FullPath, new DotNetCoreRestoreSettings()
-                {
-                    ConfigFile = new FilePath("./build/nuget.config"),
-                    ArgumentCustomization = aggs => aggs.Append(GetDotNetCoreArgsVersions(parameters.Version))
-                });
-
-
-});
-
-Task("Update-NuGet-Packages")
-    .IsDependentOn("Restore-NuGet-Packages")
-    .Does(() =>
-{
-
-
-    // Update all our packages to latest build version
-    NuGetUpdate(parameters.Solution.FullPath, new NuGetUpdateSettings {
-        Safe = true,
-        ArgumentCustomization = args => args.Append("-FileConflictAction Overwrite")
+    {
+        ConfigFile = new FilePath("./build/nuget.config"),
+        ArgumentCustomization = aggs => aggs.Append(GetDotNetCoreArgsVersions(parameters.Version))
     });
+
+
 });
+
 
 Task("Build")
     .IsDependentOn("Restore-NuGet-Packages")
@@ -200,10 +197,6 @@ Task("Run-Unit-Tests")
 
 //    ReportGenerator(parameters.Paths.Directories.TestResultsDir.CombineWithFilePath("./OpenCover.xml"), parameters.Paths.Directories.TestResultsDir);
 
-}).ReportError(exception =>
-{
-    // var apiApprovals = GetFiles("./**/ApiApprovalTests.*");
-    // CopyFiles(apiApprovals, parameters.Paths.Directories.TestResultsDir);
 });
 
 Task("Upload-Test-Coverage")
@@ -228,21 +221,8 @@ Task("Copy-Files")
     .IsDependentOn("Run-Unit-Tests")
     .Does(() =>
 {
-    // GitLink
-    //if(parameters.IsRunningOnWindows)
-    //{
-    //    Information("Updating PDB files using GitLink");
-    //    GitLink(
-    //        Context.Environment.WorkingDirectory.FullPath,
-    //        new GitLinkSettings {
-    //
-    //            SolutionFileName = parameters.Solution.FullPath,
-    //            ShaHash = parameters.Version.Sha
-    //        });
-    //}
-
     // Copy files from artifact sources to artifact directory
-    foreach(var project in parameters.Paths.Files.Projects.Where(x => !x.AssemblyName.EndsWith("Tests"))) 
+    foreach(var project in parameters.Paths.Files.Projects.Where(x => x.OutputType != "Test")) 
     {
         CleanDirectory(parameters.Paths.Directories.ArtifactsBin.Combine(project.AssemblyName));
         CopyFiles(project.GetBinaries(),
@@ -250,6 +230,22 @@ Task("Copy-Files")
     }
     // Copy license
     CopyFileToDirectory("./LICENSE", parameters.Paths.Directories.ArtifactsBin);
+});
+
+Task("GitLink")
+    .IsDependentOn("Copy-Files")
+    .Does(() =>
+{
+    // GitLink
+    // todo: use SourceLink instead (and embedded pdb)
+    Information("Updating PDB files using GitLink");
+    GitLink3(
+        GetFiles(parameters.Paths.Directories.ArtifactsBin + "/**/*.pdb"),
+        new GitLink3Settings {
+            RepositoryUrl = parameters.Repository,    
+            BaseDir = parameters.Solution.FullPath,
+            ShaHash = parameters.Version.Sha
+        });
 });
 
 Task("Zip-Files")
@@ -263,15 +259,15 @@ Task("Zip-Files")
 });
 
 Task("Create-NuGet-Packages")
-    .IsDependentOn("Copy-Files")
+    .IsDependentOn("GitLink")
     .Does(() =>
 {
     // Build nuget
-    foreach(var project in parameters.Paths.Files.Projects) 
+    foreach(var project in parameters.Packages.Nuget) 
     {
-        Information("Building nuget package: " + project.AssemblyName + " Version: " + parameters.Version.NuGet);
+        Information("Building nuget package: " + project.Id + " Version: " + parameters.Version.NuGet);
         DotNetCorePack(
-            project.ProjectFile.FullPath,
+            project.ProjectPath.ToString(),
             new DotNetCorePackSettings 
             {
                 Configuration = parameters.Configuration,

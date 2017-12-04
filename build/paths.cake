@@ -62,13 +62,17 @@ public class BuildPaths
                         .Concat(context.GetFiles(projectDir + "/Dockerfile*"));
                 };
             }
+            if(info.AssemblyName.EndsWith("Tests")) 
+            {
+                output = "Test";
+            }
 
             binDirs.Add(binDir);
 
             context.Information("Discovered project {0} output type {1}", info.AssemblyName, output);
             var filename = project.GetFilename().FullPath;
             projectInfos.Add(new ProjectInfo(
-                filename.Substring(0,filename.Length-7), 
+                filename.Substring(0, filename.Length-7), 
                 info.AssemblyName, 
                 output, 
                 project, 

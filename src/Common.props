@@ -4,8 +4,6 @@
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
-    <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 
@@ -16,7 +14,6 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/volak/Aggregates.NET</RepositoryUrl>
     <PackageProjectUrl>https://github.com/volak/Aggregates.NET</PackageProjectUrl>
-    <PackageIconUrl></PackageIconUrl>
     <PackageIconUrl>https://raw.githubusercontent.com/volak/Aggregates.NET/master/icon.png</PackageIconUrl>
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <NeutralLanguage>en-US</NeutralLanguage>

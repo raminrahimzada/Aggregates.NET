@@ -29,7 +29,7 @@ public class BuildVersion
         string nuget = semVersion;
         // tag nont master branches with pre-release 
         // gitversion in the future will support something similar
-        if(!parameters.IsMaster) 
+        if(!parameters.IsMaster && !parameters.IsLocalBuild) 
             nuget += "-" + parameters.Branch;
 
         return new BuildVersion
