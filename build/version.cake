@@ -22,12 +22,13 @@ public class BuildVersion
         });
 
         string version = string.Concat(gitversion.Major, ".", gitversion.Minor);
-        string nuget = version;
-        if(!parameters.IsMaster) 
-            nuget += "-" + parameters.Branch;
         string semVersion = string.Concat(version, ".", gitversion.BuildMetaData, ".", parameters.BuildNumber);
         string milestone = string.Concat("v", version);
         string sha = gitversion.Sha;
+        
+        string nuget = semVersion;
+        if(!parameters.IsMaster) 
+            nuget += "-" + parameters.Branch;
 
         context.Information("Calculated Semantic Version: {0} sha: {1}", semVersion, sha.Substring(0,8));
         context.Information("Calculated NuGet Version: {0}", nuget);
