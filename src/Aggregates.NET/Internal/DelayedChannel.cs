@@ -58,7 +58,7 @@ namespace Aggregates.Internal
 
             if (ex == null)
             {
-                Logger.DebugEvent("UOWEnd", "{Uncommitted} streams into mem cache");
+                Logger.DebugEvent("UOWEnd", "{Uncommitted} streams into mem cache", _uncommitted.Count);
 
                 _inFlightMemCache.Clear();
 

@@ -437,7 +437,7 @@ namespace Aggregates.Internal
                 Interlocked.CompareExchange(ref _tooLarge, 0, 1);
             }
             
-            Logger.InfoEvent("Flushed", "{Flushed} total");
+            Logger.InfoEvent("Flushed", "{Flushed} total", totalFlushed);
         }
     }
 }

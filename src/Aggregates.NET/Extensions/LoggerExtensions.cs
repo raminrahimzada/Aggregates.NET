@@ -12,7 +12,7 @@ namespace Aggregates.Extensions
                 level = Defaults.MinimumLogging.Value.Value;
             using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
             {
-                var props = new[] { eventId }.Concat(propertyValues);
+                var props = new[] { eventId }.Concat(propertyValues).ToArray();
                 logger.Log(level, () => "<{EventId:l}> " + messageTemplate, formatParameters: props);
             }
         }
@@ -22,7 +22,7 @@ namespace Aggregates.Extensions
                 level = Defaults.MinimumLogging.Value.Value;
             using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
             {
-                var props = new[] { eventId }.Concat(propertyValues);
+                var props = new[] { eventId }.Concat(propertyValues).ToArray();
                 logger.Log(level, () => "<{EventId:l}> " + messageTemplate, ex, formatParameters: props);
             }
         }
