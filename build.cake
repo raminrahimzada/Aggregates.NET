@@ -52,7 +52,7 @@ Setup(context =>
     Information("==============================================");
     Information("==============================================");
 
-    Information("Calculated Semantic Version: {0} sha: {1}", parameters.Version.SemVersion, sha.Substring(0,8));
+    Information("Calculated Semantic Version: {0} sha: {1}", parameters.Version.SemVersion, parameters.Version.Sha.Substring(0,8));
     Information("Calculated NuGet Version: {0}", parameters.Version.NuGet);
 
     Information("==============================================");
