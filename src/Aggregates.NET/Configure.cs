@@ -161,7 +161,11 @@ namespace Aggregates
 
                 return Task.CompletedTask;
             });
-
+            StartupTasks.Add((c) =>
+            {
+                Defaults.Endpoint = c.Endpoint;
+                return Task.CompletedTask;
+            });
         }
         public Configure SetEndpointName(string endpoint)
         {

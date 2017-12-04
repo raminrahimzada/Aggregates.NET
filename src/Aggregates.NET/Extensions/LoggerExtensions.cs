@@ -16,8 +16,11 @@ namespace Aggregates.Extensions
             {
             using (LogProvider.OpenMappedContext("CorrId", Defaults.CorrId.Value.ToString()))
             {
+            using (LogProvider.OpenMappedContext("Endpoint", Defaults.Endpoint))
+            {
                 var props = new[] { eventId }.Concat(propertyValues).ToArray();
                 logger.Log(level, () => "<{EventId:l}> " + messageTemplate, formatParameters: props);
+            }
             }
             }
             }
@@ -32,8 +35,11 @@ namespace Aggregates.Extensions
             {
             using (LogProvider.OpenMappedContext("CorrId", Defaults.CorrId.Value.ToString()))
             { 
+            using (LogProvider.OpenMappedContext("Endpoint", Defaults.Endpoint))
+            {
                 var props = new[] { eventId }.Concat(propertyValues).ToArray();
                 logger.Log(level, () => "<{EventId:l}> " + messageTemplate, ex, formatParameters: props);
+            }
             }
             }
             }
