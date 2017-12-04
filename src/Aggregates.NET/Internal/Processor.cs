@@ -25,7 +25,7 @@ namespace Aggregates.Internal
             var handler = container.Resolve(handlerType);
             if (handler == null)
             {
-                Logger.ErrorEvent("ProcessFailure", "No handler [{QueryType}] response [{Response}]", typeof(TQuery).FullName, typeof(TResponse).FullName);
+                Logger.ErrorEvent("ProcessFailure", "No handler [{QueryType:l}] response [{Response:l}]", typeof(TQuery).FullName, typeof(TResponse).FullName);
                 return null;
             }
 

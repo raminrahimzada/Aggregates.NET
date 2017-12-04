@@ -100,7 +100,7 @@ namespace Aggregates.Internal
                     }
                     catch (PersistenceException e)
                     {
-                        Logger.WarnEvent("WriteFailure", "Stream [{Stream}] bucket [{Bucket}]: {ExtensionType} - {ExceptionMessage}", tracked.Key.Item2, tracked.Key.Item1, e.GetType().Name, e.Message);
+                        Logger.WarnEvent("WriteFailure", "Stream [{Stream:l}] bucket [{Bucket:l}]: {ExtensionType} - {ExceptionMessage}", tracked.Key.Item2, tracked.Key.Item1, e.GetType().Name, e.Message);
                         throw;
                     }
 

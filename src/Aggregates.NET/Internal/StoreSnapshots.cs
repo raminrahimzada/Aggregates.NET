@@ -35,14 +35,14 @@ namespace Aggregates.Internal
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
 
-            Logger.DebugEvent("Get", "[{Stream}]", streamName);
+            Logger.DebugEvent("Get", "[{Stream:l}]", streamName);
             if (_snapshots != null)
             {
                 var snapshot = await _snapshots.Retreive(streamName).ConfigureAwait(false);
                 if (snapshot != null)
                 {
                     _metrics.Mark("Snapshot Cache Hits", Unit.Items);
-                    Logger.DebugEvent("Cached", "[{Stream}] version {Version}", streamName, snapshot.Version);
+                    Logger.DebugEvent("Cached", "[{Stream:l}] version {Version}", streamName, snapshot.Version);
                     return snapshot;
                 }
             }
@@ -65,11 +65,11 @@ namespace Aggregates.Internal
                     Version = @event.Descriptor.Version,
                     Payload = @event.Event as IState
                 };
-                Logger.DebugEvent("Read", "[{Stream}] version {Version}", streamName, snapshot.Version);
+                Logger.DebugEvent("Read", "[{Stream:l}] version {Version}", streamName, snapshot.Version);
                 return snapshot;
             }
             
-            Logger.DebugEvent("NotFound", "[{Stream}]", streamName);
+            Logger.DebugEvent("NotFound", "[{Stream:l}]", streamName);
             return null;
         }
 
@@ -77,7 +77,7 @@ namespace Aggregates.Internal
         public async Task WriteSnapshots<T>(string bucket, Id streamId, Id[] parents, long version, IState snapshot, IDictionary<string, string> commitHeaders) where T : IEntity
         {
             var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
-            Logger.DebugEvent("Write", "[{Stream}]", streamName);
+            Logger.DebugEvent("Write", "[{Stream:l}]", streamName);
 
             // We don't need snapshots to store the previous snapshot
             // ideally this field would be [JsonIgnore] but we have no dependency on json.net

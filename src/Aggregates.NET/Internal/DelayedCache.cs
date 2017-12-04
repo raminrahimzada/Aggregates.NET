@@ -202,7 +202,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception e)
                 {
-                    Logger.WarnEvent("WriteFailure", e, "Write to [{Channel}] failed: {ExceptionType} - {ExceptionMessage}", channel, e.GetType().Name, e.Message);
+                    Logger.WarnEvent("WriteFailure", e, "Write to [{Channel:l}] failed: {ExceptionType} - {ExceptionMessage}", channel, e.GetType().Name, e.Message);
                 }
             }
 
@@ -234,7 +234,7 @@ namespace Aggregates.Internal
                 discovered = discovered.Concat(nonSpecific).ToArray();
             }
             
-            Logger.DebugEvent("Pull", "{Messages} from channel [{Channel}] key [{Key}]", discovered.Length, channel, key);
+            Logger.DebugEvent("Pull", "{Messages} from channel [{Channel:l}] key [{Key:l}]", discovered.Length, channel, key);
             return Task.FromResult(discovered);
         }
 
@@ -249,7 +249,7 @@ namespace Aggregates.Internal
             if (_memCache.TryGetValue(specificKey, out temp))
                 specificAge = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - temp.Pulled);
             
-            Logger.DebugEvent("Age", "{Age} ms channel [{Channel}] key [{Key}]", specificAge.TotalMilliseconds, channel, key);
+            Logger.DebugEvent("Age", "{Age} ms channel [{Channel:l}] key [{Key:l}]", specificAge.TotalMilliseconds, channel, key);
 
             return Task.FromResult<TimeSpan?>(specificAge);
         }
@@ -263,7 +263,7 @@ namespace Aggregates.Internal
             if (_memCache.TryGetValue(specificKey, out temp))
                 specificSize = temp.Count;
 
-            Logger.DebugEvent("Size", "{Size} channel [{Channel}] key [{Key}]", specificSize, channel, key);
+            Logger.DebugEvent("Size", "{Size} channel [{Channel:l}] key [{Key:l}]", specificSize, channel, key);
             return Task.FromResult(specificSize);
         }
 
@@ -310,7 +310,7 @@ namespace Aggregates.Internal
                     return;
 
 
-                Logger.InfoEvent("ExpiredFlush", "{Flush} messages channel [{Channel}] key [{Key}]", messages.Length, expired.Channel, expired.Key);
+                Logger.InfoEvent("ExpiredFlush", "{Flush} messages channel [{Channel:l}] key [{Key:l}]", messages.Length, expired.Channel, expired.Key);
 
                 var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                 {
@@ -349,7 +349,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception e)
                 {
-                    Logger.WarnEvent("FlushFailure", e, "Channel [{Channel}] key [{Key}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
+                    Logger.WarnEvent("FlushFailure", e, "Channel [{Channel:l}] key [{Key:l}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
                     // Failed to write to ES - put object back in memcache
                     addToMemCache(expired.Channel, expired.Key, messages);
 
@@ -379,7 +379,7 @@ namespace Aggregates.Internal
                     {
                         var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 
-                        Logger.WarnEvent("LargeFlush", "{Flush} messages channel [{Channel}] key [{Key}]", messages.Length, expired.Channel, expired.Key);
+                        Logger.WarnEvent("LargeFlush", "{Flush} messages channel [{Channel:l}] key [{Key:l}]", messages.Length, expired.Channel, expired.Key);
 
                         var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                         {
@@ -416,7 +416,7 @@ namespace Aggregates.Internal
                         catch (Exception e)
                         {
                             limit--;
-                            Logger.WarnEvent("FlushFailure", e, "Channel [{Channel}] key [{Key}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
+                            Logger.WarnEvent("FlushFailure", e, "Channel [{Channel:l}] key [{Key:l}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
                             // Failed to write to ES - put object back in memcache
                             addToMemCache(expired.Channel, expired.Key, messages);
                             throw;

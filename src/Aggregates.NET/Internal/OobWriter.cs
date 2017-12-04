@@ -46,7 +46,7 @@ namespace Aggregates.Internal
 
         public async Task WriteEvents<TEntity>(string bucket, Id streamId, Id[] parents, IFullEvent[] events, IDictionary<string, string> commitHeaders) where TEntity : IEntity
         {
-            Logger.DebugEvent("Write", "{Events} stream [{Stream}] bucket [{Bucket}]", events.Length, streamId, bucket);
+            Logger.DebugEvent("Write", "{Events} stream [{Stream:l}] bucket [{Bucket:l}]", events.Length, streamId, bucket);
             await events.WhenAllAsync(async @event =>
             {
                 var message = new FullMessage

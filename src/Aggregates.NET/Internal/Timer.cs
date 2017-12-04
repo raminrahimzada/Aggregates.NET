@@ -30,7 +30,7 @@ namespace Aggregates.Internal
                     }
                     catch (Exception e)
                     {
-                        Logger.WarnEvent("RepeatFailure", e, "[{description}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
+                        Logger.WarnEvent("RepeatFailure", e, "[{description:l}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
                     }
                     try
                     {
@@ -60,7 +60,7 @@ namespace Aggregates.Internal
                     }
                     catch (Exception e)
                     {
-                        Logger.WarnEvent("RepeatFailure", e, "[{description}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
+                        Logger.WarnEvent("RepeatFailure", e, "[{description:l}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
                     }
                     try
                     {
@@ -95,7 +95,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception e)
                 {
-                    Logger.WarnEvent("OnceFailure", e, "[{description}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
+                    Logger.WarnEvent("OnceFailure", e, "[{description:l}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
                 }
             }, cancellationToken);
         }
@@ -121,7 +121,7 @@ namespace Aggregates.Internal
                 }
                 catch (Exception e)
                 {
-                    Logger.WarnEvent("OnceFailure", e, "[{description}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
+                    Logger.WarnEvent("OnceFailure", e, "[{description:l}]: {ExceptionType} - {ExceptionMessage}", description, e.GetType().Name, e.Message);
                 }
             }, cancellationToken);
         }
