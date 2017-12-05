@@ -17,5 +17,6 @@
     <PackageIconUrl>https://raw.githubusercontent.com/volak/Aggregates.NET/master/icon.png</PackageIconUrl>
     <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
     <NeutralLanguage>en-US</NeutralLanguage>
+    
   </PropertyGroup>
 </Project>

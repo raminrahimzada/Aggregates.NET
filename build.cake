@@ -232,21 +232,6 @@ Task("Copy-Files")
     CopyFileToDirectory("./LICENSE", parameters.Paths.Directories.ArtifactsBin);
 });
 
-Task("GitLink")
-    .IsDependentOn("Copy-Files")
-    .Does(() =>
-{
-    // GitLink
-    // todo: use SourceLink instead (and embedded pdb)
-    Information("Updating PDB files using GitLink");
-    GitLink3(
-        GetFiles(parameters.Paths.Directories.ArtifactsBin + "/**/*.pdb"),
-        new GitLink3Settings {
-            RepositoryUrl = parameters.Repository,    
-            BaseDir = parameters.Solution.FullPath,
-            ShaHash = parameters.Version.Sha
-        });
-});
 
 Task("Zip-Files")
     .IsDependentOn("Copy-Files")
@@ -259,7 +244,7 @@ Task("Zip-Files")
 });
 
 Task("Create-NuGet-Packages")
-    .IsDependentOn("GitLink")
+    .IsDependentOn("Copy-Files")
     .Does(() =>
 {
     // Build nuget
