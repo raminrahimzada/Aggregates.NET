@@ -104,6 +104,8 @@ namespace Aggregates
             {
                 var container = c.Container;
 
+                // Register outselves with ourselves
+                container.Register<IContainer>(container, Lifestyle.Singleton);
                 container.Register<IDelayedChannel, DelayedChannel>(Lifestyle.UnitOfWork);
                 container.Register<IDomainUnitOfWork, UnitOfWork>(Lifestyle.UnitOfWork);
 
