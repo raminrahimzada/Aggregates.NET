@@ -118,8 +118,6 @@ namespace Aggregates.Internal
         }
         public void Evict(string key)
         {
-            Logger.DebugEvent("Evict", "{Key}", key);
-
             lock (Lock)
             {
                 // Decrease by 5 - evicting is a terrible thing, usually means there was a version conflict
