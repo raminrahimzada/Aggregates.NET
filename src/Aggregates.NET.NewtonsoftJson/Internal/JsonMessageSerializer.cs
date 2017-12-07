@@ -123,6 +123,7 @@ namespace Aggregates.Internal
 
         Type GetMappedType(Type messageType)
         {
+            messageMapper.Initialize(messageType);
             if (messageType.IsInterface)
             {
                 var mappedTypeFor = messageMapper.GetMappedTypeFor(messageType);
