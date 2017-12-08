@@ -75,7 +75,7 @@ namespace Aggregates
         }
 
 
-        public IRepository<TEntity, TThis> For<TEntity>() where TEntity : IChildEntity<TThis>
+        public IRepository<TEntity, TThis> For<TEntity>() where TEntity : class, IChildEntity<TThis>
         {
             return Uow.For<TEntity, TThis>(this as TThis);
         }

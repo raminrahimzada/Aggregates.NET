@@ -82,7 +82,7 @@ namespace Aggregates.Internal
             _disposed = true;
         }
 
-        public IRepository<T> For<T>() where T : IEntity
+        public IRepository<T> For<T>() where T : class, IEntity
         {
             var key = typeof(T).FullName;
 
@@ -91,7 +91,7 @@ namespace Aggregates.Internal
 
             return (IRepository<T>)(_repositories[key] = (IRepository)_repoFactory.ForEntity<T>(this));
         }
-        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : IChildEntity<TParent> where TParent : IEntity
+        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : class, IChildEntity<TParent> where TParent : class, IEntity
         {
             var key = $"{typeof(TParent).FullName}.{typeof(TEntity).FullName}";
 
@@ -110,7 +110,7 @@ namespace Aggregates.Internal
 
             return (IPocoRepository<T>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<T>(this));
         }
-        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : IEntity
+        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : class, IEntity
         {
             var key = $"{typeof(TParent).FullName}.{typeof(T).FullName}";
 
@@ -120,11 +120,11 @@ namespace Aggregates.Internal
 
             return (IPocoRepository<T, TParent>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<T, TParent>(parent, this));
         }
-        public Task<TResponse> Query<TQuery, TResponse>(TQuery query, IContainer container) where TQuery : IQuery<TResponse>
+        public Task<TResponse> Query<TQuery, TResponse>(TQuery query, IContainer container) where TQuery : class, IQuery<TResponse>
         {
             return _processor.Process<TQuery, TResponse>(query, container);
         }
-        public Task<TResponse> Query<TQuery, TResponse>(Action<TQuery> query, IContainer container) where TQuery : IQuery<TResponse>
+        public Task<TResponse> Query<TQuery, TResponse>(Action<TQuery> query, IContainer container) where TQuery : class, IQuery<TResponse>
         {
             var result = _eventFactory.Create(query);
             return Query<TQuery, TResponse>(result, container);
