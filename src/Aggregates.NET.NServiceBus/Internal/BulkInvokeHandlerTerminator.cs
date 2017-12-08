@@ -134,7 +134,7 @@ namespace Aggregates.Internal
                                 
                 context.Extensions.Set<bool>("BulkInvoked", true);
                 
-                Logger.InfoEvent("Threshold", "Count [{Count}] DelayMs [{DelayMs}] bulk procesing Size [{Size}] Age [{Age}] - {Channel} {Key}", delayed.Count, delayed.Delay, size, age?.TotalMilliseconds, channelKey, specificKey);
+                Logger.InfoEvent("Threshold", "Count [{Count}] DelayMs [{DelayMs}] bulk procesing Size [{Size}] Age [{Age}] - [{Channel:l}] key [{Key:l}]", delayed.Count, delayed.Delay, size, age?.TotalMilliseconds, channelKey, specificKey);
                 
                 await InvokeDelayedChannel(channel, channelKey, specificKey, delayed, messageHandler, context).ConfigureAwait(false);
 
@@ -177,8 +177,8 @@ namespace Aggregates.Internal
                     await handler.Invoke(messages[idx].Message, context).ConfigureAwait(false);
                 
                 if(ctx.Elapsed > TimeSpan.FromSeconds(5))
-                    SlowLogger.InfoEvent("Invoked", "{Count} messages channel [{Channel}] key [{Key}] took {Milliseconds}", count, channelKey, specificKey, ctx.Elapsed.TotalMilliseconds);
-                Logger.InfoEvent("Invoked", "{Count} messages channel [{Channel}] key [{Key}] took {Milliseconds}ms", count, channelKey, specificKey, ctx.Elapsed.TotalMilliseconds);
+                    SlowLogger.InfoEvent("Invoked", "{Count} messages channel [{Channel:l}] key [{Key:l}] took {Milliseconds} ms", count, channelKey, specificKey, ctx.Elapsed.TotalMilliseconds);
+                Logger.InfoEvent("Invoked", "{Count} messages channel [{Channel:l}] key [{Key:l}] took {Milliseconds} ms", count, channelKey, specificKey, ctx.Elapsed.TotalMilliseconds);
 
             }
         }

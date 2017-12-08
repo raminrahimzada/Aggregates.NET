@@ -16,21 +16,25 @@ namespace Aggregates.Internal
         public static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         IEventMapper messageMapper;
+        IEventFactory messageFactory;
         Func<Stream, JsonReader> readerCreator;
         Func<Stream, JsonWriter> writerCreator;
         NewtonSerializer jsonSerializer;
 
         public JsonMessageSerializer(
-            IEventMapper messageMapper)
+            IEventMapper messageMapper,
+            IEventFactory messageFactory)
         {
             this.messageMapper = messageMapper;
+            this.messageFactory = messageFactory;
 
             var settings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
                 Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter(), new IdJsonConverter() },
                 Error = new EventHandler<Newtonsoft.Json.Serialization.ErrorEventArgs>(HandleError),
-                ContractResolver = new PrivateSetterContractResolver(),
+                ContractResolver = new EventContractResolver(messageMapper, messageFactory),
+                SerializationBinder = new EventSerializationBinder(messageMapper),
                 //TraceWriter = new TraceWriter(),
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 NullValueHandling = NullValueHandling.Include
@@ -114,26 +118,13 @@ namespace Aggregates.Internal
             for (var index = 0; index < rootTypes.Count; index++)
             {
                 var messageType = rootTypes[index];
+                messageMapper.Initialize(messageType);
                 stream.Seek(0, SeekOrigin.Begin);
-                messageType = GetMappedType(messageType);
                 messages[index] = ReadObject(stream, isArrayStream, messageType);
             }
             return messages;
         }
-
-        Type GetMappedType(Type messageType)
-        {
-            messageMapper.Initialize(messageType);
-            if (messageType.IsInterface)
-            {
-                var mappedTypeFor = messageMapper.GetMappedTypeFor(messageType);
-                if (mappedTypeFor != null)
-                {
-                    return mappedTypeFor;
-                }
-            }
-            return messageType;
-        }
+        
 
         bool IsArrayStream(Stream stream)
         {

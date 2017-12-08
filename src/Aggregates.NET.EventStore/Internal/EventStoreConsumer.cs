@@ -272,7 +272,7 @@ namespace Aggregates.Internal
                 await EventAppeared(e, token, callback);
             }catch(Exception ex)
             {
-                Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage", ex.GetType().Name, ex.Message);
+                Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage}", ex.GetType().Name, ex.Message);
                 sub.Fail(e, PersistentSubscriptionNakEventAction.Park, ex.GetType().Name);
                 throw;
             }
@@ -297,7 +297,7 @@ namespace Aggregates.Internal
             }
             catch (Exception ex)
             {
-                Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage", ex.GetType().Name, ex.Message);
+                Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage}", ex.GetType().Name, ex.Message);
                 throw;
             }
         }

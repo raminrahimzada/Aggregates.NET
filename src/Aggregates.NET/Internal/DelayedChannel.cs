@@ -78,7 +78,7 @@ namespace Aggregates.Internal
             var specificAge = await _cache.Age(channel, key).ConfigureAwait(false);
             
             if (specificAge > TimeSpan.FromMinutes(1))
-                SlowLogger.InfoEvent("Age", "Channel [{Channel:l}] specific [{Key:l}] age {Seconds} seconds", channel, key, specificAge?.TotalSeconds);
+                SlowLogger.InfoEvent("Age", "Channel [{Channel:l}] key [{Key:l}] age {Seconds} seconds", channel, key, specificAge?.TotalSeconds);
 
             return specificAge;
         }
@@ -93,7 +93,7 @@ namespace Aggregates.Internal
                 specificSize += _uncommitted[specificKey].Count;
 
             if (specificSize > 5000)
-                SlowLogger.InfoEvent("Size", "Channel [{Channel:l}] specific [{Key:l}] size {Size}", channel, key, specificSize);
+                SlowLogger.InfoEvent("Size", "Channel [{Channel:l}] key [{Key:l}] size {Size}", channel, key, specificSize);
 
             return specificSize;
         }
@@ -125,8 +125,7 @@ namespace Aggregates.Internal
 
             if(discovered.Any())
                 _inFlightMemCache.TryAdd(specificKey, discovered);
-
-            Logger.InfoEvent("Pull", "{Messages} from channel [{Channel:l}] key [{Key:l}]", discovered.Count, channel, key);
+            
             return discovered;
         }
 
