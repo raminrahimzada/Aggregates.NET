@@ -91,7 +91,7 @@ namespace Aggregates.Internal
 
             return (IRepository<T>)(_repositories[key] = (IRepository)_repoFactory.ForEntity<T>(this));
         }
-        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : class, IChildEntity<TParent> where TParent : class, IEntity
+        public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : class, IChildEntity<TParent> where TParent : class, IHaveEntities<TParent>
         {
             var key = $"{typeof(TParent).FullName}.{typeof(TEntity).FullName}";
 
@@ -110,7 +110,7 @@ namespace Aggregates.Internal
 
             return (IPocoRepository<T>)(_pocoRepositories[key] = (IRepository)_repoFactory.ForPoco<T>(this));
         }
-        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : class, IEntity
+        public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : class, IHaveEntities<TParent>
         {
             var key = $"{typeof(TParent).FullName}.{typeof(T).FullName}";
 

@@ -19,9 +19,9 @@ namespace Aggregates
         Task End(Exception ex = null);
 
         IRepository<T> For<T>() where T : class, IEntity;
-        IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : class, IChildEntity<TParent> where TParent : class, IEntity;
+        IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : class, IChildEntity<TParent> where TParent : class, IHaveEntities<TParent>;
         IPocoRepository<T> Poco<T>() where T : class, new();
-        IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : class, IEntity;
+        IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : class, IHaveEntities<TParent>;
 
 
         Task<TResponse> Query<TQuery, TResponse>(TQuery query, IContainer container) where TQuery : class, IQuery<TResponse>;
