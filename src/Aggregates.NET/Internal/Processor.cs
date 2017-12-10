@@ -21,7 +21,7 @@ namespace Aggregates.Internal
         {
             var handlerType = typeof(IHandleQueries<,>).MakeGenericType(typeof(TQuery), typeof(TResponse));
 
-            var handlerFunc = (Func<object, TQuery, IDomainUnitOfWork, Task<TResponse>>)Processors.GetOrAdd(handlerType, t => ReflectionExtensions.MakeQueryHandler<TQuery, TResponse>(handlerType));
+            var handlerFunc = (Func<object, TQuery, IDomainUnitOfWork, IUnitOfWork, Task<TResponse>>)Processors.GetOrAdd(handlerType, t => ReflectionExtensions.MakeQueryHandler<TQuery, TResponse>(handlerType));
             var handler = container.Resolve(handlerType);
             if (handler == null)
             {
@@ -29,7 +29,7 @@ namespace Aggregates.Internal
                 return null;
             }
 
-            return handlerFunc(handler, query, container.Resolve<IDomainUnitOfWork>());
+            return handlerFunc(handler, query, container.Resolve<IDomainUnitOfWork>(), container.Resolve<IUnitOfWork>());
         }
     }
 }

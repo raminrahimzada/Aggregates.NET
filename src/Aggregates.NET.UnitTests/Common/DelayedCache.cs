@@ -144,7 +144,7 @@ namespace Aggregates.UnitTests.Common
 
             // Todo: cache uses rand to pull non-specific channel, will have to fake rand to turn this into
             // Assert.AreEqual(2, result.Length);
-            Assert.GreaterOrEqual(1, result.Length);
+            Assert.GreaterOrEqual(2, result.Length);
             _store.Verify(x => x.WriteEvents(Moq.It.IsAny<string>(), Moq.It.IsAny<IFullEvent[]>(), Moq.It.IsAny<IDictionary<string, string>>(), Moq.It.IsAny<long?>()), Moq.Times.Once);
         }
 
