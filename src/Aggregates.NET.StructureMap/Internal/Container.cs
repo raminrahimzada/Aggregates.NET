@@ -19,31 +19,31 @@ namespace Aggregates.Internal
             _container.Dispose();
         }
 
-        private StructureMap.Pipeline.ILifecycle ConvertLifestyle(Lifestyle lifestyle)
+        private StructureMap.Pipeline.ILifecycle ConvertLifestyle(Contracts.Lifestyle lifestyle)
         {
             switch (lifestyle)
             {
-                case Lifestyle.PerInstance:
+                case Contracts.Lifestyle.PerInstance:
                     return new StructureMap.Pipeline.TransientLifecycle();
-                case Lifestyle.Singleton:
+                case Contracts.Lifestyle.Singleton:
                     return new StructureMap.Pipeline.SingletonLifecycle();
-                case Lifestyle.UnitOfWork:
+                case Contracts.Lifestyle.UnitOfWork:
                     // Transients are singletons in child containers
                     return new StructureMap.Pipeline.TransientLifecycle();
             }
             throw new ArgumentException($"Unknown lifestyle {lifestyle}");
         }
 
-        public void Register(Type concrete, Lifestyle lifestyle)
+        public void Register(Type concrete, Contracts.Lifestyle lifestyle)
         {
             _container.Configure(x => x.For(concrete).Use(concrete).SetLifecycleTo(ConvertLifestyle(lifestyle)));
         }
-        public void Register<TInterface>(TInterface instance, Lifestyle lifestyle) where TInterface : class
+        public void Register<TInterface>(TInterface instance, Contracts.Lifestyle lifestyle) where TInterface : class
         {
             _container.Configure(x => x.For<TInterface>().Use(instance).SetLifecycleTo(ConvertLifestyle(lifestyle)));
         }
 
-        public void Register<TInterface>(Func<IContainer, TInterface> factory, Lifestyle lifestyle, string name = null) where TInterface : class
+        public void Register<TInterface>(Func<IContainer, TInterface> factory, Contracts.Lifestyle lifestyle, string name = null) where TInterface : class
         {
             _container.Configure(x =>
             {
@@ -53,7 +53,7 @@ namespace Aggregates.Internal
                 use.SetLifecycleTo(ConvertLifestyle(lifestyle));
             });
         }
-        public void Register<TInterface, TConcrete>(Lifestyle lifestyle, string name = null) where TInterface : class where TConcrete : class, TInterface
+        public void Register<TInterface, TConcrete>(Contracts.Lifestyle lifestyle, string name = null) where TInterface : class where TConcrete : class, TInterface
         {
             _container.Configure(x =>
             {

@@ -21,7 +21,7 @@ namespace Aggregates.Internal
         {
             var handlerType = typeof(IHandleQueries<,>).MakeGenericType(typeof(TQuery), typeof(TResponse));
 
-            var handlerFunc = (Func<object, TQuery, IContainer, Task<TResponse>>)Processors.GetOrAdd(handlerType, t => ReflectionExtensions.MakeQueryHandler<TQuery, TResponse>(handlerType));
+            var handlerFunc = (Func<object, TQuery, IHandleContext, Task<TResponse>>)Processors.GetOrAdd(handlerType, t => ReflectionExtensions.MakeQueryHandler<TQuery, TResponse>(handlerType));
             var handler = container.Resolve(handlerType);
             if (handler == null)
             {
@@ -29,7 +29,10 @@ namespace Aggregates.Internal
                 return null;
             }
 
-            return handlerFunc(handler, query, container);
+            // Todo: both units of work should come from the pipeline not the container
+            var context = new HandleContext(container.Resolve<IDomainUnitOfWork>(), container.Resolve<IUnitOfWork>(), container);
+
+            return handlerFunc(handler, query, context);
         }
     }
 }

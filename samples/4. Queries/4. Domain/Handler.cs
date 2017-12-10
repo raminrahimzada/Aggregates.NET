@@ -49,9 +49,9 @@ namespace Domain
             await ctx.Reply(new MessagesResponse { Messages = messages.Select(x => x.Message).ToArray() }).ConfigureAwait(false);
         }
 
-        public async Task<MessageState[]> Handle(PreviousMessages query, IContainer container)
+        public async Task<MessageState[]> Handle(PreviousMessages query, IHandleContext context)
         {
-            var uow = container.Resolve<IDomainUnitOfWork>();
+            var uow = context.UoW;
 
             // Can use uow to get domain entities
             var world = await uow.For<World>().TryGet("World");
