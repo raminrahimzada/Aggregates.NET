@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Aggregates.Contracts
+namespace Aggregates
 {
     public enum Lifestyle
     {

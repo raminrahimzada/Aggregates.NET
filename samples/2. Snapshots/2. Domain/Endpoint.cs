@@ -22,7 +22,7 @@ namespace Domain
     class Endpoint
     {
         static readonly ManualResetEvent QuitEvent = new ManualResetEvent(false);
-        private static IContainer _container;
+        private static StructureMap.IContainer _container;
         private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
         {
             Log.Fatal("<{EventId:l}> Unhandled exception {Exception}", "Unhandled", e.ExceptionObject);

@@ -25,15 +25,15 @@ namespace Aggregates.Internal
             AsyncScopedLifestyle.BeginScope(_container);
         }
 
-        private SimpleInjector.Lifestyle ConvertLifestyle(Contracts.Lifestyle lifestyle)
+        private SimpleInjector.Lifestyle ConvertLifestyle(Lifestyle lifestyle)
         {
             switch (lifestyle)
             {
-                case Contracts.Lifestyle.PerInstance:
+                case Lifestyle.PerInstance:
                     return SimpleInjector.Lifestyle.Transient;
-                case Contracts.Lifestyle.Singleton:
+                case Lifestyle.Singleton:
                     return SimpleInjector.Lifestyle.Singleton;
-                case Contracts.Lifestyle.UnitOfWork:
+                case Lifestyle.UnitOfWork:
                     return SimpleInjector.Lifestyle.Scoped;
             }
             throw new ArgumentException($"Unknown lifestyle {lifestyle}");
@@ -46,18 +46,18 @@ namespace Aggregates.Internal
         }
         
 
-        public void Register(Type concrete, Contracts.Lifestyle lifestyle)
+        public void Register(Type concrete, Lifestyle lifestyle)
         {
             if (_child) return;
             _container.Register(concrete, concrete, ConvertLifestyle(lifestyle));
         }
-        public void Register<TInterface>(TInterface instance, Contracts.Lifestyle lifestyle) where TInterface : class
+        public void Register<TInterface>(TInterface instance, Lifestyle lifestyle) where TInterface : class
         {
             if (_child) return;
             _container.Register<TInterface>(() => instance, ConvertLifestyle(lifestyle));
         }
 
-        public void Register<TInterface>(Func<IContainer, TInterface> factory, Contracts.Lifestyle lifestyle, string name = null) where TInterface : class
+        public void Register<TInterface>(Func<IContainer, TInterface> factory, Lifestyle lifestyle, string name = null) where TInterface : class
         {
             if (_child) return;
 
@@ -74,7 +74,7 @@ namespace Aggregates.Internal
             }
             _container.Register(() => factory(this), ConvertLifestyle(lifestyle));
         }
-        public void Register<TInterface, TConcrete>(Contracts.Lifestyle lifestyle, string name = null) where TInterface : class where TConcrete : class, TInterface
+        public void Register<TInterface, TConcrete>(Lifestyle lifestyle, string name = null) where TInterface : class where TConcrete : class, TInterface
         {
             if (_child) return;
 

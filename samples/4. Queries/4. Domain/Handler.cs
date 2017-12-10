@@ -1,4 +1,5 @@
 ﻿using Aggregates;
+using Aggregates.Contracts;
 using Language;
 using NServiceBus;
 using System;
@@ -48,8 +49,10 @@ namespace Domain
             await ctx.Reply(new MessagesResponse { Messages = messages.Select(x => x.Message).ToArray() }).ConfigureAwait(false);
         }
 
-        public async Task<MessageState[]> Handle(PreviousMessages query, IDomainUnitOfWork uow, IUnitOfWork app)
+        public async Task<MessageState[]> Handle(PreviousMessages query, IContainer container)
         {
+            var uow = container.Resolve<IDomainUnitOfWork>();
+
             // Can use uow to get domain entities
             var world = await uow.For<World>().TryGet("World");
             if (world == null)

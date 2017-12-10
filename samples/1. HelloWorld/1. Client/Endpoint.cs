@@ -24,7 +24,7 @@ namespace Client
     class Endpoint
     {
         static readonly ManualResetEvent QuitEvent = new ManualResetEvent(false);
-        private static IContainer _container;
+        private static StructureMap.IContainer _container;
 
         private static void UnhandledExceptionTrapper(object sender, UnhandledExceptionEventArgs e)
         {
