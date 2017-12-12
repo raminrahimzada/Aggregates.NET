@@ -10,39 +10,17 @@ namespace Aggregates.Extensions
         {
             if (Defaults.MinimumLogging.Value.HasValue && level < Defaults.MinimumLogging.Value)
                 level = Defaults.MinimumLogging.Value.Value;
-            using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
-            {
-            using (LogProvider.OpenMappedContext("MessageId", Defaults.MessageId.ToString()))
-            {
-            using (LogProvider.OpenMappedContext("CorrId", Defaults.CorrId.Value.ToString()))
-            {
-            using (LogProvider.OpenMappedContext("Endpoint", Defaults.Endpoint))
-            {
-                var props = new[] { eventId }.Concat(propertyValues).ToArray();
-                logger.Log(level, () => "<{EventId:l}> " + messageTemplate, formatParameters: props);
-            }
-            }
-            }
-            }
+
+            var props = new[] { eventId }.Concat(propertyValues).ToArray();
+            logger.Log(level, () => "<{EventId:l}> " + messageTemplate, formatParameters: props);
         }
         public static void LogEvent(this ILog logger, LogLevel level, string eventId, Exception ex, string messageTemplate, params object[] propertyValues)
         {
             if (Defaults.MinimumLogging.Value.HasValue && level < Defaults.MinimumLogging.Value)
                 level = Defaults.MinimumLogging.Value.Value;
-            using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
-            {
-            using (LogProvider.OpenMappedContext("MessageId", Defaults.MessageId.ToString()))
-            {
-            using (LogProvider.OpenMappedContext("CorrId", Defaults.CorrId.Value.ToString()))
-            { 
-            using (LogProvider.OpenMappedContext("Endpoint", Defaults.Endpoint))
-            {
-                var props = new[] { eventId }.Concat(propertyValues).ToArray();
-                logger.Log(level, () => "<{EventId:l}> " + messageTemplate, ex, formatParameters: props);
-            }
-            }
-            }
-            }
+
+            var props = new[] { eventId }.Concat(propertyValues).ToArray();
+            logger.Log(level, () => "<{EventId:l}> " + messageTemplate, ex, formatParameters: props);
         }
 
         public static void DebugEvent(this ILog logger, string eventId, string messageTemplate, params object[] propertyValues)

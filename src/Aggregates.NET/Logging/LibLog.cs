@@ -633,7 +633,7 @@ namespace Aggregates.Logging
 #endif
         static ILog GetLogger(string name)
         {
-            ILogProvider logProvider = s_currentLogProvider = CurrentLogProvider ?? ResolveLogProvider();
+            ILogProvider logProvider = CurrentLogProvider ?? ResolveLogProvider();
             return logProvider == null
                 ? NoOpLogger.Instance
                 : (ILog)new LoggerExecutionWrapper(logProvider.GetLogger(name), () => IsDisabled);
@@ -652,7 +652,7 @@ namespace Aggregates.Logging
 #endif
         static IDisposable OpenNestedContext(string message)
         {
-            ILogProvider logProvider = s_currentLogProvider = CurrentLogProvider ?? ResolveLogProvider();
+            ILogProvider logProvider = CurrentLogProvider ?? ResolveLogProvider();
 
             return logProvider == null
                 ? new DisposableAction(() => { })
@@ -673,7 +673,7 @@ namespace Aggregates.Logging
 #endif
         static IDisposable OpenMappedContext(string key, object value, bool destructure = false)
         {
-            ILogProvider logProvider = s_currentLogProvider = CurrentLogProvider ?? ResolveLogProvider();
+            ILogProvider logProvider = CurrentLogProvider ?? ResolveLogProvider();
 
             return logProvider == null
                 ? new DisposableAction(() => { })
@@ -722,7 +722,7 @@ namespace Aggregates.Logging
 
         internal static ILogProvider ResolveLogProvider()
         {
-            return s_resolvedLogProvider.Value;
+            return s_currentLogProvider = s_resolvedLogProvider.Value;
         }
 
         [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Console.WriteLine(System.String,System.Object,System.Object)")]
@@ -735,7 +735,7 @@ namespace Aggregates.Logging
                 {
                     if (providerResolver.Item1())
                     {
-                        return providerResolver.Item2();
+                        return s_currentLogProvider = providerResolver.Item2();
                     }
                 }
             }

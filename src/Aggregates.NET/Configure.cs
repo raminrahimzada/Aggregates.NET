@@ -165,7 +165,6 @@ namespace Aggregates
             });
             StartupTasks.Add((c) =>
             {
-                Defaults.Endpoint = c.Endpoint;
                 return Task.CompletedTask;
             });
         }

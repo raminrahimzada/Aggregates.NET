@@ -58,6 +58,11 @@ namespace Aggregates
             }
 
 
+            context.Pipeline.Register(
+                new LogContextProviderBehaviour(),
+                "Provides useful message information to logger"
+                );
+
             if (Configuration.Settings.SlowAlertThreshold.HasValue)
                 context.Pipeline.Register(
                     behavior: new TimeExecutionBehavior(Configuration.Settings.SlowAlertThreshold.Value),

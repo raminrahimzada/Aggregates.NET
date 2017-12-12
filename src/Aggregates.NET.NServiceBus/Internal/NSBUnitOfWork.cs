@@ -72,9 +72,6 @@ namespace Aggregates.Internal
 
 
             CommitId = commitId;
-            Defaults.MessageId.Value = CommitId;
-            if (CurrentHeaders.TryGetValue(NSBDefaults.CorrelationIdHeader, out string correlationId) && Guid.TryParse(correlationId, out Guid corrId))
-                Defaults.CorrId.Value = corrId;
 
             // Helpful log and gets CommitId into the dictionary
             var firstEventId = UnitOfWork.NextEventId(CommitId);

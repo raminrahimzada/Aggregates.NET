@@ -39,10 +39,6 @@ namespace Aggregates
         public static string InstanceHeader = "Instance";
 
         public static AsyncLocal<LogLevel?> MinimumLogging = new AsyncLocal<LogLevel?>();
-        // used to add context to log messages
-        public static AsyncLocal<Guid> MessageId = new AsyncLocal<Guid>();
-        public static AsyncLocal<Guid> CorrId = new AsyncLocal<Guid>();
-        public static string Endpoint { get; internal set; }
 
     }
 }
