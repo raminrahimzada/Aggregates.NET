@@ -344,6 +344,7 @@ Task("Upload-AppVeyor-Artifacts")
     .WithCriteria(() => parameters.IsRunningOnAppVeyor)
     .Does(() =>
 {
+    AppVeyor.UpdateBuildVersion(parameters.Version.SemVersion)
     AppVeyor.UploadArtifact(parameters.Paths.Files.ZipBinaries);
 
     foreach(var package in GetFiles(parameters.Paths.Directories.NugetRoot + "/*"))
@@ -361,7 +362,8 @@ Task("Create-VSTS-Artifacts")
 {
     var commands = context.BuildSystem().TFBuild.Commands;
 
-    commands.UploadArtifact("source", context.Environment.WorkingDirectory + "/", "source");
+    commands.UploadArtifact("artifacts", parameters.Paths.Directories.ArtifactsDir, "artifacts");
+    commands.UploadArtifact("tests", parameters.Paths.Directories.TestResultsDir, "tests");
 
     commands.AddBuildTag(parameters.Version.Sha);
     commands.AddBuildTag(parameters.Version.SemVersion);
