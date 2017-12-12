@@ -344,12 +344,14 @@ Task("Upload-AppVeyor-Artifacts")
     .WithCriteria(() => parameters.IsRunningOnAppVeyor)
     .Does(() =>
 {
-    AppVeyor.UpdateBuildVersion(parameters.Version.SemVersion)
+    AppVeyor.UpdateBuildVersion(parameters.Version.SemVersion);
     AppVeyor.UploadArtifact(parameters.Paths.Files.ZipBinaries);
 
     foreach(var package in GetFiles(parameters.Paths.Directories.NugetRoot + "/*"))
     {
-        AppVeyor.UploadArtifact(package);
+        AppVeyor.UploadArtifact(package, new AppVeyorUploadArtifactsSettings {
+            ArtifactType = AppVeyorUploadArtifactType.NuGetPackage
+        });
     }
 });
 
@@ -362,8 +364,15 @@ Task("Create-VSTS-Artifacts")
 {
     var commands = context.BuildSystem().TFBuild.Commands;
 
-    commands.UploadArtifact("artifacts", parameters.Paths.Directories.ArtifactsDir, "artifacts");
-    commands.UploadArtifact("tests", parameters.Paths.Directories.TestResultsDir, "tests");
+    commands.UploadArtifact("binaries", parameters.Paths.Files.ZipBinaries);
+
+    foreach(var package in GetFiles(parameters.Paths.Directories.NugetRoot + "/*"))
+    {
+        commands.UploadArtifact("nuget", package);
+    }
+
+    commands.UploadArtifact("artifacts", parameters.Paths.Directories.ArtifactsDir + "/", "artifacts");
+    commands.UploadArtifact("tests", parameters.Paths.Directories.TestResultsDir + "/", "tests");
 
     commands.AddBuildTag(parameters.Version.Sha);
     commands.AddBuildTag(parameters.Version.SemVersion);
