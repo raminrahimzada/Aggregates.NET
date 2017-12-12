@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
+using Aggregates.Logging;
 using Aggregates.Messages;
 
 namespace Aggregates.Internal
@@ -32,7 +33,7 @@ namespace Aggregates.Internal
 
     class EntityFactory<TEntity, TState> : IEntityFactory<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
     {
-
+        private static readonly ILog Logger = LogProvider.GetLogger("EntityFactory");
         private readonly Func<TEntity> _factory;
 
         public EntityFactory()
@@ -49,7 +50,17 @@ namespace Aggregates.Internal
 
             var snapshotState = snapshot as TState;
 
-            var state = snapshotState?.Copy<TState>() ?? new TState() { Version = EntityFactory.NewEntityVersion };
+            TState state = null;
+            if (snapshotState != null)
+            {
+                // Deep copy, any changes to state shouldn't trickle into snapshot cache
+                state = snapshotState.Copy();
+                if (state == null)
+                    Logger.WarnEvent("SnapshotFailure", "Snapshot {snapshotState} could not be copied", snapshotState);
+            }
+            if (state == null)
+                state = new TState { Version = EntityFactory.NewEntityVersion };
+
             state.Id = id;
             state.Bucket = bucket;
 
@@ -68,9 +79,9 @@ namespace Aggregates.Internal
             var entity = _factory();
             (entity as IEntity<TState>).Instantiate(state);
 
-            
+
             return entity;
         }
-        
+
     }
 }
