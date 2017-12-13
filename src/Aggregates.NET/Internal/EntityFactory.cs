@@ -60,7 +60,7 @@ namespace Aggregates.Internal
 
             if (snapshotState != null)
             {
-                Logger.DebugEvent("Restored", "Snapshot {Snapshot}", snapshotState);
+                Logger.DebugEvent("Restored", "Snapshot {@Snapshot}", snapshotState);
                 state.SnapshotRestored();
             }
 
