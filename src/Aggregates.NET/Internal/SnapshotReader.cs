@@ -125,7 +125,7 @@ namespace Aggregates.Internal
                 Payload = e.Event as IState
             };
             
-            Logger.DebugEvent("GotSnapshot", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", snapshot.StreamId, snapshot.Bucket, snapshot.EntityType, snapshot.Version);
+            Logger.DebugEvent("GotSnapshot", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version} {@Snapshot}", snapshot.StreamId, snapshot.Bucket, snapshot.EntityType, snapshot.Version, snapshot);
             Snapshots.AddOrUpdate(stream, (key) =>
             {
                 _metrics.Increment("Snapshots Stored", Unit.Items);

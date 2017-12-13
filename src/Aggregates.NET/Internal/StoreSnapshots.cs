@@ -25,11 +25,6 @@ namespace Aggregates.Internal
             _snapshots = snapshots;
             _streamGen = streamGen;
         }
-        //public StoreSnapshots(IStoreEvents store, StreamIdGenerator streamGen)
-        //{
-        //    _store = store;
-        //    _streamGen = streamGen;
-        //}
 
         public async Task<ISnapshot> GetSnapshot<T>(string bucket, Id streamId, Id[] parents) where T : IEntity
         {
@@ -42,7 +37,7 @@ namespace Aggregates.Internal
                 if (snapshot != null)
                 {
                     _metrics.Mark("Snapshot Cache Hits", Unit.Items);
-                    Logger.DebugEvent("Cached", "[{Stream:l}] version {Version}", streamName, snapshot.Version);
+                    Logger.DebugEvent("Cached", "[{Stream:l}] version {Version} {@Snapshot}", streamName, snapshot.Version, snapshot);
                     return snapshot;
                 }
             }
@@ -65,7 +60,7 @@ namespace Aggregates.Internal
                     Version = @event.Descriptor.Version,
                     Payload = @event.Event as IState
                 };
-                Logger.DebugEvent("Read", "[{Stream:l}] version {Version}", streamName, snapshot.Version);
+                Logger.DebugEvent("Read", "[{Stream:l}] version {Version} {@Snapshot}", streamName, snapshot.Version, snapshot);
                 return snapshot;
             }
             
