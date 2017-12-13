@@ -50,7 +50,7 @@ namespace Aggregates.Internal
 
             var snapshotState = snapshot as TState;
 
-            var state = snapshotState?.Copy<TState>() ?? new TState() { Version = EntityFactory.NewEntityVersion };
+            var state = snapshotState ?? new TState() { Version = EntityFactory.NewEntityVersion };
 
             state.Id = id;
             state.Bucket = bucket;
