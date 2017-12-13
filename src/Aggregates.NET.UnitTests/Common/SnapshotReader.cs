@@ -19,7 +19,6 @@ namespace Aggregates.UnitTests.Common
         
         private Moq.Mock<IMetrics> _metrics;
         private Moq.Mock<IEventStoreConsumer> _consumer;
-        private IMessageSerializer _serializer;
         private Aggregates.Internal.SnapshotReader _subscriber;
 
         [SetUp]
@@ -27,11 +26,10 @@ namespace Aggregates.UnitTests.Common
         {
             _metrics = new Moq.Mock<IMetrics>();
             _consumer = new Moq.Mock<IEventStoreConsumer>();
-            _serializer = new JsonMessageSerializer(new Moq.Mock<IEventMapper>().Object, new Moq.Mock<IEventFactory>().Object);
 
             var store = new Moq.Mock<IStoreEvents>();
             
-            _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object, _serializer);
+            _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object);
             Bus.BusOnline = true;
 
         }
@@ -109,6 +107,46 @@ namespace Aggregates.UnitTests.Common
             var read = await _subscriber.Retreive("test").ConfigureAwait(false);
             Assert.AreEqual(1, read.Payload.Version);
 
+
+            cts.Cancel();
+        }
+        [Test]
+        public async Task gets_snapshot_is_clone()
+        {
+
+            Func<string, long, IFullEvent, Task> eventCb = null;
+            _consumer.Setup(
+                    x =>
+                        x.SubscribeToStreamEnd(Moq.It.Is<string>(m => m.EndsWith(StreamTypes.Snapshot)),
+                            Moq.It.IsAny<CancellationToken>(), Moq.It.IsAny<Func<string, long, IFullEvent, Task>>(),
+                            Moq.It.IsAny<Func<Task>>()))
+                .Callback<string, CancellationToken, Func<string, long, IFullEvent, Task>, Func<Task>>(
+                    (stream, token, onEvent, onDisconnect) =>
+                    {
+                        eventCb = onEvent;
+                    })
+                .Returns(Task.FromResult(true));
+
+            var cts = new CancellationTokenSource();
+            await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
+
+            await _subscriber.Connect().ConfigureAwait(false);
+
+            Assert.NotNull(eventCb);
+
+            var memento = new FakeState();
+            memento.Version = 1;
+
+            var message = new Moq.Mock<IFullEvent>();
+            message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
+            message.Setup(x => x.Event).Returns(memento);
+            await eventCb("test", 0, message.Object);
+
+            var read = await _subscriber.Retreive("test").ConfigureAwait(false);
+
+            // A change to the base memento shouldn't change what we get from snapshot reader (it should have cloned the snapshot)
+            memento.Version = 2;
+            Assert.AreEqual(1, read.Payload.Version);
 
             cts.Cancel();
         }

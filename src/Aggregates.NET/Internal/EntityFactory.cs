@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
+using Aggregates.Internal.Cloning;
 using Aggregates.Logging;
 using Aggregates.Messages;
 
@@ -56,7 +57,7 @@ namespace Aggregates.Internal
             state.Bucket = bucket;
 
             state.Parents = parents;
-            state.Snapshot = snapshotState;
+            state.Snapshot = snapshotState?.Copy();
 
             if (snapshotState != null)
             {
