@@ -49,7 +49,7 @@ namespace Aggregates.Internal
         public override void BindToName(Type serializedType, out string assemblyName, out string typeName)
         {
             var mappedType = serializedType;
-            if (!serializedType.IsInterface)
+            if (!serializedType.IsInterface && typeof(Messages.IEvent).IsAssignableFrom(serializedType))
                 mappedType = _mapper.GetMappedTypeFor(serializedType) ?? serializedType;
 
             assemblyName = null;

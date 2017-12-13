@@ -69,8 +69,8 @@ namespace Aggregates.Internal
                 } while (!current.IsEndOfStream && (!count.HasValue || (events.Count != count.Value)));
 
                 if (ctx.Elapsed > TimeSpan.FromSeconds(1))
-                    SlowLogger.InfoEvent("SlowRead", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
-                Logger.InfoEvent("Read", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
+                    SlowLogger.InfoEvent("SlowRead", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds} ms", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
+                Logger.DebugEvent("Read", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds} ms", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
             }
 
             if (current.Status == SliceReadStatus.StreamNotFound)
@@ -144,8 +144,8 @@ namespace Aggregates.Internal
 
 
                     if (ctx.Elapsed > TimeSpan.FromSeconds(1))
-                        SlowLogger.InfoEvent("SlowBackwardsRead", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
-                    Logger.InfoEvent("BackwardsRead", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds}", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
+                        SlowLogger.InfoEvent("SlowBackwardsRead", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds} ms", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
+                    Logger.DebugEvent("BackwardsRead", "{Events} events size {Size} stream [{Stream:l}] elapsed {Milliseconds} ms", events.Count, events.Sum(x => x.Event.Data.Length), stream, ctx.Elapsed.TotalMilliseconds);
                 }
 
                 if (current.Status == SliceReadStatus.StreamNotFound)
@@ -304,8 +304,8 @@ namespace Aggregates.Internal
                 }
 
                 if (ctx.Elapsed > TimeSpan.FromSeconds(1))
-                    SlowLogger.DebugEvent("SlowWrite", "{Events} events size {Size} stream [{Stream:l}] version {ExpectedVersion} took {Milliseconds}", events.Count(), events.Sum(x => x.Data.Length), stream, expectedVersion, ctx.Elapsed.TotalMilliseconds);
-                Logger.DebugEvent("Write", "{Events} events size {Size} stream [{Stream:l}] version {ExpectedVersion} took {Milliseconds}", events.Count(), events.Sum(x => x.Data.Length), stream, expectedVersion, ctx.Elapsed.TotalMilliseconds);
+                    SlowLogger.InfoEvent("SlowWrite", "{Events} events size {Size} stream [{Stream:l}] version {ExpectedVersion} took {Milliseconds} ms", events.Count(), events.Sum(x => x.Data.Length), stream, expectedVersion, ctx.Elapsed.TotalMilliseconds);
+                Logger.DebugEvent("Write", "{Events} events size {Size} stream [{Stream:l}] version {ExpectedVersion} took {Milliseconds} ms", events.Count(), events.Sum(x => x.Data.Length), stream, expectedVersion, ctx.Elapsed.TotalMilliseconds);
             }
             return nextVersion;
         }
