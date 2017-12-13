@@ -20,8 +20,11 @@ namespace Aggregates.Internal
         protected override JsonObjectContract CreateObjectContract(Type objectType)
         {
             var mappedTypeFor = objectType;
-            if (mappedTypeFor.IsInterface)
-                mappedTypeFor = _mapper.GetMappedTypeFor(objectType);
+
+            if(!mappedTypeFor.IsInterface)
+                return base.CreateObjectContract(objectType);
+            
+            mappedTypeFor = _mapper.GetMappedTypeFor(objectType);
 
             if (mappedTypeFor == null)
                 return base.CreateObjectContract(objectType);

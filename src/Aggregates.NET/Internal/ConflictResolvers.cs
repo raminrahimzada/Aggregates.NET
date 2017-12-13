@@ -115,7 +115,7 @@ namespace Aggregates.Internal
 
             var latestEvents =
                 await _eventstore.GetEvents<TEntity>(entity.Bucket, entity.Id, entity.Parents, entity.Version).ConfigureAwait(false);
-            Logger.InfoEvent("Behind", "Stream is {Count} events behind store");
+            Logger.InfoEvent("Behind", "Stream is {Count} events behind store", latestEvents.Count());
 
             for (var i = 0; i < latestEvents.Length; i++)
                 state.Apply(latestEvents[i].Event as IEvent);

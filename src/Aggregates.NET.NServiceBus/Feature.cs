@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aggregates
@@ -121,7 +122,11 @@ namespace Aggregates
                 x.Instance = Defaults.Instance;
             }).ConfigureAwait(false);
 
-            await _startupTasks.WhenAllAsync(x => x(_config)).ConfigureAwait(false);
+            // Don't stop the bus from completing setup
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                _startupTasks.WhenAllAsync(x => x(_config)).Wait();
+            });
         }
         protected override async Task OnStop(IMessageSession session)
         {

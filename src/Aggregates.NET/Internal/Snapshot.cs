@@ -3,7 +3,7 @@ using Aggregates.Contracts;
 
 namespace Aggregates.Internal
 {
-    class Snapshot : ISnapshot
+    public class Snapshot : ISnapshot
     {
         public string Bucket { get; set; }
         public Id StreamId { get; set; }

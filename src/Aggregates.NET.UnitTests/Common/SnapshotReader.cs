@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Internal;
+using Newtonsoft.Json;
 using NServiceBus.Transport;
 using NUnit.Framework;
 
@@ -14,8 +15,11 @@ namespace Aggregates.UnitTests.Common
     [TestFixture]
     public class SnapshotReader
     {
+        class FakeState : Aggregates.State<FakeState> { }
+        
         private Moq.Mock<IMetrics> _metrics;
         private Moq.Mock<IEventStoreConsumer> _consumer;
+        private IMessageSerializer _serializer;
         private Aggregates.Internal.SnapshotReader _subscriber;
 
         [SetUp]
@@ -23,9 +27,11 @@ namespace Aggregates.UnitTests.Common
         {
             _metrics = new Moq.Mock<IMetrics>();
             _consumer = new Moq.Mock<IEventStoreConsumer>();
+            _serializer = new JsonMessageSerializer(new Moq.Mock<IEventMapper>().Object, new Moq.Mock<IEventFactory>().Object);
+
             var store = new Moq.Mock<IStoreEvents>();
             
-            _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object);
+            _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object, _serializer);
             Bus.BusOnline = true;
 
         }
@@ -92,12 +98,12 @@ namespace Aggregates.UnitTests.Common
 
             Assert.NotNull(eventCb);
 
-            var memento = new Moq.Mock<IState>();
-            memento.Setup(x => x.Version).Returns(1);
+            var memento = new FakeState();
+            memento.Version = 1;
 
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
-            message.Setup(x => x.Event).Returns(memento.Object);
+            message.Setup(x => x.Event).Returns(memento);
             await eventCb("test", 0, message.Object);
 
             var read = await _subscriber.Retreive("test").ConfigureAwait(false);
@@ -141,16 +147,16 @@ namespace Aggregates.UnitTests.Common
 
             Assert.NotNull(eventCb);
 
-            var memento = new Moq.Mock<IState>();
-            var memento2 = new Moq.Mock<IState>();
-            memento.Setup(x => x.Version).Returns(1);
-            memento2.Setup(x => x.Version).Returns(2);
+            var memento = new FakeState();
+            var memento2 = new FakeState();
+            memento.Version = 1;
+            memento2.Version = 2;
 
             var message = new Moq.Mock<IFullEvent>();
             message.Setup(x => x.Descriptor).Returns(new EventDescriptor());
-            message.Setup(x => x.Event).Returns(memento.Object);
+            message.Setup(x => x.Event).Returns(memento);
             await eventCb("test", 0, message.Object);
-            message.Setup(x => x.Event).Returns(memento2.Object);
+            message.Setup(x => x.Event).Returns(memento2);
             await eventCb("test", 0, message.Object);
 
             var snapshot = await _subscriber.Retreive("test").ConfigureAwait(false);

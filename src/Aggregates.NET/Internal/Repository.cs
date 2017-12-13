@@ -172,7 +172,7 @@ namespace Aggregates.Internal
                             var strategy = _conflictResolution.Conflict.Build(Configuration.Settings.Container, _conflictResolution.Resolver);
                             await strategy.Resolve<TEntity, TState>(clean, domainEvents, commitId, commitHeaders).ConfigureAwait(false);
                             
-                            Logger.InfoEvent("ConflictResolveSuccess", "[{Stream:l}] entity [{EntityType:l}] resolution success");
+                            Logger.InfoEvent("ConflictResolveSuccess", "[{Stream:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
                         }
                         catch (AbandonConflictException abandon)
                         {

@@ -50,16 +50,7 @@ namespace Aggregates.Internal
 
             var snapshotState = snapshot as TState;
 
-            TState state = null;
-            if (snapshotState != null)
-            {
-                // Deep copy, any changes to state shouldn't trickle into snapshot cache
-                state = snapshotState.Copy();
-                if (state == null)
-                    Logger.WarnEvent("SnapshotFailure", "Snapshot {snapshotState} could not be copied", snapshotState);
-            }
-            if (state == null)
-                state = new TState { Version = EntityFactory.NewEntityVersion };
+            var state = snapshotState?.Copy<TState>() ?? new TState() { Version = EntityFactory.NewEntityVersion };
 
             state.Id = id;
             state.Bucket = bucket;
@@ -78,7 +69,6 @@ namespace Aggregates.Internal
 
             var entity = _factory();
             (entity as IEntity<TState>).Instantiate(state);
-
 
             return entity;
         }
