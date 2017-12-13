@@ -31,6 +31,10 @@ namespace Domain
         {
             LastMessage = e.Message;
         }
+        protected override void SnapshotRestored()
+        {
+            Console.WriteLine(LastMessage);
+        }
 
         protected override bool ShouldSnapshot()
         {
