@@ -20,7 +20,7 @@ namespace Aggregates.Extensions
                 level = Defaults.MinimumLogging.Value.Value;
 
             var props = new[] { eventId }.Concat(propertyValues).ToArray();
-            logger.Log(level, () => "<{EventId:l}> " + messageTemplate, ex, formatParameters: props);
+            logger.Log(level, () => "<{EventId:l}> " + messageTemplate, exception: ex, formatParameters: props);
         }
 
         public static void DebugEvent(this ILog logger, string eventId, string messageTemplate, params object[] propertyValues)

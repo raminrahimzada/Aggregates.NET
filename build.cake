@@ -84,6 +84,9 @@ Setup(context =>
         commands.AddBuildTag(parameters.Version.SemVersion);
         commands.AddBuildTag(parameters.Configuration);
     }
+    if(parameters.IsRunningOnAppVeyor) {
+        AppVeyor.UpdateBuildVersion(parameters.Version.SemVersion);
+    }
 
     Information("Building version {0} {5} of {4} ({1}, {2}) using version {3} of Cake",
         parameters.Version.SemVersion,
@@ -344,7 +347,6 @@ Task("Upload-AppVeyor-Artifacts")
     .WithCriteria(() => parameters.IsRunningOnAppVeyor)
     .Does(() =>
 {
-    AppVeyor.UpdateBuildVersion(parameters.Version.SemVersion);
     AppVeyor.UploadArtifact(parameters.Paths.Files.ZipBinaries);
 
     foreach(var package in GetFiles(parameters.Paths.Directories.NugetRoot + "/*"))

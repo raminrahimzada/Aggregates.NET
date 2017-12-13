@@ -18,7 +18,7 @@ namespace Aggregates.Internal
             {
                 using (LogProvider.OpenMappedContext("MessageId", context.MessageId))
                 {
-                    string corrId = "";
+                    string corrId = context.MessageId;
                     context.MessageHeaders.TryGetValue(Headers.CorrelationId, out corrId);
                     using (LogProvider.OpenMappedContext("CorrId", corrId))
                     {
