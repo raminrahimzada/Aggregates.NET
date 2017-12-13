@@ -3,6 +3,8 @@ using Newtonsoft.Json.Serialization;
 using System.Reflection;
 using System;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Aggregates.Internal
 {
@@ -17,6 +19,12 @@ namespace Aggregates.Internal
             _factory = factory;
         }
 
+        // https://stackoverflow.com/a/18548894/223547
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            IList<JsonProperty> props = base.CreateProperties(type, memberSerialization);
+            return props.Where(p => p.Writable).ToList();
+        }
         // https://github.com/danielwertheim/jsonnet-privatesetterscontractresolvers/blob/master/src/JsonNet.PrivateSettersContractResolvers/PrivateSettersContractResolvers.cs
         // Need to be able to set private members because snapshots generally are { get; private set; } which won't deserialize properly
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)

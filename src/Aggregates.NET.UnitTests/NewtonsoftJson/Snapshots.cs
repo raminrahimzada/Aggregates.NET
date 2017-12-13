@@ -25,6 +25,14 @@ namespace Aggregates.NewtonsoftJson
             public void setTest(string test) { Test = test; }
         }
 
+        class GetOnly
+        {
+            private string _test;
+            public string Test => _test;
+
+            public void setTest(string test) { _test = test; }
+        }
+
         private Moq.Mock<IEventMapper> _mapper;
         private Moq.Mock<IEventFactory> _factory;
 
@@ -62,6 +70,20 @@ namespace Aggregates.NewtonsoftJson
             var deserialized = _serializer.Deserialize<Private>(serialized);
 
             Assert.AreEqual(obj.Test, deserialized.Test);
+        }
+
+        [Test]
+        public void get_only()
+        {
+            var obj = new GetOnly();
+            obj.setTest("test");
+
+            var serialized = _serializer.Serialize(obj);
+
+            // deserialize as "Private" to check that field Test was NOT serialized above
+            var deserialized = _serializer.Deserialize<Private>(serialized);
+
+            Assert.AreNotEqual(obj.Test, deserialized.Test);
         }
     }
 }
