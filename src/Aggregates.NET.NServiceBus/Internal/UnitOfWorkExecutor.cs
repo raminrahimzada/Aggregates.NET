@@ -16,6 +16,7 @@ namespace Aggregates.Internal
     internal class UnitOfWorkExecutor : Behavior<IIncomingLogicalMessageContext>
     {
         private static readonly ILog Logger = LogProvider.GetLogger("UOW Executor");
+        private static readonly ConcurrentDictionary<string, dynamic> Bags = new ConcurrentDictionary<string, dynamic>();
 
         private readonly IMetrics _metrics;
 
@@ -53,6 +54,10 @@ namespace Aggregates.Internal
             {
                 // IUnitOfWork might not be defined by user
                 appUOW = child.Resolve<IUnitOfWork>();
+                appUOW.Bag = new System.Dynamic.ExpandoObject();
+                // if this is a retry pull the bag from the registry
+                if (Bags.TryRemove(context.MessageId, out var bag))
+                    appUOW.Bag = bag;
             }
             catch { }
 
@@ -90,7 +95,10 @@ namespace Aggregates.Internal
                     // Todo: if one throws an exception (again) the others wont work.  Fix with a loop of some kind
                     await domainUOW.End(e).ConfigureAwait(false);
                     if (appUOW != null)
+                    {
                         await appUOW.End(e).ConfigureAwait(false);
+                        Bags.TryAdd(context.MessageId, appUOW.Bag);
+                    }
                     await delayed.End(e).ConfigureAwait(false);
                 }
                 catch (Exception endException)

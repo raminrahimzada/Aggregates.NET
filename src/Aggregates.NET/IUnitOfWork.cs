@@ -9,6 +9,10 @@ namespace Aggregates
 {
     public interface IUnitOfWork
     {
+        /// Used to store things you might need persisted should the message be retried
+        /// (if you attempt to save 2 objects and 1 fails, you may want to save the successful one here and ignore it when retrying)
+        dynamic Bag { get; set; }
+
         Task Begin();
         Task End(Exception ex = null);
     }
