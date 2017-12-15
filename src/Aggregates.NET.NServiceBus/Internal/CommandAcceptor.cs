@@ -48,7 +48,7 @@ namespace Aggregates.Internal
                 {
                     _metrics.Mark("Business Exceptions", Unit.Errors);
                     
-                    Logger.InfoEvent("BusinessException", e, "{MessageId} {MessageType} rejected {Message}", context.MessageId, context.Message.MessageType.FullName, e.Message);
+                    Logger.InfoEvent("BusinessException", "{MessageId} {MessageType} rejected {Message}", context.MessageId, context.Message.MessageType.FullName, e.Message);
                     if (!context.MessageHeaders.ContainsKey(Defaults.RequestResponse) || context.MessageHeaders[Defaults.RequestResponse] != "1")
                         return; // Dont throw, business exceptions are not message failures
                     
