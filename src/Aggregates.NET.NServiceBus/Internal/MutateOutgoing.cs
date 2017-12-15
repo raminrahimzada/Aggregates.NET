@@ -13,18 +13,9 @@ namespace Aggregates.Internal
     internal class MutateOutgoing : Behavior<IOutgoingLogicalMessageContext>
     {
         private static readonly ILog Logger = LogProvider.GetLogger("MutateOutgoing");
-
-        private readonly IMetrics _metrics;
-
-        public MutateOutgoing(IMetrics metrics)
-        {
-            _metrics = metrics;
-        }
-
+        
         public override Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
         {
-            _metrics.Mark("Outgoing Messages", Unit.Message);
-
             IMutating mutated = new Mutating(context.Message.Instance, context.Headers ?? new Dictionary<string, string>());
 
             var mutators = MutationManager.Registered.ToList();

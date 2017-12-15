@@ -67,10 +67,11 @@ namespace Aggregates.Internal
     }
     internal class CommandAcceptorRegistration : RegisterStep
     {
-        public CommandAcceptorRegistration() : base(
+        public CommandAcceptorRegistration(IContainer container) : base(
             stepId: "CommandAcceptor",
             behavior: typeof(CommandAcceptor),
-            description: "Filters [BusinessException] from processing failures"
+            description: "Filters [BusinessException] from processing failures",
+            factoryMethod: (b) => new CommandAcceptor(container.Resolve<IMetrics>())
         )
         {
             // Needs to be after message unpack so Message.Instance is correct

@@ -42,13 +42,13 @@ namespace Aggregates
                 MutationManager.RegisterMutator("domain unit of work", typeof(IDomainUnitOfWork));
 
                 context.Pipeline.Register(
-                    b => new ExceptionRejector(b.Build<IMetrics>(), Configuration.Settings.Retries),
+                    b => new ExceptionRejector(container.Resolve<IMetrics>(), Configuration.Settings.Retries),
                     "Watches message faults, sends error replies to client when message moves to error queue"
                     );
 
-                context.Pipeline.Register<UowRegistration>();
-                context.Pipeline.Register<CommandAcceptorRegistration>();
-                context.Pipeline.Register<LocalMessageUnpackRegistration>();
+                context.Pipeline.Register(new UowRegistration(container));
+                context.Pipeline.Register(new CommandAcceptorRegistration(container));
+                context.Pipeline.Register(new LocalMessageUnpackRegistration(container));
                 // Remove NSBs unit of work since we do it ourselves
                 context.Pipeline.Remove("ExecuteUnitOfWork");
 
