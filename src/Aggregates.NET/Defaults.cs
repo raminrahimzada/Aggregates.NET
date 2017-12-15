@@ -31,6 +31,7 @@ namespace Aggregates
         public static readonly string OobDaysToLiveKey = "Aggregates.DaysToLive";
         public static readonly string LocalHeader = "Aggregates.NET.LocalMessage";
         public static readonly string LocalBulkHeader = "Aggregates.NET.LocalBulkMessage";
+        public static readonly string ConflictResolvedHeader = "ConflictResolver";
 
 
         public static Guid Instance = Guid.NewGuid();

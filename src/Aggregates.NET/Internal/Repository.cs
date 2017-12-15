@@ -153,7 +153,7 @@ namespace Aggregates.Internal
                     }
                     catch (VersionException e)
                     {
-                        Logger.InfoEvent("VersionConflict", "[{Stream:l}] entity [{EntityType:l}] version {Version} commit version {CommitVersion} - {StoreMessage}", tracked.Id, typeof(TEntity).FullName, state.Version, tracked.Version, e.Message);
+                        Logger.DebugEvent("VersionConflict", "[{Stream:l}] entity [{EntityType:l}] version {Version} commit version {CommitVersion} - {StoreMessage}", tracked.Id, typeof(TEntity).FullName, state.Version, tracked.Version, e.Message);
                         _metrics.Mark("Conflicts", Unit.Items);
                         // If we expected no stream, no reason to try to resolve the conflict
                         if (tracked.Version == EntityFactory.NewEntityVersion)
@@ -170,9 +170,12 @@ namespace Aggregates.Internal
                             
                             Logger.DebugEvent("ConflictResolve", "[{Stream:l}] entity [{EntityType:l}] resolving {ConflictingEvents} events with {ConflictResolver}", tracked.Id, typeof(TEntity).FullName, state.Version - clean.Version, _conflictResolution.Conflict);
                             var strategy = _conflictResolution.Conflict.Build(Configuration.Settings.Container, _conflictResolution.Resolver);
+                            
+                            commitHeaders[Defaults.ConflictResolvedHeader] = _conflictResolution.Conflict.DisplayName;
+
                             await strategy.Resolve<TEntity, TState>(clean, domainEvents, commitId, commitHeaders).ConfigureAwait(false);
                             
-                            Logger.InfoEvent("ConflictResolveSuccess", "[{Stream:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
+                            Logger.DebugEvent("ConflictResolveSuccess", "[{Stream:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
                         }
                         catch (AbandonConflictException abandon)
                         {
