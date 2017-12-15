@@ -379,7 +379,7 @@ namespace Aggregates.Internal
                     {
                         var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 
-                        Logger.WarnEvent("LargeFlush", "{Flush} messages channel [{Channel:l}] key [{Key:l}]", messages.Length, expired.Channel, expired.Key);
+                        Logger.InfoEvent("LargeFlush", "{Flush} messages channel [{Channel:l}] key [{Key:l}]", messages.Length, expired.Channel, expired.Key);
 
                         var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
                         {
@@ -437,7 +437,7 @@ namespace Aggregates.Internal
                 Interlocked.CompareExchange(ref _tooLarge, 0, 1);
             }
             
-            Logger.InfoEvent("Flushed", "{Flushed} total", totalFlushed);
+            Logger.DebugEvent("Flushed", "{Flushed} total", totalFlushed);
         }
     }
 }

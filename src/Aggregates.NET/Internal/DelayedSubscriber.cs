@@ -140,7 +140,7 @@ namespace Aggregates.Internal
                     {
                         Task.Run(async () =>
                         {
-                            Logger.InfoEvent("Processing", "{Messages} bulk events", flushedEvents.Count);
+                            Logger.DebugEvent("Processing", "{Messages} bulk events", flushedEvents.Count);
                             
                             metrics.Decrement("Delayed Queued", Unit.Event, flushedEvents.Count(x => x.Item2.Event != null));
                             

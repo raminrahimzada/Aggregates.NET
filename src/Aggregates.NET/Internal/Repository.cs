@@ -70,7 +70,7 @@ namespace Aggregates.Internal
 
         protected override async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents)
         {
-            var entity = await base.GetUntracked(bucket, id, parents);
+            var entity = await base.GetUntracked(bucket, id, parents).ConfigureAwait(false);
 
             entity.Parent = _parent;
 
@@ -79,7 +79,7 @@ namespace Aggregates.Internal
 
         protected override async Task<TEntity> NewUntracked(string bucket, Id id, Id[] parents)
         {
-            var entity = await base.NewUntracked(bucket, id, parents);
+            var entity = await base.NewUntracked(bucket, id, parents).ConfigureAwait(false);
 
             entity.Parent = _parent;
 
@@ -158,7 +158,7 @@ namespace Aggregates.Internal
                         // If we expected no stream, no reason to try to resolve the conflict
                         if (tracked.Version == EntityFactory.NewEntityVersion)
                         {
-                            Logger.WarnEvent("AlreadyExists", "[{Stream:l}] entity [{EntityType:l}] already exists", tracked.Id, typeof(TEntity).FullName);
+                            Logger.DebugEvent("AlreadyExists", "[{Stream:l}] entity [{EntityType:l}] already exists", tracked.Id, typeof(TEntity).FullName);
                             throw new ConflictResolutionFailedException(
                                 $"New stream [{tracked.Id}] entity {tracked.GetType().FullName} already exists in store");
                         }
@@ -226,7 +226,7 @@ namespace Aggregates.Internal
                     {
                         Logger.WarnEvent("SecondaryFailure", "[{Stream:l}] entity [{EntityType:l}] bucket [{Bucket:l}]: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).Name, tracked.Bucket, e.GetType().Name, e.Message);
                     }
-                });
+                }).ConfigureAwait(false);
 
             
             Logger.DebugEvent("FinishedCommit", "[{EntityType:l}] commit {CommitId}", typeof(TEntity).FullName, commitId);

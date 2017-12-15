@@ -66,7 +66,7 @@ namespace Aggregates.Internal
         {
             var state = entity.State;
 
-            Logger.InfoEvent("Resolver", "Resolving {Events} uncommitted events to stream [{Stream:l}] type [{EntityType:l}] bucket [{Bucket:l}]", uncommitted.Count(), entity.Id, typeof(TEntity).FullName, entity.Bucket);
+            Logger.InfoEvent("Resolver", "Resolving {Events} conflicting events to stream [{Stream:l}] type [{EntityType:l}] bucket [{Bucket:l}]", uncommitted.Count(), entity.Id, typeof(TEntity).FullName, entity.Bucket);
 
             foreach (var u in uncommitted)
             {
@@ -85,7 +85,7 @@ namespace Aggregates.Internal
 
         public Task Resolve<TEntity, TState>(TEntity entity, IFullEvent[] uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where TEntity : IEntity<TState> where TState : IState, new()
         {
-            Logger.InfoEvent("Resolver", "Discarding {Events} conflicting uncommitted events to stream [{Stream:l}] type [{EntityType:l}] bucket [{Bucket:l}]", uncommitted.Count(), entity.Id, typeof(TEntity).FullName, entity.Bucket);
+            Logger.InfoEvent("Resolver", "Discarding {Events} conflicting events to stream [{Stream:l}] type [{EntityType:l}] bucket [{Bucket:l}]", uncommitted.Count(), entity.Id, typeof(TEntity).FullName, entity.Bucket);
 
             return Task.CompletedTask;
         }
@@ -111,11 +111,11 @@ namespace Aggregates.Internal
         public async Task Resolve<TEntity, TState>(TEntity entity, IFullEvent[] uncommitted, Guid commitId, IDictionary<string, string> commitHeaders) where TEntity : IEntity<TState> where TState : IState, new()
         {
             var state = entity.State;
-            Logger.InfoEvent("Resolver", "Resolving {Events} conflicting uncommitted events to stream [{Stream:l}] type [{EntityType:l}] bucket [{Bucket:l}]", uncommitted.Count(), entity.Id, typeof(TEntity).FullName, entity.Bucket);
+            Logger.InfoEvent("Resolver", "Resolving {Events} conflicting events to stream [{Stream:l}] type [{EntityType:l}] bucket [{Bucket:l}]", uncommitted.Count(), entity.Id, typeof(TEntity).FullName, entity.Bucket);
 
             var latestEvents =
                 await _eventstore.GetEvents<TEntity>(entity.Bucket, entity.Id, entity.Parents, entity.Version).ConfigureAwait(false);
-            Logger.InfoEvent("Behind", "Stream is {Count} events behind store", latestEvents.Count());
+            Logger.DebugEvent("Behind", "Stream is {Count} events behind store", latestEvents.Count());
 
             for (var i = 0; i < latestEvents.Length; i++)
                 state.Apply(latestEvents[i].Event as IEvent);

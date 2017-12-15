@@ -67,18 +67,14 @@ namespace Aggregates.Internal
                     if (!kv.Value.Any())
                         return;
 
-                    await _cache.Add(kv.Key.Item1, kv.Key.Item2, kv.Value.ToArray());
+                    await _cache.Add(kv.Key.Item1, kv.Key.Item2, kv.Value.ToArray()).ConfigureAwait(false);
                 }
             }
         }
 
         public async Task<TimeSpan?> Age(string channel, string key = null)
         {
-
             var specificAge = await _cache.Age(channel, key).ConfigureAwait(false);
-            
-            if (specificAge > TimeSpan.FromMinutes(1))
-                SlowLogger.InfoEvent("Age", "Channel [{Channel:l}] key [{Key:l}] age {Seconds} seconds", channel, key, specificAge?.TotalSeconds);
 
             return specificAge;
         }
@@ -91,9 +87,6 @@ namespace Aggregates.Internal
             var specificKey = new Tuple<string, string>(channel, key);
             if (_uncommitted.ContainsKey(specificKey))
                 specificSize += _uncommitted[specificKey].Count;
-
-            if (specificSize > 5000)
-                SlowLogger.InfoEvent("Size", "Channel [{Channel:l}] key [{Key:l}] size {Size}", channel, key, specificSize);
 
             return specificSize;
         }

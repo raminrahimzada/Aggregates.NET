@@ -82,7 +82,6 @@ namespace Aggregates.Internal
             }
             catch (Exception e)
             {
-                Logger.InfoEvent("UOWError", e, "{MessageId} {MessageType}: {ExceptionType} - {ExceptionMessage}", context.MessageId, context.Message.MessageType.FullName, e.GetType().Name, e.Message);
                 _metrics.Mark("Message Errors", Unit.Errors);
                 var trailingExceptions = new List<Exception>();
 

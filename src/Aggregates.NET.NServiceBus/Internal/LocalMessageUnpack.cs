@@ -29,7 +29,7 @@ namespace Aggregates.Internal
             {
                 _metrics.Mark("Messages", Unit.Message, delayedMessages.Length);
 
-                Logger.InfoEvent("Bulk", "Processing {Count}", delayedMessages.Length);
+                Logger.DebugEvent("Bulk", "Processing {Count}", delayedMessages.Length);
                 var index = 1;
                 var originalheaders = new Dictionary<string, string>(context.Headers);
 
