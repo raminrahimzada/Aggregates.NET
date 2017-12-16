@@ -269,7 +269,7 @@ namespace Aggregates.Internal
 
             try
             {
-                await EventAppeared(e, token, callback);
+                await EventAppeared(e, token, callback).ConfigureAwait(false);
             }catch(Exception ex)
             {
                 Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage}", ex.GetType().Name, ex.Message);

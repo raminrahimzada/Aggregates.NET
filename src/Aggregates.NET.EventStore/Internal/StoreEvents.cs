@@ -74,7 +74,7 @@ namespace Aggregates.Internal
             }
 
             if (current.Status == SliceReadStatus.StreamNotFound)
-                throw new NotFoundException($"Stream [{stream}] does not exist!");
+                throw new NotFoundException($"Stream [{stream}] does not exist on {_clients[shard].Settings.GossipSeeds[0].EndPoint.Address}!");
             
 
             var translatedEvents = events.Select(e =>
@@ -149,8 +149,8 @@ namespace Aggregates.Internal
                 }
 
                 if (current.Status == SliceReadStatus.StreamNotFound)
-                    throw new NotFoundException($"Stream [{stream}] does not exist!");
-                
+                    throw new NotFoundException($"Stream [{stream}] does not exist on {_clients[shard].Settings.GossipSeeds[0].EndPoint.Address}!");
+
             }
 
             var translatedEvents = events.Select(e =>
@@ -188,13 +188,13 @@ namespace Aggregates.Internal
 
         public async Task<bool> VerifyVersion(string stream, long expectedVersion)
         {
-            var size = await Size(stream);
+            var size = await Size(stream).ConfigureAwait(false);
             return size == expectedVersion;
         }
         public async Task<bool> VerifyVersion<TEntity>(string bucket, Id streamId, Id[] parents,
             long expectedVersion) where TEntity : IEntity
         {
-            var size = await Size<TEntity>(bucket, streamId, parents);
+            var size = await Size<TEntity>(bucket, streamId, parents).ConfigureAwait(false);
             return size == expectedVersion;
         }
 
