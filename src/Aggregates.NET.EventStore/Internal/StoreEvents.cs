@@ -46,7 +46,7 @@ namespace Aggregates.Internal
 
         public async Task<IFullEvent[]> GetEvents(string stream, long? start = null, int? count = null)
         {
-            var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
+            var shard = Math.Abs(stream.GetHash() % _clients.Count());
 
             var sliceStart = start ?? StreamPosition.Start;
             StreamEventsSlice current;
@@ -107,7 +107,7 @@ namespace Aggregates.Internal
         public async Task<IFullEvent[]> GetEventsBackwards(string stream, long? start = null, int? count = null)
         {
 
-            var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
+            var shard = Math.Abs(stream.GetHash() % _clients.Count());
 
             var events = new List<ResolvedEvent>();
             var sliceStart = StreamPosition.End;
@@ -201,7 +201,7 @@ namespace Aggregates.Internal
 
         public async Task<long> Size(string stream)
         {
-            var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
+            var shard = Math.Abs(stream.GetHash() % _clients.Count());
 
             var result = await _clients[shard].ReadStreamEventsBackwardAsync(stream, StreamPosition.End, 1, false).ConfigureAwait(false);
             var size = result.Status == SliceReadStatus.Success ? result.NextEventNumber : 0;
@@ -268,7 +268,7 @@ namespace Aggregates.Internal
 
         private async Task<long> DoWrite(string stream, EventData[] events, long? expectedVersion = null)
         {
-            var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
+            var shard = Math.Abs(stream.GetHash() % _clients.Count());
 
             long nextVersion;
             using (var ctx = _metrics.Begin("EventStore Write Time"))
@@ -315,7 +315,7 @@ namespace Aggregates.Internal
             TimeSpan? cacheControl = null, bool force = false, IDictionary<string, string> custom = null)
         {
 
-            var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
+            var shard = Math.Abs(stream.GetHash() % _clients.Count());
 
             Logger.DebugEvent("Metadata", "Metadata to stream [{Stream:l}] [ MaxCount: {MaxCount}, MaxAge: {MaxAge}, CacheControl: {CacheControl}, Custom: {Custom} ]", stream, maxCount, maxAge, cacheControl, custom.AsString());
 
@@ -387,7 +387,7 @@ namespace Aggregates.Internal
 
         public async Task<string> GetMetadata(string stream, string key)
         {
-            var shard = Math.Abs(stream.GetHashCode() % _clients.Count());
+            var shard = Math.Abs(stream.GetHash() % _clients.Count());
 
             var existing = await _clients[shard].GetStreamMetadataAsync(stream).ConfigureAwait(false);
             
