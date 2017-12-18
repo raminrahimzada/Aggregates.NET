@@ -41,6 +41,7 @@ namespace Client
 
         private static void Main(string[] args)
         {
+            Console.Title = "Client";
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Warning()
                .WriteTo.Console(outputTemplate: "[{Level}] {Message}{NewLine}{Exception}")

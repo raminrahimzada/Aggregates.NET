@@ -39,6 +39,7 @@ namespace Domain
 
         private static void Main(string[] args)
         {
+            Console.Title = "Domain";
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Warning()
                .WriteTo.Console(outputTemplate: "[{Level}] {Message}{NewLine}{Exception}")
