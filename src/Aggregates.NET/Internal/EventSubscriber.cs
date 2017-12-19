@@ -141,8 +141,8 @@ when({{
         private Task onEvent(string stream, long position, IFullEvent e)
         {
             _metrics.Increment("Events Queued", Unit.Event);
-
-            var bucket = Math.Abs(stream.GetHashCode() % _concurrency);
+            
+            var bucket = Math.Abs(stream.GetHash() % _concurrency);
             _waitingEvents[bucket].Add(new Tuple<string, long, IFullEvent>(stream, position, e));
             return Task.CompletedTask;
         }

@@ -234,7 +234,6 @@ namespace Aggregates.Internal
                 discovered = discovered.Concat(nonSpecific).ToArray();
             }
             
-            Logger.DebugEvent("Pull", "{Messages} from channel [{Channel:l}] key [{Key:l}]", discovered.Length, channel, key);
             return Task.FromResult(discovered);
         }
 
@@ -249,7 +248,6 @@ namespace Aggregates.Internal
             if (_memCache.TryGetValue(specificKey, out temp))
                 specificAge = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - temp.Pulled);
             
-            Logger.DebugEvent("Age", "{Age} ms channel [{Channel:l}] key [{Key:l}]", specificAge.TotalMilliseconds, channel, key);
 
             return Task.FromResult<TimeSpan?>(specificAge);
         }
@@ -262,8 +260,7 @@ namespace Aggregates.Internal
             CachedList temp;
             if (_memCache.TryGetValue(specificKey, out temp))
                 specificSize = temp.Count;
-
-            Logger.DebugEvent("Size", "{Size} channel [{Channel:l}] key [{Key:l}]", specificSize, channel, key);
+            
             return Task.FromResult(specificSize);
         }
 
