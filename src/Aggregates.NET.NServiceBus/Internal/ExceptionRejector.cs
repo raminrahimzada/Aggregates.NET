@@ -51,7 +51,8 @@ namespace Aggregates.Internal
 
                 if (retries < _retries || _retries == -1)
                 {
-                    Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", context.MessageId, retries, _retries, e.GetType().Name, e.Message);
+                    Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] [{MessageType}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", context.MessageId,
+                        retries, _retries, e.GetType().Name, e.Message);
                     
                     RetryRegistry.TryAdd(messageId, retries + 1);
 
@@ -67,7 +68,7 @@ namespace Aggregates.Internal
                 // At this point message is dead - should be moved to error queue, send message to client that their request was rejected due to error 
                 _metrics.Mark("Message Faults", Unit.Errors);
                 
-                Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries}: {ExceptionType} - {ExceptionMessage}", context.MessageId, retries, _retries, e.GetType().Name, e.Message);
+                Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries}\n{@Headers}\n{@Body}\n{ExceptionType} - {ExceptionMessage}", context.MessageId, retries, _retries, context.MessageHeaders, context.Message.Body.AsString(), e.GetType().Name, e.Message);
                 // Only need to reply if the client expects it
                 if (!context.Message.Headers.ContainsKey(Defaults.RequestResponse) ||
                     context.Message.Headers[Defaults.RequestResponse] != "1")
