@@ -68,7 +68,7 @@ namespace Aggregates.Internal
                 // At this point message is dead - should be moved to error queue, send message to client that their request was rejected due to error 
                 _metrics.Mark("Message Faults", Unit.Errors);
                 
-                Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries}\n{@Headers}\n{@Body}\n{ExceptionType} - {ExceptionMessage}", context.MessageId, retries, context.MessageHeaders, context.Message.Body.AsString(), e.GetType().Name, e.Message);
+                Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries}\n{@Headers}\n{Body}\n{ExceptionType} - {ExceptionMessage}", context.MessageId, retries, context.MessageHeaders, context.Message.Body.AsString(), e.GetType().Name, e.Message);
                 // Only need to reply if the client expects it
                 if (!context.Message.Headers.ContainsKey(Defaults.RequestResponse) ||
                     context.Message.Headers[Defaults.RequestResponse] != "1")
