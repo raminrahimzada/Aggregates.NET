@@ -357,14 +357,15 @@ namespace Aggregates.Internal
 
             try
             {
+                if (memCacheTotalSize > (_maxSize * 1.5))
+                {
+                    Logger.WarnEvent("TooLarge", "Pausing message processing");
+                    Interlocked.CompareExchange(ref _tooLarge, 1, 0);
+                }
+
                 var limit = 10;
                 while (memCacheTotalSize > _maxSize && limit > 0)
                 {
-                    if (memCacheTotalSize > (_maxSize * 1.5))
-                    {
-                        Logger.WarnEvent("TooLarge", "Pausing message processing");
-                        Interlocked.CompareExchange(ref _tooLarge, 1, 0);
-                    }
 
                     // Flush the largest channels
                     var toFlush = _memCache.Where(x => x.Value.Count > _flushSize || (x.Value.Count > (_maxSize / 5))).Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5)).ToArray();
@@ -416,7 +417,6 @@ namespace Aggregates.Internal
                             Logger.WarnEvent("FlushFailure", e, "Channel [{Channel:l}] key [{Key:l}]: {ExceptionType} - {ExceptionMessage}", expired.Channel, expired.Key, e.GetType().Name, e.Message);
                             // Failed to write to ES - put object back in memcache
                             addToMemCache(expired.Channel, expired.Key, messages);
-                            throw;
                         }
 
 
