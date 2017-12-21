@@ -62,13 +62,6 @@ namespace Aggregates.Extensions
                 return deserialized[0];
             }
         }
-        public static object Deserialize(this IMessageSerializer serializer, string type, byte[] bytes)
-        {
-            var resolved = Type.GetType(type, false);
-            if (resolved == null) return null;
-
-            return Deserialize(serializer, resolved, bytes);
-        }
 
         public static T Deserialize<T>(this IMessageSerializer serializer, byte[] bytes)
         {
