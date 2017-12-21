@@ -118,7 +118,6 @@ namespace Aggregates.Internal
             for (var index = 0; index < rootTypes.Count; index++)
             {
                 var messageType = rootTypes[index];
-                messageMapper.Initialize(messageType);
                 stream.Seek(0, SeekOrigin.Begin);
 
                 messageType = GetMappedType(messageType);
