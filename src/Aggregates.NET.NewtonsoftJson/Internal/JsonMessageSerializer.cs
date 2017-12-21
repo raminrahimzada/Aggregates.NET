@@ -120,11 +120,25 @@ namespace Aggregates.Internal
                 var messageType = rootTypes[index];
                 messageMapper.Initialize(messageType);
                 stream.Seek(0, SeekOrigin.Begin);
+
+                messageType = GetMappedType(messageType);
                 messages[index] = ReadObject(stream, isArrayStream, messageType);
             }
             return messages;
         }
-        
+
+        Type GetMappedType(Type messageType)
+        {
+            if (messageType.IsInterface)
+            {
+                var mappedTypeFor = messageMapper.GetMappedTypeFor(messageType);
+                if (mappedTypeFor != null)
+                {
+                    return mappedTypeFor;
+                }
+            }
+            return messageType;
+        }
 
         bool IsArrayStream(Stream stream)
         {
