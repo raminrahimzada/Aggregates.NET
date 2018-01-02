@@ -46,7 +46,8 @@ namespace Aggregates.Internal
         protected override JsonObjectContract CreateObjectContract(Type objectType)
         {
             var mappedTypeFor = objectType;
-            
+
+            _mapper.Initialize(objectType);
             mappedTypeFor = _mapper.GetMappedTypeFor(objectType);
 
             if (mappedTypeFor == null)

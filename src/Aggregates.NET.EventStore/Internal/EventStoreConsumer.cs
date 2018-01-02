@@ -268,15 +268,16 @@ namespace Aggregates.Internal
 
             var eventId = $"{e.Event.EventId}:{e.Event.EventStreamId}:{e.Event.EventNumber}";
             _outstandingEvents[eventId] = new Tuple<EventStorePersistentSubscriptionBase, Guid>(sub, e.OriginalEvent.EventId);
-
+            
             try
             {
                 await EventAppeared(e, token, callback).ConfigureAwait(false);
             }catch(Exception ex)
             {
-                Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage}", ex.GetType().Name, ex.Message);
+                Logger.ErrorEvent("AppearedException", ex, "Stream: [{Stream:l}] Position: {StreamPosition} {ExceptionType} - {ExceptionMessage}", e.Event.EventStreamId, e.Event.EventNumber, ex.GetType().Name, ex.Message);
                 sub.Fail(e, PersistentSubscriptionNakEventAction.Park, ex.GetType().Name);
-                throw;
+                // don't throw, stops subscription and causes reconnect
+                //throw;
             }
         }
 
@@ -299,8 +300,8 @@ namespace Aggregates.Internal
             }
             catch (Exception ex)
             {
-                Logger.ErrorEvent("AppearedException", ex, "{ExceptionType} - {ExceptionMessage}", ex.GetType().Name, ex.Message);
-                throw;
+                Logger.ErrorEvent("AppearedException", ex, "Stream: [{Stream:l}] Position: {StreamPosition} {ExceptionType} - {ExceptionMessage}", e.Event.EventStreamId, e.Event.EventNumber, ex.GetType().Name, ex.Message);
+                //throw;
             }
         }
 
