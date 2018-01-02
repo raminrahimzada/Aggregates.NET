@@ -67,7 +67,7 @@ namespace Aggregates.Internal
                         await eventstore.WriteMetadata(x, truncateBefore: tb).ConfigureAwait(false);
                     }
                     catch { }
-                });
+                }).ConfigureAwait(false);
             }, store, TimeSpan.FromMinutes(5), "snapshot truncate before");
 
             _snapshotExpiration = Timer.Repeat((state) =>
@@ -144,7 +144,8 @@ namespace Aggregates.Internal
                 return Task.FromResult((ISnapshot)null);
 
             // Update timestamp so snapshot doesn't expire
-            Snapshots.TryUpdate(stream, new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot.Item2), snapshot);
+            // let all snapshots eventually expire
+            //Snapshots.TryUpdate(stream, new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot.Item2), snapshot);
             
             return Task.FromResult(snapshot.Item2.Copy());
         }
