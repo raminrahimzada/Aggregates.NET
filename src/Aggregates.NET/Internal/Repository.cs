@@ -166,7 +166,7 @@ namespace Aggregates.Internal
                         try
                         {
                             // make new clean entity
-                            var clean = await GetUntracked(tracked.Bucket, tracked.Id, tracked.Parents).ConfigureAwait(false);
+                            var clean = await GetClean(tracked).ConfigureAwait(false);
                             
                             Logger.DebugEvent("ConflictResolve", "[{Stream:l}] entity [{EntityType:l}] resolving {ConflictingEvents} events with {ConflictResolver}", tracked.Id, typeof(TEntity).FullName, state.Version - clean.Version, _conflictResolution.Conflict);
                             var strategy = _conflictResolution.Conflict.Build(Configuration.Settings.Container, _conflictResolution.Resolver);
@@ -292,7 +292,7 @@ namespace Aggregates.Internal
             var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
             var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents, start: snapshot?.Version).ConfigureAwait(false);
 
-            var entity = Factory.Create(bucket, id, parents, events, snapshot?.Payload);
+            var entity = Factory.Create(bucket, id, parents, events.Select(x => x.Event as IEvent).ToArray(), snapshot?.Payload);
 
             (entity as INeedDomainUow).Uow = _uow;
             (entity as INeedEventFactory).EventFactory = _factory;
@@ -301,6 +301,22 @@ namespace Aggregates.Internal
             
             Logger.DebugEvent("Get", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
             return entity;
+        }
+
+        private Task<TEntity> GetClean(TEntity dirty)
+        {
+            var snapshot = dirty.State.Snapshot;
+            var events = dirty.State.Committed;
+
+            var entity = Factory.Create(dirty.Bucket, dirty.Id, dirty.Parents, events, snapshot);
+
+            (entity as INeedDomainUow).Uow = _uow;
+            (entity as INeedEventFactory).EventFactory = _factory;
+            (entity as INeedStore).Store = _eventstore;
+            (entity as INeedStore).OobWriter = _oobStore;
+
+            Logger.DebugEvent("GetClean", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", dirty.Id, dirty.Bucket, typeof(TEntity).FullName, entity.Version);
+            return Task.FromResult(entity);
         }
 
         public virtual Task<TEntity> New(Id id)

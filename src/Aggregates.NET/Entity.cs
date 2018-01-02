@@ -44,7 +44,7 @@ namespace Aggregates
         IEventFactory INeedEventFactory.EventFactory { get; set; }
         IStoreEvents INeedStore.Store { get; set; }
         IOobWriter INeedStore.OobWriter { get; set; }
-
+        
         void IEntity<TState>.Instantiate(TState state)
         {
             Id = state.Id;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
@@ -42,7 +43,7 @@ namespace Aggregates.Internal
             _factory = ReflectionExtensions.BuildCreateEntityFunc<TEntity>();
         }
 
-        public TEntity Create(string bucket, Id id, Id[] parents = null, IFullEvent[] events = null, IState snapshot = null)
+        public TEntity Create(string bucket, Id id, Id[] parents = null, IEvent[] events = null, IState snapshot = null)
         {
             // Todo: Can use a simple duck type helper incase snapshot type != TState due to refactor or something
             if (snapshot != null && !(snapshot is TState))
@@ -68,7 +69,7 @@ namespace Aggregates.Internal
             if (events != null && events.Length > 0)
             {
                 for (var i = 0; i < events.Length; i++)
-                    state.Apply(events[i].Event as IEvent);
+                    state.Apply(events[i]);
             }
 
             var entity = _factory();

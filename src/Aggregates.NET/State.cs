@@ -16,6 +16,7 @@ namespace Aggregates
         private IMutateState Mutator => StateMutators.For(typeof(TThis));
 
         // set is for deserialization
+        // todo: with the private contract resolver is this needed?
         public Id Id
         {
             get => (this as IState).Id;
@@ -47,6 +48,9 @@ namespace Aggregates
         Id[] IState.Parents { get; set; }
         long IState.Version { get; set; }
         IState IState.Snapshot { get; set; }
+        IEvent[] IState.Committed => _committed.ToArray();
+
+        private List<IEvent> _committed = new List<IEvent>();
 
         // Allow user to perform and needed initial tasks with the snapshot info
         protected virtual void SnapshotRestored() { }
@@ -80,6 +84,7 @@ namespace Aggregates
             try
             {
                 Mutator.Handle(this, @event);
+                _committed.Add(@event);
             }
             catch (NoRouteException)
             {
