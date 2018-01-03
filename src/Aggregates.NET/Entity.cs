@@ -134,9 +134,9 @@ namespace Aggregates
             });
         }
 
-        void IEntity<TState>.Raise(IEvent @event, string id, bool transient, int? daysToLive)
+        void IEntity<TState>.Raise(IEvent @event, string id, bool transient, int? daysToLive, bool? single)
         {
-            _uncommitted.Add(new FullEvent
+            var newEvent = new FullEvent
             {
                 Descriptor = new EventDescriptor
                 {
@@ -149,15 +149,23 @@ namespace Aggregates
                     Version = State.Version,
                     Headers = new Dictionary<string, string>()
                     {
-                        { Defaults.OobHeaderKey, id },
-                        { Defaults.OobTransientKey, transient.ToString() },
-                        { Defaults.OobDaysToLiveKey, daysToLive.ToString() }
+                        {Defaults.OobHeaderKey, id},
+                        {Defaults.OobTransientKey, transient.ToString()},
+                        {Defaults.OobDaysToLiveKey, daysToLive.ToString()}
                     }
                 },
                 Event = @event
-            });
+            };
+
+            if (single.HasValue && single == true && _uncommitted.Any())
+                _uncommitted[0] = newEvent;
+            else
+                _uncommitted.Add(newEvent);
         }
 
+        /// <summary>
+        /// Apply a new event to the stream, will be hydrated each future read
+        /// </summary>
         protected void Apply<TEvent>(Action<TEvent> @event) where TEvent : IEvent
         {
             var instance = Factory.Create(@event);
@@ -165,11 +173,18 @@ namespace Aggregates
             (this as IEntity<TState>).Apply(instance);
         }
 
-        protected void Raise<TEvent>(Action<TEvent> @event, string id, bool transient = true, int? daysToLive = null) where TEvent : IEvent
+        /// <summary>
+        /// Raise an OOB event - identify the channel with id and the properties
+        /// If the channel is transient (requires no persistence)
+        /// or if the channel is written but has an expiration (daysToLive)
+        /// Single is used if you only ever want to write 1 oob event of this type per transaction
+        /// useful if you are bulk delivering messages and only want 1 oob event raised
+        /// </summary>
+        protected void Raise<TEvent>(Action<TEvent> @event, string id, bool transient = true, int? daysToLive = null, bool? single = null) where TEvent : IEvent
         {
             var instance = Factory.Create(@event);
 
-            (this as IEntity<TState>).Raise(instance, id, transient, daysToLive);
+            (this as IEntity<TState>).Raise(instance, id, transient, daysToLive, single);
         }
 
         public override int GetHashCode()
