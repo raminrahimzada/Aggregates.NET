@@ -173,8 +173,23 @@ namespace Aggregates.Internal
             
             using (var ctx = _metrics.Begin("Bulk Messages Time"))
             {
-                foreach (var idx in Enumerable.Range(0, messages.Length))
-                    await handler.Invoke(messages[idx].Message, context).ConfigureAwait(false);
+                switch (attr.Mode)
+                {
+                    case DeliveryMode.Single:
+                        foreach (var idx in Enumerable.Range(0, messages.Length))
+                            await handler.Invoke(messages[idx].Message, context).ConfigureAwait(false);
+                        break;
+                    case DeliveryMode.First:
+                        await handler.Invoke(messages[0].Message, context).ConfigureAwait(false);
+                        break;
+                    case DeliveryMode.Last:
+                        await handler.Invoke(messages[messages.Length-1].Message, context).ConfigureAwait(false);
+                        break;
+                    case DeliveryMode.FirstAndLast:
+                        await handler.Invoke(messages[0].Message, context).ConfigureAwait(false);
+                        await handler.Invoke(messages[messages.Length - 1].Message, context).ConfigureAwait(false);
+                        break;
+                }
                 
                 if(ctx.Elapsed > TimeSpan.FromSeconds(5))
                     SlowLogger.InfoEvent("Invoked", "{Count} messages channel [{Channel:l}] key [{Key:l}] took {Milliseconds} ms", count, channelKey, specificKey, ctx.Elapsed.TotalMilliseconds);
