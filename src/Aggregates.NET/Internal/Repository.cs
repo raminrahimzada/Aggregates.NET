@@ -174,6 +174,8 @@ namespace Aggregates.Internal
                             commitHeaders[Defaults.ConflictResolvedHeader] = _conflictResolution.Conflict.DisplayName;
 
                             await strategy.Resolve<TEntity, TState>(clean, domainEvents, commitId, commitHeaders).ConfigureAwait(false);
+                            // Conflict resolved, replace original dirty entity we were trying to save with clean one
+                            tracked = clean;
                             
                             Logger.DebugEvent("ConflictResolveSuccess", "[{Stream:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
                         }
@@ -216,7 +218,7 @@ namespace Aggregates.Internal
                         if (oobEvents.Any())
                             await _oobStore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, oobEvents, commitHeaders).ConfigureAwait(false);
 
-                        if (state.ShouldSnapshot())
+                        if (tracked.State.ShouldSnapshot())
                         {
                             // Notify the entity and state that we are taking a snapshot
                             (tracked as IEntity<TState>).Snapshotting();
