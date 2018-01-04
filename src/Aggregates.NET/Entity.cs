@@ -158,10 +158,10 @@ namespace Aggregates
             };
 
             if (single.HasValue && single == true &&
-                _uncommitted.Any(x => x.Descriptor.Headers[Defaults.OobHeaderKey] == id))
+                _uncommitted.Any(x => x.Descriptor.Headers.ContainsKey(Defaults.OobHeaderKey) && x.Descriptor.Headers[Defaults.OobHeaderKey] == id))
             {
                 var idx = _uncommitted.IndexOf(
-                    _uncommitted.First(x => x.Descriptor.Headers[Defaults.OobHeaderKey] == id));
+                    _uncommitted.First(x => x.Descriptor.Headers.ContainsKey(Defaults.OobHeaderKey) && x.Descriptor.Headers[Defaults.OobHeaderKey] == id));
                 _uncommitted[idx] = newEvent;
             }
             else
