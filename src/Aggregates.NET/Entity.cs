@@ -157,8 +157,13 @@ namespace Aggregates
                 Event = @event
             };
 
-            if (single.HasValue && single == true && _uncommitted.Any())
-                _uncommitted[0] = newEvent;
+            if (single.HasValue && single == true &&
+                _uncommitted.Any(x => x.Descriptor.Headers[Defaults.OobHeaderKey] == id))
+            {
+                var idx = _uncommitted.IndexOf(
+                    _uncommitted.First(x => x.Descriptor.Headers[Defaults.OobHeaderKey] == id));
+                _uncommitted[idx] = newEvent;
+            }
             else
                 _uncommitted.Add(newEvent);
         }
