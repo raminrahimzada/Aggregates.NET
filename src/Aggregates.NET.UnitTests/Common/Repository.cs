@@ -304,7 +304,7 @@ namespace Aggregates.UnitTests.Common
 
             await (_repository as IRepository).Commit(Guid.NewGuid(), new Dictionary<string, string>());
 
-            _snapshots.Verify(x => x.WriteSnapshots<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IState>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Never);
+            _snapshots.Verify(x => x.WriteSnapshots<FakeEntity>(Moq.It.IsAny<IState>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Never);
             
         }
 
@@ -322,7 +322,7 @@ namespace Aggregates.UnitTests.Common
 
             await (_repository as IRepository).Commit(Guid.NewGuid(), new Dictionary<string, string>());
 
-            _snapshots.Verify(x => x.WriteSnapshots<FakeEntity>(Moq.It.IsAny<string>(), Moq.It.IsAny<Id>(), Moq.It.IsAny<Id[]>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IState>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Once);
+            _snapshots.Verify(x => x.WriteSnapshots<FakeEntity>(Moq.It.IsAny<IState>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Once);
             
         }
 

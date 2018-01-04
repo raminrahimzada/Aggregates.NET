@@ -69,9 +69,10 @@ namespace Aggregates.Internal
         }
 
 
-        public async Task WriteSnapshots<T>(string bucket, Id streamId, Id[] parents, long version, IState snapshot, IDictionary<string, string> commitHeaders) where T : IEntity
+        public async Task WriteSnapshots<T>(IState snapshot, IDictionary<string, string> commitHeaders) where T : IEntity
         {
-            var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, bucket, streamId, parents);
+            
+            var streamName = _streamGen(typeof(T), StreamTypes.Snapshot, snapshot.Bucket, snapshot.Id, snapshot.Parents);
             Logger.DebugEvent("Write", "[{Stream:l}]", streamName);
 
             // We don't need snapshots to store the previous snapshot
@@ -84,11 +85,11 @@ namespace Aggregates.Internal
                 {
                     EntityType = typeof(T).AssemblyQualifiedName,
                     StreamType = StreamTypes.Snapshot,
-                    Bucket = bucket,
-                    StreamId = streamId,
-                    Parents = parents,
+                    Bucket = snapshot.Bucket,
+                    StreamId = snapshot.Id,
+                    Parents = snapshot.Parents,
                     Timestamp = DateTime.UtcNow,
-                    Version = version + 1,
+                    Version = snapshot.Version + 1,
                     Headers = new Dictionary<string, string>(),
                     CommitHeaders = commitHeaders
                 },
