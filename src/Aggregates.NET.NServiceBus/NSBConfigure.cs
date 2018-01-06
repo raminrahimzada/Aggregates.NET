@@ -29,6 +29,8 @@ namespace Aggregates
             endpointConfig.EnableCallbacks();
             endpointConfig.EnableInstallers();
 
+            endpointConfig.UseSerialization<Internal.AggregatesSerializer>();
+
 
             settings.Set("Retries", config.Retries);
             settings.Set("SlowAlertThreshold", config.SlowAlertThreshold);
