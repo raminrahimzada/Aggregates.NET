@@ -28,8 +28,7 @@ namespace Aggregates
             endpointConfig.AssemblyScanner().ScanAppDomainAssemblies = true;
             endpointConfig.EnableCallbacks();
             endpointConfig.EnableInstallers();
-
-            endpointConfig.UseSerialization(new Internal.AggregatesSerializer())
+            
             endpointConfig.UseSerialization<Internal.AggregatesSerializer>();
 
 
