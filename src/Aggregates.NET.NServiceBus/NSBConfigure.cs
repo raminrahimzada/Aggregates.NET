@@ -29,6 +29,7 @@ namespace Aggregates
             endpointConfig.EnableCallbacks();
             endpointConfig.EnableInstallers();
 
+            endpointConfig.UseSerialization(new Internal.AggregatesSerializer())
             endpointConfig.UseSerialization<Internal.AggregatesSerializer>();
 
 
