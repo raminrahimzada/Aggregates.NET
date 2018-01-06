@@ -28,7 +28,6 @@ namespace Aggregates
             var settings = context.Settings;
             var container = Configuration.Settings.Container;
             
-
             context.Container.ConfigureComponent<IDomainUnitOfWork>((c) => new NSBUnitOfWork(c.Build<IRepositoryFactory>(), c.Build<IEventFactory>(), c.Build<IProcessor>()), DependencyLifecycle.InstancePerUnitOfWork);
             context.Container.ConfigureComponent<IEventFactory>((c) => new EventFactory(c.Build<IMessageCreator>()), DependencyLifecycle.InstancePerCall);
             context.Container.ConfigureComponent<IMessageDispatcher>((c) => new Dispatcher(c.Build<IMetrics>(), c.Build<IMessageSerializer>(), c.Build<IEventMapper>()), DependencyLifecycle.InstancePerCall);
@@ -113,6 +112,9 @@ namespace Aggregates
         }
         protected override async Task OnStart(IMessageSession session)
         {
+            // Subscribe to BulkMessage, because it wraps messages and is not used in a handler directly
+            if(!_config.Passive)
+                await session.Subscribe<BulkMessage>().ConfigureAwait(false);
 
             Logger.InfoEvent("Startup", "Starting on {Queue}", _instanceQueue);
 
