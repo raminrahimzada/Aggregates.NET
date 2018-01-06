@@ -17,7 +17,7 @@ namespace Aggregates.Internal
     {
         private readonly IMessageSerializer _serializer;
 
-        public string ContentType => "Json";
+        public string ContentType => _serializer.ContentType;
 
         public Serializer(IMessageSerializer serializer)
         {
