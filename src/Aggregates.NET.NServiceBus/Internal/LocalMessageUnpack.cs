@@ -79,8 +79,6 @@ namespace Aggregates.Internal
                             context.Headers[$"{Defaults.BulkPrefixHeader}.{header.Key}"] = header.Value;
 
                         context.Headers[Defaults.BulkHeader] = bulk.Messages.Length.ToString();
-                        // Don't set on headers because headers are kept with the message through retries, could lead to unexpected results
-                        context.Extensions.Set(Defaults.ChannelKey, x.Headers[Defaults.ChannelKey]);
 
                         context.UpdateMessageInstance(x.Message);
                         await next().ConfigureAwait(false);
