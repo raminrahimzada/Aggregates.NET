@@ -22,6 +22,7 @@ namespace Aggregates
         public static readonly string PrefixHeader = "Originating";
         public static readonly string EventPrefixHeader = "Event";
         public static readonly string DelayedPrefixHeader = "Delayed";
+        public static readonly string BulkPrefixHeader = "Bulk";
         public static readonly string Retries = "Aggregates.NET.Retries";
         public static readonly string RequestResponse = "Aggregates.NET.Request";
         public static readonly string DelayedId = "Aggregates.NET.DelayedMessageId";
@@ -30,7 +31,7 @@ namespace Aggregates
         public static readonly string OobTransientKey = "Aggregates.Transient";
         public static readonly string OobDaysToLiveKey = "Aggregates.DaysToLive";
         public static readonly string LocalHeader = "Aggregates.NET.LocalMessage";
-        public static readonly string LocalBulkHeader = "Aggregates.NET.LocalBulkMessage";
+        public static readonly string BulkHeader = "Aggregates.NET.BulkMessage";
         public static readonly string ConflictResolvedHeader = "ConflictResolver";
 
 
