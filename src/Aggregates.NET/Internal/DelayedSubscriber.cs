@@ -16,8 +16,6 @@ using Aggregates.Messages;
 
 namespace Aggregates.Internal
 {
-    class BulkMessage : IMessage { }
-
     class DelayedSubscriber : IEventSubscriber
     {
         private static readonly ILog Logger = LogProvider.GetLogger("DelaySubscriber");

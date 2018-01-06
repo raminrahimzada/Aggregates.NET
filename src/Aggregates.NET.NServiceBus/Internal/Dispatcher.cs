@@ -30,41 +30,31 @@ namespace Aggregates.Internal
             _mapper = mapper;
         }
 
-        public Task Publish(IFullMessage message, IDictionary<string, string> headers = null)
+        public Task Publish(IFullMessage[] messages)
         {
             var options = new PublishOptions();
-            if (headers != null)
-                foreach (var header in message.Headers.Merge(headers))
-                {
-                    if (header.Key == Headers.OriginatingHostId)
-                    {
-                        //is added by bus in v5
-                        continue;
-                    }
-                    options.SetHeader(header.Key, header.Value);
-                }
             _metrics.Mark("Dispatched Messages", Unit.Message);
-            return Bus.Instance.Publish(message.Message, options);
+
+            var message = new BulkMessage
+            {
+                Messages = messages
+            };
+
+            return Bus.Instance.Publish(message, options);
         }
 
-        public Task Send(IFullMessage message, string destination, IDictionary<string, string> headers = null)
+        public Task Send(IFullMessage[] messages, string destination)
         {
             var options = new SendOptions();
             options.SetDestination(destination);
 
-            if (headers != null)
-                foreach (var header in message.Headers.Merge(headers))
-                {
-                    if (header.Key == Headers.OriginatingHostId)
-                    {
-                        //is added by bus in v5
-                        continue;
-                    }
-                    options.SetHeader(header.Key, header.Value);
-                }
+            var message = new BulkMessage
+            {
+                Messages = messages
+            };
 
             _metrics.Mark("Dispatched Messages", Unit.Message);
-            return Bus.Instance.Send(message.Message, options);
+            return Bus.Instance.Send(message, options);
         }
 
         public async Task SendLocal(IFullMessage message, IDictionary<string, string> headers = null)
