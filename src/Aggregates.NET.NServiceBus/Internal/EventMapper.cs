@@ -19,17 +19,11 @@ namespace Aggregates.Internal
 
         public void Initialize(Type type)
         {
-            while (!Bus.BusOnline)
-                Thread.Sleep(100);
-
             _mapper.Initialize(new[] {type});
         }
 
         public Type GetMappedTypeFor(Type type)
         {
-            while (!Bus.BusOnline)
-                Thread.Sleep(100);
-
             return _mapper.GetMappedTypeFor(type);
         }
     }
