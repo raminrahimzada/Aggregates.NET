@@ -153,12 +153,12 @@ namespace Aggregates.Internal
                     }
                     catch (VersionException e)
                     {
-                        Logger.DebugEvent("VersionConflict", "[{Stream:l}] entity [{EntityType:l}] version {Version} commit version {CommitVersion} - {StoreMessage}", tracked.Id, typeof(TEntity).FullName, state.Version, tracked.Version, e.Message);
+                        Logger.DebugEvent("VersionConflict", "[{EntityId:l}] entity [{EntityType:l}] version {Version} commit version {CommitVersion} - {StoreMessage}", tracked.Id, typeof(TEntity).FullName, state.Version, tracked.Version, e.Message);
                         _metrics.Mark("Conflicts", Unit.Items);
                         // If we expected no stream, no reason to try to resolve the conflict
                         if (tracked.Version == EntityFactory.NewEntityVersion)
                         {
-                            Logger.DebugEvent("AlreadyExists", "[{Stream:l}] entity [{EntityType:l}] already exists", tracked.Id, typeof(TEntity).FullName);
+                            Logger.DebugEvent("AlreadyExists", "[{EntityId:l}] entity [{EntityType:l}] already exists", tracked.Id, typeof(TEntity).FullName);
                             throw new ConflictResolutionFailedException(
                                 $"New stream [{tracked.Id}] entity {tracked.GetType().FullName} already exists in store");
                         }
@@ -168,7 +168,7 @@ namespace Aggregates.Internal
                             // make new clean entity
                             var clean = await GetClean(tracked).ConfigureAwait(false);
                             
-                            Logger.DebugEvent("ConflictResolve", "[{Stream:l}] entity [{EntityType:l}] resolving {ConflictingEvents} events with {ConflictResolver}", tracked.Id, typeof(TEntity).FullName, state.Version - clean.Version, _conflictResolution.Conflict);
+                            Logger.DebugEvent("ConflictResolve", "[{EntityId:l}] entity [{EntityType:l}] resolving {ConflictingEvents} events with {ConflictResolver}", tracked.Id, typeof(TEntity).FullName, state.Version - clean.Version, _conflictResolution.Conflict);
                             var strategy = _conflictResolution.Conflict.Build(Configuration.Settings.Container, _conflictResolution.Resolver);
                             
                             commitHeaders[Defaults.ConflictResolvedHeader] = _conflictResolution.Conflict.DisplayName;
@@ -177,12 +177,12 @@ namespace Aggregates.Internal
                             // Conflict resolved, replace original dirty entity we were trying to save with clean one
                             tracked = clean;
                             
-                            Logger.DebugEvent("ConflictResolveSuccess", "[{Stream:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
+                            Logger.DebugEvent("ConflictResolveSuccess", "[{EntityId:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
                         }
                         catch (AbandonConflictException abandon)
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
-                            Logger.ErrorEvent("ConflictResolveAbandon", "[{Stream:l}] entity [{EntityType:l}] abandonded", tracked.Id, typeof(TEntity).FullName);
+                            Logger.ErrorEvent("ConflictResolveAbandon", "[{EntityId:l}] entity [{EntityType:l}] abandonded", tracked.Id, typeof(TEntity).FullName);
                             throw new ConflictResolutionFailedException(
                                 $"Aborted conflict resolution for stream [{tracked.Id}] entity {tracked.GetType().FullName}",
                                 abandon);
@@ -190,7 +190,7 @@ namespace Aggregates.Internal
                         catch (Exception ex)
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
-                            Logger.ErrorEvent("ConflictResolveFail", ex, "[{Stream:l}] entity [{EntityType:l}] failed: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).FullName, ex.GetType().Name, ex.Message);
+                            Logger.ErrorEvent("ConflictResolveFail", ex, "[{EntityId:l}] entity [{EntityType:l}] failed: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).FullName, ex.GetType().Name, ex.Message);
                             throw new ConflictResolutionFailedException(
                                 $"Failed to resolve conflict for stream [{tracked.Id}] entity {tracked.GetType().FullName} due to exception",
                                 ex);
@@ -199,13 +199,13 @@ namespace Aggregates.Internal
                     }
                     catch (PersistenceException e)
                     {
-                        Logger.WarnEvent("CommitFailure", e, "[{Stream:l}] entity [{EntityType:l}] bucket [{Bucket:l}]: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).Name, tracked.Bucket, e.GetType().Name, e.Message);
+                        Logger.WarnEvent("CommitFailure", e, "[{EntityId:l}] entity [{EntityType:l}] bucket [{Bucket:l}]: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).Name, tracked.Bucket, e.GetType().Name, e.Message);
                         _metrics.Mark("Event Write Errors", Unit.Errors);
                         throw;
                     }
                     catch (DuplicateCommitException)
                     {
-                        Logger.Warn("DoubleCommit", "[{Stream:l}] entity [{EntityType:l}]", tracked.Id, typeof(TEntity).FullName);
+                        Logger.Warn("DoubleCommit", "[{EntityId:l}] entity [{EntityType:l}]", tracked.Id, typeof(TEntity).FullName);
 
                         _metrics.Mark("Event Write Errors", Unit.Errors);
                         // I was throwing this, but if this happens it means the events for this message have already been committed.  Possibly as a partial message failure earlier. 
@@ -228,7 +228,7 @@ namespace Aggregates.Internal
                     }
                     catch (Exception e)
                     {
-                        Logger.WarnEvent("SecondaryFailure", "[{Stream:l}] entity [{EntityType:l}] bucket [{Bucket:l}]: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).Name, tracked.Bucket, e.GetType().Name, e.Message);
+                        Logger.WarnEvent("SecondaryFailure", "[{EntityId:l}] entity [{EntityType:l}] bucket [{Bucket:l}]: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).Name, tracked.Bucket, e.GetType().Name, e.Message);
                     }
                 }).ConfigureAwait(false);
 
@@ -300,7 +300,7 @@ namespace Aggregates.Internal
             (entity as INeedStore).Store = _eventstore;
             (entity as INeedStore).OobWriter = _oobStore;
             
-            Logger.DebugEvent("Get", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
+            Logger.DebugEvent("Get", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
             return entity;
         }
 
@@ -316,7 +316,7 @@ namespace Aggregates.Internal
             (entity as INeedStore).Store = _eventstore;
             (entity as INeedStore).OobWriter = _oobStore;
 
-            Logger.DebugEvent("GetClean", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", dirty.Id, dirty.Bucket, typeof(TEntity).FullName, entity.Version);
+            Logger.DebugEvent("GetClean", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", dirty.Id, dirty.Bucket, typeof(TEntity).FullName, entity.Version);
             return Task.FromResult(entity);
         }
 
@@ -339,7 +339,7 @@ namespace Aggregates.Internal
         }
         protected virtual Task<TEntity> NewUntracked(string bucket, Id id, Id[] parents = null)
         {
-            Logger.DebugEvent("Create", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}]", id, bucket, typeof(TEntity).FullName);
+            Logger.DebugEvent("Create", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}]", id, bucket, typeof(TEntity).FullName);
 
             var entity = Factory.Create(bucket, id, parents);
 
