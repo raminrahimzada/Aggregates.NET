@@ -69,7 +69,7 @@ namespace Aggregates.NServiceBus
 
             var events = new IFullMessage[] { delayed.Object };
 
-            _contextBag.Set(Defaults.LocalBulkHeader, events);
+            _contextBag.Set(Defaults.BulkHeader, events);
 
             var headers = new Dictionary<string, string>();
             _context.Setup(x => x.Headers).Returns(headers);
@@ -92,7 +92,7 @@ namespace Aggregates.NServiceBus
 
             var events = new IFullMessage[] { delayed.Object, delayed.Object, delayed.Object };
 
-            _contextBag.Set(Defaults.LocalBulkHeader, events);
+            _contextBag.Set(Defaults.BulkHeader, events);
 
             var headers = new Dictionary<string, string>();
             _context.Setup(x => x.Headers).Returns(headers);
