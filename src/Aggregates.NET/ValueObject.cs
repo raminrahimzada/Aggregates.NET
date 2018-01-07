@@ -91,7 +91,7 @@ namespace Aggregates
 
         public static bool operator ==(ValueObject<T> x, ValueObject<T> y)
         {
-            return x.Equals(y);
+            return x == null ? y == null : x.Equals(y);
         }
 
         public static bool operator !=(ValueObject<T> x, ValueObject<T> y)
