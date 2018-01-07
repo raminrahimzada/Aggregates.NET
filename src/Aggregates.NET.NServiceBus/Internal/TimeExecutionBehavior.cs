@@ -51,7 +51,7 @@ namespace Aggregates.Internal
 
                 if (elapsed > _slowAlert.TotalSeconds)
                 {
-                    SlowLogger.WarnEvent("Processed", "{MessageId} {MessageType} took {Milliseconds} payload {Payload}", context.MessageId, messageTypeIdentifier, elapsed, Encoding.UTF8.GetString(context.Message.Body));
+                    SlowLogger.WarnEvent("Processed", "{MessageId} {MessageType} took {Milliseconds} payload {Payload}", context.MessageId, messageTypeIdentifier, elapsed, Encoding.UTF8.GetString(context.Message.Body).MaxLines(10));
                     if (!verbose)
                         lock (SlowLock) SlowCommandTypes.Add(messageTypeIdentifier);
                 }
