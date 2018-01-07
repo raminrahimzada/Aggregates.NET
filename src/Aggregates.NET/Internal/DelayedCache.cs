@@ -70,7 +70,7 @@ namespace Aggregates.Internal
             {
                 Pulled = DateTime.UtcNow.Ticks;
 
-                count = count ?? int.MaxValue;
+                count = Math.Min(Count, count ?? int.MaxValue);
 
                 var discovered = new List<IDelayedMessage>();
                 lock (_lock)
@@ -169,43 +169,7 @@ namespace Aggregates.Internal
             // If cache grows larger than 150% of max cache size, pause all processing until flush finished
             while (Interlocked.CompareExchange(ref _tooLarge, 1, 1) == 1)
                 await Task.Delay(50).ConfigureAwait(false);
-
-            // Anything without a key bypasses memory cache
-            if (string.IsNullOrEmpty(key))
-            {
-                var translatedEvents = messages.Select(x => (IFullEvent)new FullEvent
-                {
-                    Descriptor = new EventDescriptor
-                    {
-                        EntityType = "DELAY",
-                        StreamType = $"{_endpoint}.{StreamTypes.Delayed}",
-                        Bucket = Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN",
-                        StreamId = channel,
-                        Timestamp = DateTime.UtcNow,
-                        Headers = new Dictionary<string, string>()
-                        {
-                            ["Expired"] = "true",
-                            ["FlushTime"] = DateTime.UtcNow.ToString("s"),
-                            ["Instance"] = Defaults.Instance.ToString(),
-                            ["Machine"] = Environment.MachineName,
-                        }
-                    },
-                    Event = x,
-                }).ToArray();
-                try
-                {
-                    var streamName = _streamGen(typeof(DelayedCache),
-                        $"{_endpoint}.{StreamTypes.Delayed}",
-                        Assembly.GetEntryAssembly()?.FullName ?? "UNKNOWN", channel, new Id[] { });
-                    await _store.WriteEvents(streamName, translatedEvents, null).ConfigureAwait(false);
-                    return;
-                }
-                catch (Exception e)
-                {
-                    Logger.WarnEvent("WriteFailure", e, "Write to [{Channel:l}] failed: {ExceptionType} - {ExceptionMessage}", channel, e.GetType().Name, e.Message);
-                }
-            }
-
+            
             addToMemCache(channel, key, messages);
         }
 
