@@ -39,6 +39,8 @@ namespace Aggregates.Internal
             {
                 Messages = messages
             };
+            // Publishing an IMessage normally creates a warning
+            options.DoNotEnforceBestPractices();
 
             return Bus.Instance.Publish(message, options);
         }
