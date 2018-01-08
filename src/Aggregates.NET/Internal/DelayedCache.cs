@@ -252,7 +252,7 @@ namespace Aggregates.Internal
         private async Task Flush()
         {
             var memCacheTotalSize = _memCache.Values.Sum(x => x.Count);
-            _metrics.Update("Delayed Cache Size", Unit.Items, memCacheTotalSize);
+            _metrics.Update("Delayed Cache Size", Unit.Message, memCacheTotalSize);
 
             Logger.InfoEvent("Flush", "Cache Size: {CacheSize} Total Channels: {TotalChannels}", memCacheTotalSize, _memCache.Keys.Count);
             var totalFlushed = 0;

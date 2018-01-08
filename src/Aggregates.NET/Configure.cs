@@ -82,8 +82,8 @@ namespace Aggregates
 
         public Configure()
         {
-            EndpointVersion = Assembly.GetEntryAssembly().GetName().Version;
-            AggregatesVersion = Assembly.GetExecutingAssembly().GetName().Version;
+            EndpointVersion = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
+            AggregatesVersion = Assembly.GetExecutingAssembly()?.GetName().Version ?? new Version(0, 0, 0);
 
             RegistrationTasks = new List<Func<Configure, Task>>();
             SetupTasks = new List<Func<Configure, Task>>();
