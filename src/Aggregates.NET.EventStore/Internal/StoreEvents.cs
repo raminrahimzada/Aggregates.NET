@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
@@ -230,7 +231,14 @@ namespace Aggregates.Internal
                 var descriptor = new EventDescriptor
                 {
                     EventId = e.EventId ?? Guid.NewGuid(),
-                    CommitHeaders = commitHeaders ?? new Dictionary<string, string>(),
+                    CommitHeaders = (commitHeaders ?? new Dictionary<string, string>()).Merge(new Dictionary<string, string>
+                    {
+                        [Defaults.InstanceHeader] = Defaults.Instance.ToString(),
+                        [Defaults.EndpointHeader] = Configuration.Settings.Endpoint,
+                        [Defaults.EndpointVersionHeader] = Configuration.Settings.EndpointVersion.ToString(),
+                        [Defaults.AggregatesVersionHeader] = Configuration.Settings.AggregatesVersion.ToString(),
+                        [Defaults.MachineHeader] = Environment.MachineName
+                    }),
                     Compressed = _compress.HasFlag(Compression.Events),
                     EntityType = e.Descriptor.EntityType,
                     StreamType = e.Descriptor.StreamType,
@@ -239,7 +247,7 @@ namespace Aggregates.Internal
                     Parents = e.Descriptor.Parents,
                     Version = e.Descriptor.Version,
                     Timestamp = e.Descriptor.Timestamp,
-                    Headers = e.Descriptor.Headers
+                    Headers = e.Descriptor.Headers,
                 };
 
                 var mappedType = e.Event.GetType();

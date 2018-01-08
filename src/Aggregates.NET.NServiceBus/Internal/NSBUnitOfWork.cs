@@ -49,8 +49,7 @@ namespace Aggregates.Internal
 
             foreach (var header in userHeaders)
                 CurrentHeaders[header] = command.Headers[header];
-
-            CurrentHeaders[Defaults.InstanceHeader] = Defaults.Instance.ToString();
+            
             if (command.Headers.ContainsKey(Headers.CorrelationId))
                 CurrentHeaders[Headers.CorrelationId] = command.Headers[Headers.CorrelationId];
 

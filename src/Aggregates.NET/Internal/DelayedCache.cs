@@ -285,9 +285,7 @@ namespace Aggregates.Internal
                         Headers = new Dictionary<string, string>()
                         {
                             ["Expired"] = "true",
-                            ["FlushTime"] = DateTime.UtcNow.ToString("s"),
-                            ["Instance"] = Defaults.Instance.ToString(),
-                            ["Machine"] = Environment.MachineName,
+                            ["FlushTime"] = DateTime.UtcNow.ToString(),
                         }
                     },
                     Event = x,
@@ -355,9 +353,7 @@ namespace Aggregates.Internal
                                 Headers = new Dictionary<string, string>()
                                 {
                                     ["Expired"] = "false",
-                                    ["FlushTime"] = DateTime.UtcNow.ToString("s"),
-                                    ["Instance"] = Defaults.Instance.ToString(),
-                                    ["Machine"] = Environment.MachineName,
+                                    ["FlushTime"] = DateTime.UtcNow.ToString(),
                                 }
                             },
                             Event = x,

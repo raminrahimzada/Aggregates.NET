@@ -34,11 +34,16 @@ namespace Aggregates
         public static readonly string BulkHeader = "Aggregates.NET.BulkMessage";
         public static readonly string ConflictResolvedHeader = "ConflictResolver";
 
+        public static readonly string AggregatesVersionHeader = "Aggregates.NET.Version";
+        public static readonly string EndpointHeader = "Endpoint";
+        public static readonly string InstanceHeader = "Endpoint.Instance";
+        public static readonly string MachineHeader = "Endpoint.Machine";
+        public static readonly string EndpointVersionHeader = "Endpoint.Version";
+
 
         public static Guid Instance = Guid.NewGuid();
         public static string Bucket = "default";
         public static string CommitIdHeader = "CommitId";
-        public static string InstanceHeader = "Instance";
 
         public static AsyncLocal<LogLevel?> MinimumLogging = new AsyncLocal<LogLevel?>();
 

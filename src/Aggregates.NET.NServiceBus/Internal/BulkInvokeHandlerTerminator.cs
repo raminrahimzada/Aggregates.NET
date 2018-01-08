@@ -21,7 +21,8 @@ namespace Aggregates.Internal
         public IDictionary<string, string> Headers { get; set; }
         public object Message { get; set; }
         public DateTime Received { get; set; }
-        public String ChannelKey { get; set; }
+        public string ChannelKey { get; set; }
+        public string SpecificKey { get; set; }
     }
     internal class BulkInvokeHandlerTerminator : PipelineTerminator<IInvokeHandlerContext>
     {
@@ -90,14 +91,6 @@ namespace Aggregates.Internal
                 DelayedAttribute delayed;
                 IsDelayed.TryGetValue(channelKey, out delayed);
 
-                var msgPkg = new DelayedMessage
-                {
-                    MessageId = context.MessageId,
-                    Headers = context.Headers,
-                    Message = context.MessageBeingHandled,
-                    Received = DateTime.UtcNow,
-                    ChannelKey = channelKey
-                };
                 
                 var specificKey = "";
                 if (delayed.KeyPropertyFunc != null)
@@ -111,7 +104,17 @@ namespace Aggregates.Internal
                         Logger.Warn($"Failed to get key properties from message {msgType.FullName}");
                     }
                 }
-                
+
+                var msgPkg = new DelayedMessage
+                {
+                    MessageId = context.MessageId,
+                    Headers = context.Headers,
+                    Message = context.MessageBeingHandled,
+                    Received = DateTime.UtcNow,
+                    ChannelKey = channelKey,
+                    SpecificKey = specificKey
+                };
+
                 await channel.AddToQueue(channelKey, msgPkg, key: specificKey).ConfigureAwait(false);
 
                 bool bulkInvoked;

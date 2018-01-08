@@ -41,6 +41,8 @@ namespace Aggregates
 
     public class Configure
     {
+        public readonly Version EndpointVersion;
+        public readonly Version AggregatesVersion;
 
         // Log settings
         public TimeSpan? SlowAlertThreshold { get; private set; }
@@ -80,6 +82,9 @@ namespace Aggregates
 
         public Configure()
         {
+            EndpointVersion = Assembly.GetEntryAssembly().GetName().Version;
+            AggregatesVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
             RegistrationTasks = new List<Func<Configure, Task>>();
             SetupTasks = new List<Func<Configure, Task>>();
             StartupTasks = new List<Func<Configure, Task>>();
