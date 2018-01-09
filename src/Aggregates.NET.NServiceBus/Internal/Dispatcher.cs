@@ -35,6 +35,8 @@ namespace Aggregates.Internal
             var options = new PublishOptions();
             _metrics.Mark("Dispatched Messages", Unit.Message);
 
+            // Todo: publish would only be called for messages on a single stream
+            // we can set a routing key somehow for BulkMessage so its routed to the same sharded queue 
             var message = new BulkMessage
             {
                 Messages = messages

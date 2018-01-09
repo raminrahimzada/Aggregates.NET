@@ -72,8 +72,8 @@ namespace Aggregates.Internal
 
             context.Extensions.TryGet(Defaults.ChannelKey, out string contextChannelKey);
 
-            // Special case for when we are bulk processing messages from DelayedSubscriber, simply process it and return dont check for more bulk
-            if (channel == null || contains || contextChannelKey == channelKey)
+            // Special case for when we are bulk processing messages from DelayedSubscriber or BulkMessage, simply process it and return dont check for more bulk
+            if (channel == null || contains || contextChannelKey == channelKey || msgType == typeof(BulkMessage))
             {
                 await messageHandler.Invoke(context.MessageBeingHandled, context).ConfigureAwait(false);
                 return;
