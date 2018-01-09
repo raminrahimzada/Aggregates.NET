@@ -28,7 +28,7 @@ namespace Aggregates.Attributes
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
     public class DelayedAttribute : Attribute
     {
-        public DelayedAttribute(Type type, int count = -1, int delayMs = -1, DeliveryMode mode = DeliveryMode.Single, bool? useKeyProperties = null)
+        public DelayedAttribute(Type type, int count = -1, int delayMs = -1, DeliveryMode mode = DeliveryMode.Single, bool useKeyProperties = true)
         {
             this.Type = type;
             if(count != -1)
