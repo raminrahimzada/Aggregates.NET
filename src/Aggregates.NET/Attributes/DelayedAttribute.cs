@@ -28,7 +28,7 @@ namespace Aggregates.Attributes
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
     public class DelayedAttribute : Attribute
     {
-        public DelayedAttribute(Type type, int count = -1, int delayMs = -1, DeliveryMode mode = DeliveryMode.Single)
+        public DelayedAttribute(Type type, int count = -1, int delayMs = -1, DeliveryMode mode = DeliveryMode.Single, bool? useKeyProperties = null)
         {
             this.Type = type;
             if(count != -1)
@@ -42,6 +42,9 @@ namespace Aggregates.Attributes
 
             if (!this.Count.HasValue && !this.Delay.HasValue)
                 throw new ArgumentException($"{nameof(Count)} or {nameof(delayMs)} is required to use Delayed attribute");
+
+            if (useKeyProperties == false)
+                return;
 
             var keys =
                 type.GetProperties(BindingFlags.Public | BindingFlags.Instance)

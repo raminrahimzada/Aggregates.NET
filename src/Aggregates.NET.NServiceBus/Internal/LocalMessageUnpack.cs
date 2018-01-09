@@ -42,8 +42,7 @@ namespace Aggregates.Internal
                         context.Headers.Clear();
                         foreach (var header in x.Headers)
                             context.Headers[$"{Defaults.DelayedPrefixHeader}.{header.Key}"] = header.Value;
-
-                        context.Headers[Defaults.ChannelKey] = x.Headers[Defaults.ChannelKey];
+                        
                         context.Headers[Defaults.BulkHeader] = delayedMessages.Length.ToString();
                         // Don't set on headers because headers are kept with the message through retries, could lead to unexpected results
                         context.Extensions.Set(Defaults.ChannelKey, x.Headers[Defaults.ChannelKey]);
