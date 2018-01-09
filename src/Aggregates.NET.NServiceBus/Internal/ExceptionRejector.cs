@@ -57,7 +57,7 @@ namespace Aggregates.Internal
                     RetryRegistry.TryAdd(messageId, retries + 1);
 
                     // Don't let NSB do an immediate retry, put a small delay
-                    await Task.Delay((retries / 3) * 200).ConfigureAwait(false);
+                    await Task.Delay(200).ConfigureAwait(false);
                     throw;
                 }
 

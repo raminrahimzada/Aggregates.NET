@@ -42,17 +42,17 @@ namespace Aggregates.Attributes
 
             if (!this.Count.HasValue && !this.Delay.HasValue)
                 throw new ArgumentException($"{nameof(Count)} or {nameof(delayMs)} is required to use Delayed attribute");
-
-            if (useKeyProperties == false)
-                return;
-
+            
+            
             var keys =
-                type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(x => x.GetCustomAttribute(typeof(KeyProperty), false) != null).ToList();
-            if (keys.Any())
+                type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => new Tuple<PropertyInfo, KeyProperty>(x, x.GetCustomAttribute<KeyProperty>(false)));
+            
+            // Slightly complex logic to select properties having `KeyProperty` attributes to combine into a string.
+            // if `useKeyProperties` is false, only use `KeyProperty` attributes having `Always` be true
+            if (keys.Any(x => x.Item2 != null && (useKeyProperties || x.Item2.Always)))
             {
                 this.KeyPropertyFunc =
-                    (o) => keys.Select(x => x.GetValue(o).ToString()).Aggregate((cur, next) => $"{cur}:{next}");
+                    (o) => keys.Where(x => x.Item2 != null && (useKeyProperties || x.Item2.Always)).Select(x => x.Item1.GetValue(o).ToString()).Aggregate((cur, next) => $"{cur}:{next}");
             }
             
         }
