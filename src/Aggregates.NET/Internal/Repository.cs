@@ -295,8 +295,12 @@ namespace Aggregates.Internal
         protected virtual async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents = null)
         {
             var cacheKey = CacheKeyGenerator(bucket, id, parents);
-            var entity = _cache.Retreive(cacheKey) as TEntity;
-            if (entity == null)
+            var state = _cache.Retreive(cacheKey) as TState;
+
+            TEntity entity;
+            if (state != null)
+                entity = Factory.Create(bucket, id, parents, null, state);
+            else
             {
                 // Todo: pass parent instead of Id[]?
                 var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
@@ -314,7 +318,7 @@ namespace Aggregates.Internal
 
             // Cache the entity if retrieved a lot without much eviction
             // force caching if conflict resolution is set to ignore (conflicts don't matter)
-            _cache.Cache(cacheKey, entity, expires1M: _conflictResolution.Conflict.Value == ConcurrencyConflict.Ignore);
+            _cache.Cache(cacheKey, entity.State, expires1M: _conflictResolution.Conflict.Value == ConcurrencyConflict.Ignore);
             return entity;
         }
 
