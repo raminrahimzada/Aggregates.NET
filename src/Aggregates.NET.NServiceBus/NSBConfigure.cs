@@ -52,11 +52,8 @@ namespace Aggregates
 
                 endpointConfig.Recoverability().Delayed(x =>
                 {
-                    // Delayed retries don't work well with the InMemory context bag storage.  Creating
-                    // a problem of possible duplicate commits
-                    x.NumberOfRetries(0);
-                    //x.TimeIncrease(TimeSpan.FromSeconds(1));
-                    //x.NumberOfRetries(forever ? int.MaxValue : delayedRetries);
+                    x.NumberOfRetries(config.Retries);
+                    x.TimeIncrease(TimeSpan.FromSeconds(5));
                 });
 
                 endpointConfig.MakeInstanceUniquelyAddressable(c.UniqueAddress);
