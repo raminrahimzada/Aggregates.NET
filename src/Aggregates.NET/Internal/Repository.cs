@@ -22,8 +22,8 @@ namespace Aggregates.Internal
 
         private readonly TParent _parent;
 
-        public Repository(TParent parent, IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow, ICache cache)
-            : base(metrics, store, snapshots, oobStore, factory, uow, cache)
+        public Repository(TParent parent, IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow)
+            : base(metrics, store, snapshots, oobStore, factory, uow)
         {
             _parent = parent;
         }
@@ -100,14 +100,13 @@ namespace Aggregates.Internal
         private readonly IOobWriter _oobStore;
         private readonly IEventFactory _factory;
         protected readonly IDomainUnitOfWork _uow;
-        private readonly ICache _cache;
 
         private bool _disposed;
 
         public int ChangedStreams => Tracked.Count(x => x.Value.Dirty);
 
         // Todo: too many operations on this class, make a "EntityWriter" contract which does event, oob, and snapshot writing
-        public Repository(IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow, ICache cache)
+        public Repository(IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow)
         {
             _metrics = metrics;
             _eventstore = store;
@@ -115,7 +114,6 @@ namespace Aggregates.Internal
             _oobStore = oobStore;
             _factory = factory;
             _uow = uow;
-            _cache = cache;
 
             // Conflict resolution is strong by default
             if (_conflictResolution == null)
@@ -152,7 +150,6 @@ namespace Aggregates.Internal
                     {
                         if (domainEvents.Any())
                         {
-                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
                             await _eventstore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents,
                                 domainEvents, commitHeaders, tracked.Version).ConfigureAwait(false);
                         }
@@ -173,16 +170,16 @@ namespace Aggregates.Internal
                         {
                             // make new clean entity
                             var clean = await GetClean(tracked).ConfigureAwait(false);
-                            
+
                             Logger.DebugEvent("ConflictResolve", "[{EntityId:l}] entity [{EntityType:l}] resolving {ConflictingEvents} events with {ConflictResolver}", tracked.Id, typeof(TEntity).FullName, state.Version - clean.Version, _conflictResolution.Conflict);
                             var strategy = _conflictResolution.Conflict.Build(Configuration.Settings.Container, _conflictResolution.Resolver);
-                            
+
                             commitHeaders[Defaults.ConflictResolvedHeader] = _conflictResolution.Conflict.DisplayName;
 
                             await strategy.Resolve<TEntity, TState>(clean, domainEvents, commitId, commitHeaders).ConfigureAwait(false);
                             // Conflict resolved, replace original dirty entity we were trying to save with clean one
                             tracked = clean;
-                            
+
                             Logger.DebugEvent("ConflictResolveSuccess", "[{EntityId:l}] entity [{EntityType:l}] resolution success", tracked.Id, typeof(TEntity).FullName);
                         }
                         catch (AbandonConflictException abandon)
@@ -240,7 +237,7 @@ namespace Aggregates.Internal
                     }
                 }).ConfigureAwait(false);
 
-            
+
             Logger.DebugEvent("FinishedCommit", "[{EntityType:l}] commit {CommitId}", typeof(TEntity).FullName, commitId);
         }
 
@@ -296,33 +293,21 @@ namespace Aggregates.Internal
         }
         protected virtual async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents = null)
         {
-            var cacheKey = CacheKeyGenerator(bucket, id, parents);
-            var entity = _cache.Retreive(cacheKey) as TEntity;
-            
-            if (entity == null)
-            {
-                // Todo: pass parent instead of Id[]?
-                var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
-                var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents, start: snapshot?.Version).ConfigureAwait(false);
+            // Todo: pass parent instead of Id[]?
+            var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
+            var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents, start: snapshot?.Version).ConfigureAwait(false);
 
-                entity = Factory.Create(bucket, id, parents, events.Select(x => x.Event as IEvent).ToArray(), snapshot?.Payload);
-            }
+            var entity = Factory.Create(bucket, id, parents, events.Select(x => x.Event as IEvent).ToArray(), snapshot?.Payload);
+
 
             (entity as INeedDomainUow).Uow = _uow;
             (entity as INeedEventFactory).EventFactory = _factory;
             (entity as INeedStore).Store = _eventstore;
             (entity as INeedStore).OobWriter = _oobStore;
-            
+
             Logger.DebugEvent("Get", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
 
-            // Cache the entity if retrieved a lot without much eviction
-            _cache.Cache(cacheKey, entity);
             return entity;
-        }
-
-        private string CacheKeyGenerator(string bucket, Id id, Id[] parents = null)
-        {
-            return $"{typeof(TEntity).FullName}.{bucket}.{id}.{parents.BuildParentsString()}";
         }
 
         private Task<TEntity> GetClean(TEntity dirty)

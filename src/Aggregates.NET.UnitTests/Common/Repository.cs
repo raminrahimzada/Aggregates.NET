@@ -69,7 +69,6 @@ namespace Aggregates.UnitTests.Common
         private Moq.Mock<IOobWriter> _oobStore;
         private Moq.Mock<IEventFactory> _factory;
         private Moq.Mock<IDomainUnitOfWork> _uow;
-        private Moq.Mock<ICache> _cache;
         private Moq.Mock<IFullEvent> _event;
         private Moq.Mock<IEventMapper> _mapper;
         private FakeResolver _resolver;
@@ -83,7 +82,6 @@ namespace Aggregates.UnitTests.Common
             _oobStore = new Moq.Mock<IOobWriter>();
             _factory = new Moq.Mock<IEventFactory>();
             _uow = new Moq.Mock<IDomainUnitOfWork>();
-            _cache = new Moq.Mock<ICache>();
             _event = new Moq.Mock<IFullEvent>();
             _mapper = new Moq.Mock<IEventMapper>();
 
@@ -103,7 +101,7 @@ namespace Aggregates.UnitTests.Common
                 .Returns(Task.FromResult((ISnapshot)null));
 
             _event.Setup(x => x.Event).Returns(new FakeEvent());
-            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(_metrics.Object, _eventstore.Object, _snapshots.Object, _oobStore.Object, _factory.Object, _uow.Object, _cache.Object);
+            _repository = new Aggregates.Internal.Repository<FakeEntity, FakeState>(_metrics.Object, _eventstore.Object, _snapshots.Object, _oobStore.Object, _factory.Object, _uow.Object);
         }
 
         [Test]

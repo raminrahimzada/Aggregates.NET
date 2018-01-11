@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
@@ -26,58 +27,65 @@ namespace Aggregates.Internal
         private static readonly Dictionary<string, Tuple<DateTime, int>> CacheAttempts = new Dictionary<string, Tuple<DateTime, int>>();
         private static readonly object Lock = new object();
         private static int _stage;
-        private static readonly Task CachableEviction = Timer.Repeat(() =>
-        {
-            // Clear cachable every 10 minutes
-            if (_stage % 120 == 0)
-            {
-                _stage = 0;
 
-                lock (Lock)
-                {
-                    foreach (var expired in CacheAttempts.Where(x => (DateTime.UtcNow - x.Value.Item1).TotalMinutes > 10).Select(x => x.Key).ToList())
-                        CacheAttempts.Remove(expired);
-                }
-            }
-
-            if (_stage % 60 == 0)
-            {
-                lock (Lock)
-                {
-                    foreach (var stream in Expires2)
-                        MemCache.Remove(stream);
-                    Expires2.Clear();
-                }
-            }
-            if (_stage % 12 == 0)
-            {
-                lock (Lock)
-                {
-                    foreach (var stream in Expires1)
-                        MemCache.Remove(stream);
-                    Expires1.Clear();
-                }
-            }
-
-            if (_stage % 2 == 0)
-            {
-                lock (Lock)
-                {
-                    foreach (var stream in Expires0)
-                        MemCache.Remove(stream);
-                    Expires0.Clear();
-                }
-            }
-
-            _stage++;
-            return Task.CompletedTask;
-        }, TimeSpan.FromSeconds(5), "intelligent cache eviction");
-
-        private readonly IMetrics _metrics;
+        private static int _evicting;
+        private static Task _eviction;
 
         public IntelligentCache(IMetrics metrics)
         {
-            _metrics = metrics;
+            if (Interlocked.CompareExchange(ref _evicting, 1, 0) == 1) return;
+
+            _eviction = Timer.Repeat((state) =>
+            {
+                var m = state as IMetrics;
+
+                // Clear cachable every 10 minutes
+                if (_stage % 120 == 0)
+                {
+                    _stage = 0;
+
+                    lock (Lock)
+                    {
+                        foreach (var expired in CacheAttempts.Where(x => (DateTime.UtcNow - x.Value.Item1).TotalMinutes > 10).Select(x => x.Key).ToList())
+                            CacheAttempts.Remove(expired);
+                    }
+                }
+
+                if (_stage % 60 == 0)
+                {
+                    lock (Lock)
+                    {
+                        foreach (var stream in Expires2)
+                            MemCache.Remove(stream);
+                        Expires2.Clear();
+                    }
+                }
+                if (_stage % 12 == 0)
+                {
+                    lock (Lock)
+                    {
+                        foreach (var stream in Expires1)
+                            MemCache.Remove(stream);
+                        Expires1.Clear();
+                    }
+                }
+
+                if (_stage % 2 == 0)
+                {
+                    lock (Lock)
+                    {
+                        foreach (var stream in Expires0)
+                            MemCache.Remove(stream);
+                        Expires0.Clear();
+                    }
+                }
+
+                lock (Lock) m.Update("Aggregates Cache Size", Unit.Items, MemCache.Count);
+
+
+                _stage++;
+                return Task.CompletedTask;
+            }, metrics, TimeSpan.FromSeconds(5), "intelligent cache eviction");
         }
 
         public void Cache(string key, object cached, bool expires10S = false, bool expires1M = false, bool expires5M = false)
@@ -104,7 +112,6 @@ namespace Aggregates.Internal
                         Expires2.Add(key);
                     }
 
-                    _metrics.Increment("Cached", Unit.Items);
                     MemCache[key] = cached;
 
                     return;
@@ -136,11 +143,8 @@ namespace Aggregates.Internal
 
                 Cachable.Remove(key);
 
-                if (MemCache.ContainsKey(key))
-                {
-                    _metrics.Decrement("Cached", Unit.Items);
-                    MemCache.Remove(key);
-                }
+                MemCache.Remove(key);
+
             }
         }
 
@@ -154,6 +158,7 @@ namespace Aggregates.Internal
                     cached = null;
             }
 
+            Logger.DebugEvent("Retrieved", "{Key}", key);
             return cached;
         }
 

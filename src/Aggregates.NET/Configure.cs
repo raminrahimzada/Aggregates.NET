@@ -121,7 +121,7 @@ namespace Aggregates
                 container.Register<IOobWriter>((factory) => new OobWriter(factory.Resolve<IMessageDispatcher>(), factory.Resolve<IStoreEvents>(), c.Generator), Lifestyle.PerInstance);
                 container.Register<ISnapshotReader, SnapshotReader>(Lifestyle.PerInstance);
 
-                container.Register<ICache, IntelligentCache>(Lifestyle.Singleton);
+                container.Register<ICache, IntelligentCache>(Lifestyle.PerInstance);
                 container.Register<IMetrics, NullMetrics>(Lifestyle.Singleton);
                 container.Register<IDelayedCache>((factory) => new DelayedCache(factory.Resolve<IMetrics>(), factory.Resolve<IStoreEvents>(), c.FlushInterval, c.Endpoint, c.MaxDelayed, c.FlushSize, c.DelayedExpiration, c.Generator), Lifestyle.Singleton);
 
