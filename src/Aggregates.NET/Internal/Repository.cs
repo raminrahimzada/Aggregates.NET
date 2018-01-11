@@ -150,8 +150,12 @@ namespace Aggregates.Internal
 
                     try
                     {
-                        if(domainEvents.Any())
-                            await _eventstore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, domainEvents, commitHeaders, tracked.Version).ConfigureAwait(false);
+                        if (domainEvents.Any())
+                        {
+                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
+                            await _eventstore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents,
+                                domainEvents, commitHeaders, tracked.Version).ConfigureAwait(false);
+                        }
                     }
                     catch (VersionException e)
                     {
@@ -161,7 +165,6 @@ namespace Aggregates.Internal
                         if (tracked.Version == EntityFactory.NewEntityVersion)
                         {
                             Logger.DebugEvent("AlreadyExists", "[{EntityId:l}] entity [{EntityType:l}] already exists", tracked.Id, typeof(TEntity).FullName);
-                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
                             throw new ConflictResolutionFailedException(
                                 $"New stream [{tracked.Id}] entity {tracked.GetType().FullName} already exists in store");
                         }
@@ -186,7 +189,6 @@ namespace Aggregates.Internal
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
                             Logger.ErrorEvent("ConflictResolveAbandon", "[{EntityId:l}] entity [{EntityType:l}] abandonded", tracked.Id, typeof(TEntity).FullName);
-                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
 
                             throw new ConflictResolutionFailedException(
                                 $"Aborted conflict resolution for stream [{tracked.Id}] entity {tracked.GetType().FullName}",
@@ -196,7 +198,6 @@ namespace Aggregates.Internal
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
                             Logger.ErrorEvent("ConflictResolveFail", ex, "[{EntityId:l}] entity [{EntityType:l}] failed: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).FullName, ex.GetType().Name, ex.Message);
-                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
 
                             throw new ConflictResolutionFailedException(
                                 $"Failed to resolve conflict for stream [{tracked.Id}] entity {tracked.GetType().FullName} due to exception",
@@ -296,12 +297,9 @@ namespace Aggregates.Internal
         protected virtual async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents = null)
         {
             var cacheKey = CacheKeyGenerator(bucket, id, parents);
-            var state = _cache.Retreive(cacheKey) as TState;
-
-            TEntity entity;
-            if (state != null)
-                entity = Factory.Create(bucket, id, parents, null, state);
-            else
+            var entity = _cache.Retreive(cacheKey) as TEntity;
+            
+            if (entity == null)
             {
                 // Todo: pass parent instead of Id[]?
                 var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
@@ -318,8 +316,7 @@ namespace Aggregates.Internal
             Logger.DebugEvent("Get", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
 
             // Cache the entity if retrieved a lot without much eviction
-            // force caching if conflict resolution is set to ignore (conflicts don't matter)
-            _cache.Cache(cacheKey, entity.State, expires1M: _conflictResolution.Conflict.Value == ConcurrencyConflict.Ignore);
+            _cache.Cache(cacheKey, entity);
             return entity;
         }
 
