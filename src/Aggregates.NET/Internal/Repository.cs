@@ -47,7 +47,7 @@ namespace Aggregates.Internal
             {
                 root = await GetUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
-                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+                    Tracked.TryGetValue(cacheId, out root);
             }
 
             return root;
@@ -62,7 +62,7 @@ namespace Aggregates.Internal
             {
                 root = await NewUntracked(_parent.Bucket, id, _parent.BuildParents()).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
-                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+                    Tracked.TryGetValue(cacheId, out root);
             }
 
             return root;
@@ -287,7 +287,7 @@ namespace Aggregates.Internal
             {
                 root = await GetUntracked(bucket, id).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
-                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+                    Tracked.TryGetValue(cacheId, out root);
             }
 
             return root;
@@ -352,7 +352,7 @@ namespace Aggregates.Internal
             {
                 root = await NewUntracked(bucket, id).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
-                    throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
+                    Tracked.TryGetValue(cacheId, out root);
             }
             return root;
         }
