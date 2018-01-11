@@ -3,8 +3,10 @@ using Aggregates.Messages;
 using NServiceBus;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Aggregates.Internal;
 
 namespace Aggregates
 {
@@ -38,6 +40,24 @@ namespace Aggregates
         {
             var uow = context.Extensions.Get<IUnitOfWork>();
             return uow as TUnitOfWork;
+        }
+
+        public static Task SendToSelf(this IMessageHandlerContext context, Messages.ICommand command)
+        {
+            return context.SendToSelf(new[] {command});
+        }
+        public static Task SendToSelf(this IMessageHandlerContext context, Messages.ICommand[] commands)
+        {
+            var container = context.Extensions.Get<IContainer>();
+            var dispatcher = container.Resolve<IMessageDispatcher>();
+
+            var messages = commands.Select(x => new FullMessage
+            {
+                Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value),
+                Message = x
+            }).ToArray();
+
+            return dispatcher.SendLocal(messages);
         }
     }
 }
