@@ -295,15 +295,15 @@ namespace Aggregates.Internal
         protected virtual async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents = null)
         {
             var cacheKey = CacheKeyGenerator(bucket, id, parents);
-            var cached = _cache.Retreive(cacheKey) as TEntity;
-            if (cached != null)
-                return cached;
+            var entity = _cache.Retreive(cacheKey) as TEntity;
+            if (entity == null)
+            {
+                // Todo: pass parent instead of Id[]?
+                var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
+                var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents, start: snapshot?.Version).ConfigureAwait(false);
 
-            // Todo: pass parent instead of Id[]?
-            var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
-            var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents, start: snapshot?.Version).ConfigureAwait(false);
-
-            var entity = Factory.Create(bucket, id, parents, events.Select(x => x.Event as IEvent).ToArray(), snapshot?.Payload);
+                entity = Factory.Create(bucket, id, parents, events.Select(x => x.Event as IEvent).ToArray(), snapshot?.Payload);
+            }
 
             (entity as INeedDomainUow).Uow = _uow;
             (entity as INeedEventFactory).EventFactory = _factory;
