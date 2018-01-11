@@ -58,11 +58,13 @@ namespace Aggregates.Internal
 
             // Attempt to get MessageId from NServicebus headers
             // If we maintain a good CommitId convention it should solve the message idempotentcy issue (assuming the storage they choose supports it)
-            if (CurrentHeaders.TryGetValue(NSBDefaults.MessageIdHeader, out messageId))
-                Guid.TryParse(messageId, out commitId);
             if (CurrentHeaders.TryGetValue($"{Defaults.PrefixHeader}.{NSBDefaults.MessageIdHeader}", out messageId))
                 Guid.TryParse(messageId, out commitId);
             if (CurrentHeaders.TryGetValue($"{Defaults.DelayedPrefixHeader}.{NSBDefaults.MessageIdHeader}", out messageId))
+                Guid.TryParse(messageId, out commitId);
+            if (CurrentHeaders.TryGetValue($"{Defaults.BulkPrefixHeader}.{NSBDefaults.MessageIdHeader}", out messageId))
+                Guid.TryParse(messageId, out commitId);
+            if (CurrentHeaders.TryGetValue(NSBDefaults.MessageIdHeader, out messageId))
                 Guid.TryParse(messageId, out commitId);
 
             // Allow the user to send a CommitId along with his message if he wants
