@@ -89,14 +89,14 @@ namespace Aggregates.Extensions
             return lambda.Compile();
         }
 
-        public static Func<IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, IRepository<TEntity>> BuildRepositoryFunc<TEntity>()
+        public static Func<IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, ICache, IRepository<TEntity>> BuildRepositoryFunc<TEntity>()
             where TEntity : IEntity
         {
             var stateType = typeof(TEntity).BaseType.GetGenericArguments()[1];
             var repoType = typeof(Repository<,>).MakeGenericType(typeof(TEntity), stateType);
 
             // doing my own open-generics implementation so I don't have to depend on an IoC container supporting it
-            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(IMetrics), typeof(IStoreEvents), typeof(IStoreSnapshots), typeof(IOobWriter), typeof(IEventFactory), typeof(IDomainUnitOfWork) }, null);
+            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(IMetrics), typeof(IStoreEvents), typeof(IStoreSnapshots), typeof(IOobWriter), typeof(IEventFactory), typeof(IDomainUnitOfWork), typeof(ICache) }, null);
             if (ctor == null)
                 throw new AggregateException("No constructor found for repository");
 
@@ -106,20 +106,21 @@ namespace Aggregates.Extensions
             var oobParam = Expression.Parameter(typeof(IOobWriter), "oobStore");
             var factoryParam = Expression.Parameter(typeof(IEventFactory), "factory");
             var uowParam = Expression.Parameter(typeof(IDomainUnitOfWork), "uow");
+            var cacheParam = Expression.Parameter(typeof(ICache), "cache");
 
-            var body = Expression.New(ctor, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam);
-            var lambda = Expression.Lambda<Func<IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, IRepository<TEntity>>>(body, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam);
+            var body = Expression.New(ctor, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam, cacheParam);
+            var lambda = Expression.Lambda<Func<IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, ICache, IRepository<TEntity>>>(body, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam, cacheParam);
 
             return lambda.Compile();
         }
-        public static Func<TParent, IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, IRepository<TEntity, TParent>> BuildParentRepositoryFunc<TEntity, TParent>()
+        public static Func<TParent, IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, ICache, IRepository<TEntity, TParent>> BuildParentRepositoryFunc<TEntity, TParent>()
             where TEntity : IChildEntity<TParent> where TParent : IEntity
         {
             var stateType = typeof(TEntity).BaseType.GetGenericArguments()[1];
             var repoType = typeof(Repository<,,>).MakeGenericType(typeof(TEntity), stateType, typeof(TParent));
 
             // doing my own open-generics implementation so I don't have to depend on an IoC container supporting it
-            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(TParent), typeof(IMetrics), typeof(IStoreEvents), typeof(IStoreSnapshots), typeof(IOobWriter), typeof(IEventFactory), typeof(IDomainUnitOfWork) }, null);
+            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(TParent), typeof(IMetrics), typeof(IStoreEvents), typeof(IStoreSnapshots), typeof(IOobWriter), typeof(IEventFactory), typeof(IDomainUnitOfWork), typeof(ICache) }, null);
             if (ctor == null)
                 throw new AggregateException("No constructor found for repository");
 
@@ -130,9 +131,10 @@ namespace Aggregates.Extensions
             var oobParam = Expression.Parameter(typeof(IOobWriter), "oobStore");
             var factoryParam = Expression.Parameter(typeof(IEventFactory), "factory");
             var uowParam = Expression.Parameter(typeof(IDomainUnitOfWork), "uow");
+            var cacheParam = Expression.Parameter(typeof(ICache), "cache");
 
-            var body = Expression.New(ctor, parentParam, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam);
-            var lambda = Expression.Lambda<Func<TParent, IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, IRepository<TEntity, TParent>>>(body, parentParam, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam);
+            var body = Expression.New(ctor, parentParam, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam, cacheParam);
+            var lambda = Expression.Lambda<Func<TParent, IMetrics, IStoreEvents, IStoreSnapshots, IOobWriter, IEventFactory, IDomainUnitOfWork, ICache, IRepository<TEntity, TParent>>>(body, parentParam, metricsParam, eventstoreParam, snapshotParam, oobParam, factoryParam, uowParam, cacheParam);
 
             return lambda.Compile();
         }

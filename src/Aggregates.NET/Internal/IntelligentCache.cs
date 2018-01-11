@@ -23,7 +23,7 @@ namespace Aggregates.Internal
         // Only cache items that don't change very often
         private static readonly HashSet<string> Cachable = new HashSet<string>();
         //                                          Last attempt  count  
-        private static readonly Dictionary<string,Tuple<DateTime, int>> CacheAttempts = new Dictionary<string, Tuple<DateTime, int>>();
+        private static readonly Dictionary<string, Tuple<DateTime, int>> CacheAttempts = new Dictionary<string, Tuple<DateTime, int>>();
         private static readonly object Lock = new object();
         private static int _stage;
         private static readonly Task CachableEviction = Timer.Repeat(() =>
@@ -35,7 +35,7 @@ namespace Aggregates.Internal
 
                 lock (Lock)
                 {
-                    foreach(var expired in CacheAttempts.Where(x => (DateTime.UtcNow - x.Value.Item1).TotalMinutes > 10).Select(x => x.Key).ToList())
+                    foreach (var expired in CacheAttempts.Where(x => (DateTime.UtcNow - x.Value.Item1).TotalMinutes > 10).Select(x => x.Key).ToList())
                         CacheAttempts.Remove(expired);
                 }
             }
@@ -68,18 +68,22 @@ namespace Aggregates.Internal
                     Expires0.Clear();
                 }
             }
-            
+
             _stage++;
             return Task.CompletedTask;
         }, TimeSpan.FromSeconds(5), "intelligent cache eviction");
-        
-        
+
+        private readonly IMetrics _metrics;
+
+        public IntelligentCache(IMetrics metrics)
+        {
+            _metrics = metrics;
+        }
 
         public void Cache(string key, object cached, bool expires10S = false, bool expires1M = false, bool expires5M = false)
         {
             lock (Lock)
             {
-
                 if (Cachable.Contains(key) || expires10S || expires1M || expires5M)
                 {
                     if (!expires10S && !expires1M && !expires5M)
@@ -93,11 +97,14 @@ namespace Aggregates.Internal
                     {
                         Logger.DebugEvent("Cache", "{Key} for {Seconds}s", key, 60);
                         Expires1.Add(key);
-                    }else if (expires5M)
+                    }
+                    else if (expires5M)
                     {
                         Logger.DebugEvent("Cache", "{Key} for {Seconds}s", key, 300);
                         Expires2.Add(key);
                     }
+
+                    _metrics.Increment("Cached", Unit.Items);
                     MemCache[key] = cached;
 
                     return;
@@ -106,14 +113,17 @@ namespace Aggregates.Internal
                 if (!CacheAttempts.ContainsKey(key))
                     CacheAttempts[key] = new Tuple<DateTime, int>(DateTime.UtcNow, 1);
                 else
-                    CacheAttempts[key] = new Tuple<DateTime, int>(DateTime.UtcNow, Math.Min(20, CacheAttempts[key].Item2 + 1));
-                
-                if (CacheAttempts[key].Item2 >= 20)
-                {
-                    Logger.InfoEvent("Cachable", "{Key} is cachable now", key);
-                    Cachable.Add(key);
-                }
+                    CacheAttempts[key] =
+                        new Tuple<DateTime, int>(DateTime.UtcNow, Math.Min(20, CacheAttempts[key].Item2 + 1));
             }
+
+
+            if (CacheAttempts[key].Item2 >= 20)
+            {
+                Logger.DebugEvent("Cachable", "{Key} is cachable now", key);
+                Cachable.Add(key);
+            }
+
 
         }
         public void Evict(string key)
@@ -121,16 +131,19 @@ namespace Aggregates.Internal
             lock (Lock)
             {
                 // Decrease by 5 - evicting is a terrible thing, usually means there was a version conflict
-                if(CacheAttempts.ContainsKey(key))
+                if (CacheAttempts.ContainsKey(key))
                     CacheAttempts[key] = new Tuple<DateTime, int>(DateTime.UtcNow, Math.Max(0, CacheAttempts[key].Item2 - 5));
 
                 Cachable.Remove(key);
 
-                MemCache.Remove(key);
+                if (MemCache.ContainsKey(key))
+                {
+                    _metrics.Decrement("Cached", Unit.Items);
+                    MemCache.Remove(key);
+                }
             }
-            
-
         }
+
         public object Retreive(string key)
         {
             object cached;
@@ -143,6 +156,6 @@ namespace Aggregates.Internal
 
             return cached;
         }
-        
+
     }
 }

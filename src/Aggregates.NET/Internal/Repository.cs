@@ -22,8 +22,8 @@ namespace Aggregates.Internal
 
         private readonly TParent _parent;
 
-        public Repository(TParent parent, IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow)
-            : base(metrics, store, snapshots, oobStore, factory, uow)
+        public Repository(TParent parent, IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow, ICache cache)
+            : base(metrics, store, snapshots, oobStore, factory, uow, cache)
         {
             _parent = parent;
         }
@@ -100,13 +100,14 @@ namespace Aggregates.Internal
         private readonly IOobWriter _oobStore;
         private readonly IEventFactory _factory;
         protected readonly IDomainUnitOfWork _uow;
+        private readonly ICache _cache;
 
         private bool _disposed;
 
         public int ChangedStreams => Tracked.Count(x => x.Value.Dirty);
 
         // Todo: too many operations on this class, make a "EntityWriter" contract which does event, oob, and snapshot writing
-        public Repository(IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow)
+        public Repository(IMetrics metrics, IStoreEvents store, IStoreSnapshots snapshots, IOobWriter oobStore, IEventFactory factory, IDomainUnitOfWork uow, ICache cache)
         {
             _metrics = metrics;
             _eventstore = store;
@@ -114,6 +115,7 @@ namespace Aggregates.Internal
             _oobStore = oobStore;
             _factory = factory;
             _uow = uow;
+            _cache = cache;
 
             // Conflict resolution is strong by default
             if (_conflictResolution == null)
@@ -183,6 +185,8 @@ namespace Aggregates.Internal
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
                             Logger.ErrorEvent("ConflictResolveAbandon", "[{EntityId:l}] entity [{EntityType:l}] abandonded", tracked.Id, typeof(TEntity).FullName);
+                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
+
                             throw new ConflictResolutionFailedException(
                                 $"Aborted conflict resolution for stream [{tracked.Id}] entity {tracked.GetType().FullName}",
                                 abandon);
@@ -191,6 +195,8 @@ namespace Aggregates.Internal
                         {
                             _metrics.Mark("Conflicts Unresolved", Unit.Items);
                             Logger.ErrorEvent("ConflictResolveFail", ex, "[{EntityId:l}] entity [{EntityType:l}] failed: {ExceptionType} - {ExceptionMessage}", tracked.Id, typeof(TEntity).FullName, ex.GetType().Name, ex.Message);
+                            _cache.Evict(CacheKeyGenerator(tracked.Bucket, tracked.Id, tracked.Parents));
+
                             throw new ConflictResolutionFailedException(
                                 $"Failed to resolve conflict for stream [{tracked.Id}] entity {tracked.GetType().FullName} due to exception",
                                 ex);
@@ -288,6 +294,10 @@ namespace Aggregates.Internal
         }
         protected virtual async Task<TEntity> GetUntracked(string bucket, Id id, Id[] parents = null)
         {
+            var cacheKey = CacheKeyGenerator(bucket, id, parents);
+            var cached = _cache.Retreive(cacheKey) as TEntity;
+            if (cached != null)
+                return cached;
 
             // Todo: pass parent instead of Id[]?
             var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents).ConfigureAwait(false);
@@ -301,7 +311,16 @@ namespace Aggregates.Internal
             (entity as INeedStore).OobWriter = _oobStore;
             
             Logger.DebugEvent("Get", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
+
+            // Cache the entity if retrieved a lot without much eviction
+            // force caching if conflict resolution is set to ignore (conflicts don't matter)
+            _cache.Cache(cacheKey, entity, expires1M: _conflictResolution.Conflict.Value == ConcurrencyConflict.Ignore);
             return entity;
+        }
+
+        private string CacheKeyGenerator(string bucket, Id id, Id[] parents = null)
+        {
+            return $"{typeof(TEntity).FullName}.{bucket}.{id}.{parents.BuildParentsString()}";
         }
 
         private Task<TEntity> GetClean(TEntity dirty)
