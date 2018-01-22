@@ -48,7 +48,7 @@ namespace Aggregates.Internal
             catch (Exception e)
             {
                 // Special exception we dont want to retry or reply
-                if (e is BusinessException)
+                if (e is BusinessException || context.MessageHandled)
                     return;
 
                 var stackTrace = string.Join("\n", (e.StackTrace?.Split('\n').Take(10) ?? new string[] { }).AsEnumerable());
