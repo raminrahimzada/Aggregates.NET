@@ -107,7 +107,7 @@ namespace Aggregates.Internal
             factoryMethod: (b) => new ExceptionRejector(container.Resolve<IMetrics>(), Configuration.Settings.Retries, container.Resolve<DelayedRetry>(), container.Resolve<IMessageSerializer>())
         )
         {
-            InsertBefore("LoadHandlersConnector");
+            InsertBefore("MutateIncomingMessages");
         }
     }
 }
