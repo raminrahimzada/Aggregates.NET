@@ -155,7 +155,7 @@ namespace Aggregates.Internal
             {
                 // Cachable check is O(1) whereas a Dict search is not
                 if (!Cachable.Contains(key) || !MemCache.TryGetValue(key, out cached))
-                    cached = null;
+                    return null;
             }
 
             Logger.DebugEvent("Retrieved", "{Key}", key);

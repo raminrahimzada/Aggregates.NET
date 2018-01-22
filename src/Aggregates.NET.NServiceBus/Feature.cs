@@ -39,12 +39,9 @@ namespace Aggregates
             {
                 //container.Register<IDomainUnitOfWork, NSBUnitOfWork>();
                 MutationManager.RegisterMutator("domain unit of work", typeof(IDomainUnitOfWork));
+                
 
-                context.Pipeline.Register(
-                    b => new ExceptionRejector(container.Resolve<IMetrics>(), Configuration.Settings.Retries),
-                    "Watches message faults, sends error replies to client when message moves to error queue"
-                    );
-
+                context.Pipeline.Register(new ExceptionRejectorRegistration(container));
                 context.Pipeline.Register(new UowRegistration(container));
                 context.Pipeline.Register(new CommandAcceptorRegistration(container));
                 context.Pipeline.Register(new LocalMessageUnpackRegistration(container));

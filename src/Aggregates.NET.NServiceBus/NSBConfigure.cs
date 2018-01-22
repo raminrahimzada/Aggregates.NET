@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using NServiceBus.Transport;
+using System.Threading.Tasks;
 
 namespace Aggregates
 {
@@ -35,7 +36,14 @@ namespace Aggregates
             }
 
 
+            config.RegistrationTasks.Add(c =>
+            {
+                var container = c.Container;
+                
+                container.Register(factory => new Aggregates.Internal.DelayedRetry(factory.Resolve<IMetrics>(), factory.Resolve<IMessageDispatcher>()), Lifestyle.Singleton);
 
+                return Task.CompletedTask;
+            });
 
             config.SetupTasks.Add((c) =>
             {
@@ -44,16 +52,15 @@ namespace Aggregates
                 settings.Set("Retries", config.Retries);
                 settings.Set("SlowAlertThreshold", config.SlowAlertThreshold);
 
-                // Set immediate retries to our "MaxRetries" setting
+                // Set immediate retries to 0 - we handle retries ourselves any message which throws should be sent to error queue
                 endpointConfig.Recoverability().Immediate(x =>
                 {
-                    x.NumberOfRetries(config.Retries);
+                    x.NumberOfRetries(0);
                 });
 
                 endpointConfig.Recoverability().Delayed(x =>
                 {
-                    x.NumberOfRetries(config.Retries);
-                    x.TimeIncrease(TimeSpan.FromSeconds(5));
+                    x.NumberOfRetries(0);
                 });
 
                 endpointConfig.MakeInstanceUniquelyAddressable(c.UniqueAddress);
