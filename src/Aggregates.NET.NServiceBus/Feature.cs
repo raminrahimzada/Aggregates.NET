@@ -35,13 +35,14 @@ namespace Aggregates
 
             context.Container.ConfigureComponent<IEventMapper>((c) => new EventMapper(c.Build<IMessageMapper>()), DependencyLifecycle.SingleInstance);
 
+            context.Pipeline.Register(new ExceptionRejectorRegistration(container));
+
             if (!Configuration.Settings.Passive)
             {
                 //container.Register<IDomainUnitOfWork, NSBUnitOfWork>();
                 MutationManager.RegisterMutator("domain unit of work", typeof(IDomainUnitOfWork));
                 
 
-                context.Pipeline.Register(new ExceptionRejectorRegistration(container));
                 context.Pipeline.Register(new UowRegistration(container));
                 context.Pipeline.Register(new CommandAcceptorRegistration(container));
                 context.Pipeline.Register(new LocalMessageUnpackRegistration(container));

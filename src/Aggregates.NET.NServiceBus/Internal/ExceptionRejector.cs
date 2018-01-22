@@ -74,7 +74,7 @@ namespace Aggregates.Internal
                 
                 // Only send reply if the message is a SEND, else we risk endless reply loops as message failures bounce back and forth
                 if (context.GetMessageIntent() != MessageIntentEnum.Send && context.GetMessageIntent() != MessageIntentEnum.Publish)
-                    throw;
+                    return;
 
                 // At this point message is dead - should be moved to error queue, send message to client that their request was rejected due to error 
                 _metrics.Mark("Message Faults", Unit.Errors);
@@ -107,7 +107,7 @@ namespace Aggregates.Internal
             factoryMethod: (b) => new ExceptionRejector(container.Resolve<IMetrics>(), Configuration.Settings.Retries, container.Resolve<DelayedRetry>(), container.Resolve<IMessageSerializer>())
         )
         {
-            InsertBefore("MutateIncomingMessages");
+            InsertBefore("LoadHandlersConnector");
         }
     }
 }

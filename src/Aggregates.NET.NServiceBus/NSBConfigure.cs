@@ -52,16 +52,19 @@ namespace Aggregates
                 settings.Set("Retries", config.Retries);
                 settings.Set("SlowAlertThreshold", config.SlowAlertThreshold);
 
-                // Set immediate retries to 0 - we handle retries ourselves any message which throws should be sent to error queue
-                endpointConfig.Recoverability().Immediate(x =>
+                if (!c.Passive)
                 {
-                    x.NumberOfRetries(0);
-                });
+                    // Set immediate retries to 0 - we handle retries ourselves any message which throws should be sent to error queue
+                    endpointConfig.Recoverability().Immediate(x =>
+                    {
+                        x.NumberOfRetries(0);
+                    });
 
-                endpointConfig.Recoverability().Delayed(x =>
-                {
-                    x.NumberOfRetries(0);
-                });
+                    endpointConfig.Recoverability().Delayed(x =>
+                    {
+                        x.NumberOfRetries(0);
+                    });
+                }
 
                 endpointConfig.MakeInstanceUniquelyAddressable(c.UniqueAddress);
                 endpointConfig.LimitMessageProcessingConcurrencyTo(c.ParallelMessages);
