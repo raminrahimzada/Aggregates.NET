@@ -78,6 +78,8 @@ namespace Aggregates.Internal
 
             var messageId = Guid.NewGuid().ToString();
             var corrId = "";
+            if (message?.Headers?.ContainsKey(Headers.MessageId) ?? false)
+                messageId = message.Headers[Headers.MessageId];
             if (message?.Headers?.ContainsKey(Headers.CorrelationId) ?? false)
                 corrId = message.Headers[Headers.CorrelationId];
 
@@ -99,8 +101,7 @@ namespace Aggregates.Internal
 
                 try
                 {
-
-                    // Don't re-use the event id for the message id
+                    
                     var messageContext = new MessageContext(messageId,
                         finalHeaders,
                         Marker, transportTransaction, tokenSource,

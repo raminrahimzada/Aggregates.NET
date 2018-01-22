@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
+using NServiceBus;
 using NServiceBus.Pipeline;
 
 namespace Aggregates.Internal
@@ -42,7 +43,11 @@ namespace Aggregates.Internal
                         context.Headers.Clear();
                         foreach (var header in x.Headers)
                             context.Headers[$"{Defaults.DelayedPrefixHeader}.{header.Key}"] = header.Value;
-                        
+
+                        if (x.Headers.ContainsKey(Headers.MessageId))
+                            context.Headers[Headers.MessageId] = x.Headers[Headers.MessageId];
+                        if (x.Headers.ContainsKey(Headers.CorrelationId))
+                            context.Headers[Headers.CorrelationId] = x.Headers[Headers.CorrelationId];
                         context.Headers[Defaults.BulkHeader] = delayedMessages.Length.ToString();
                         // Don't set on headers because headers are kept with the message through retries, could lead to unexpected results
                         context.Extensions.Set(Defaults.ChannelKey, x.Headers[Defaults.ChannelKey]);
@@ -78,6 +83,10 @@ namespace Aggregates.Internal
                         foreach (var header in x.Headers)
                             context.Headers[$"{Defaults.BulkPrefixHeader}.{header.Key}"] = header.Value;
 
+                        if (x.Headers.ContainsKey(Headers.MessageId))
+                            context.Headers[Headers.MessageId] = x.Headers[Headers.MessageId];
+                        if (x.Headers.ContainsKey(Headers.CorrelationId))
+                            context.Headers[Headers.CorrelationId] = x.Headers[Headers.CorrelationId];
                         context.Headers[Defaults.BulkHeader] = bulk.Messages.Length.ToString();
 
                         context.UpdateMessageInstance(x.Message);

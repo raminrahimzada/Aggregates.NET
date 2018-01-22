@@ -166,8 +166,11 @@ namespace Aggregates.UnitTests.Common.ConflictResolvers
             // Runs all conflicting events back through a re-hydrated entity
             var resolver = new Aggregates.Internal.ResolveStronglyConflictResolver(_snapstore.Object, _eventstore.Object, streamGen);
 
+            var uow = new Moq.Mock<IDomainUnitOfWork>();
+
             var entity = new FakeEntity();
             (entity as IEntity<FakeState>).Instantiate(new FakeState());
+            (entity as INeedDomainUow).Uow = uow.Object;
 
             await resolver.Resolve<FakeEntity, FakeState>(entity, new[] { _event.Object }, Guid.NewGuid(), new Dictionary<string, string>())
                 .ConfigureAwait(false);
