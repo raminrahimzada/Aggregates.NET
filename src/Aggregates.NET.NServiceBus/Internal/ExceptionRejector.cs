@@ -45,8 +45,6 @@ namespace Aggregates.Internal
                 Message = context.Message.Instance,
                 Headers = context.Headers.ToDictionary(kv => kv.Key, kv => kv.Value)
             };
-            context.MessageHeaders
-
             try
             {
                 RetryRegistry.TryRemove(messageId, out retries);
