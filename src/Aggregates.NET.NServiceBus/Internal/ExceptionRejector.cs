@@ -38,13 +38,6 @@ namespace Aggregates.Internal
             var messageId = context.MessageId;
             var retries = 0;
 
-            // Make a copy of the message to send for retries if needed
-            // since downstream Bulk unpack and others will modify instance and header data
-            var message = new FullMessage
-            {
-                Message = context.Message.Instance,
-                Headers = context.Headers.ToDictionary(kv => kv.Key, kv => kv.Value)
-            };
             try
             {
                 RetryRegistry.TryRemove(messageId, out retries);
@@ -66,7 +59,13 @@ namespace Aggregates.Internal
                     Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", messageId,
                         retries, _retries, e.GetType().Name, e.Message);
                     
-                    RetryRegistry.TryAdd(messageId, retries + 1);                    
+                    RetryRegistry.TryAdd(messageId, retries + 1);
+                    
+                    var message = new FullMessage
+                    {
+                        Message = context.Message.Instance,
+                        Headers = context.Headers
+                    };
                     _retry.QueueRetry(message, TimeSpan.FromMilliseconds(500));
                     // retry out of the pipeline so NSB can continue processing other messages & we can delay
                     //throw;
@@ -84,8 +83,7 @@ namespace Aggregates.Internal
                 
                 Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries} times\n{@Headers}\n{ExceptionType} - {ExceptionMessage}", messageId, retries, message.Headers, e.GetType().Name, e.Message);
                 // Only need to reply if the client expects it
-                if (!message.Headers.ContainsKey(Defaults.RequestResponse) ||
-                    message.Headers[Defaults.RequestResponse] != "1")
+                if (!message.Headers.ContainsKey(Defaults.RequestResponse) || message.Headers[Defaults.RequestResponse] != "1")
                     throw;
 
                 // Tell the sender the command was not handled due to a service exception

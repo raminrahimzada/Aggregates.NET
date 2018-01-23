@@ -41,6 +41,10 @@ namespace Aggregates.NServiceBus
             {
                 [Headers.MessageIntent] = MessageIntentEnum.Send.ToString()
             });
+            _context.Setup(x => x.Headers).Returns(new Dictionary<string, string>
+            {
+                [Headers.MessageIntent] = MessageIntentEnum.Send.ToString()
+            });
             _context.Setup(x => x.Message).Returns(new LogicalMessage(new global::NServiceBus.Unicast.Messages.MessageMetadata(typeof(Messages.ICommand)), 1));
 
             _executor = new Internal.LocalMessageUnpack(_metrics.Object);
@@ -52,7 +56,7 @@ namespace Aggregates.NServiceBus
 
             await _executor.Invoke(_context.Object, _next.Object);
 
-            _context.Verify(x => x.UpdateMessageInstance(Moq.It.IsAny<object>()), Moq.Times.Once);
+            _context.Verify(x => x.UpdateMessageInstance(Moq.It.IsAny<object>()), Moq.Times.Exactly(2));
             _next.Verify(x => x(), Moq.Times.Once);
         }
 
@@ -76,7 +80,7 @@ namespace Aggregates.NServiceBus
 
             await _executor.Invoke(_context.Object, _next.Object);
             
-            _context.Verify(x => x.UpdateMessageInstance(Moq.It.IsAny<object>()), Moq.Times.Once);
+            _context.Verify(x => x.UpdateMessageInstance(Moq.It.IsAny<object>()), Moq.Times.Exactly(2));
             _next.Verify(x => x(), Moq.Times.Once);
         }
 
@@ -99,7 +103,7 @@ namespace Aggregates.NServiceBus
 
             await _executor.Invoke(_context.Object, _next.Object);
             
-            _context.Verify(x => x.UpdateMessageInstance(Moq.It.IsAny<object>()), Moq.Times.Exactly(3));
+            _context.Verify(x => x.UpdateMessageInstance(Moq.It.IsAny<object>()), Moq.Times.Exactly(4));
             _next.Verify(x => x(), Moq.Times.Exactly(3));
         }
     }

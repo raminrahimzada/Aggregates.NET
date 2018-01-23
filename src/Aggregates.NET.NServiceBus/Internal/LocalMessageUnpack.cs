@@ -24,7 +24,9 @@ namespace Aggregates.Internal
 
         public override async Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
-            
+            var originalheaders = new Dictionary<string, string>(context.Headers);
+            var originalInstance = context.Message.Instance;
+
             // Stupid hack to get events from ES and messages from NSB into the same pipeline
             // Special case for delayed messages read from delayed stream
             if (context.Extensions.TryGet(Defaults.BulkHeader, out IFullMessage[] delayedMessages))
@@ -33,7 +35,6 @@ namespace Aggregates.Internal
 
                 Logger.DebugEvent("Bulk", "Processing {Count}", delayedMessages.Length);
                 var index = 1;
-                var originalheaders = new Dictionary<string, string>(context.Headers);
 
                 try
                 {
@@ -63,6 +64,7 @@ namespace Aggregates.Internal
                     context.Headers.Clear();
                     foreach (var original in originalheaders)
                         context.Headers[original.Key] = original.Value;
+                    context.UpdateMessageInstance(originalInstance);
                 }
             }
             else if (context.Message.MessageType == typeof(BulkMessage))
@@ -73,7 +75,6 @@ namespace Aggregates.Internal
                 Logger.DebugEvent("Bulk", "Processing {Count}", bulk.Messages.Length);
 
                 var index = 1;
-                var originalheaders = new Dictionary<string, string>(context.Headers);
                 try
                 {
                     foreach (var x in bulk.Messages)
@@ -100,13 +101,21 @@ namespace Aggregates.Internal
                     context.Headers.Clear();
                     foreach (var original in originalheaders)
                         context.Headers[original.Key] = original.Value;
+                    context.UpdateMessageInstance(originalInstance);
                 }
             }
             else if (context.Extensions.TryGet(Defaults.LocalHeader, out object @event))
             {
-                _metrics.Mark("Messages", Unit.Message);
-                context.UpdateMessageInstance(@event);
-                await next().ConfigureAwait(false);
+                try
+                {
+                    _metrics.Mark("Messages", Unit.Message);
+                    context.UpdateMessageInstance(@event);
+                    await next().ConfigureAwait(false);
+                }
+                finally
+                {
+                    context.UpdateMessageInstance(originalInstance);
+                }
             }
             else
             {
