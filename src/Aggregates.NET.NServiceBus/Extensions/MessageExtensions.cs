@@ -12,7 +12,7 @@ namespace Aggregates.Extensions
         {
             var messageIntent = default(MessageIntentEnum);
 
-            if (message.Headers.TryGetValue(Headers.MessageIntent, out var messageIntentString))
+            if (message.MessageHeaders.TryGetValue(Headers.MessageIntent, out var messageIntentString))
             {
                 Enum.TryParse(messageIntentString, true, out messageIntent);
             }

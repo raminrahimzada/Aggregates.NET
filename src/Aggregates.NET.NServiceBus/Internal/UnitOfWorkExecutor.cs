@@ -34,7 +34,7 @@ namespace Aggregates.Internal
             context.Extensions.Set(child);
 
             // Only SEND messages deserve a UnitOfWork
-            if (context.MessageHeaders[Headers.MessageIntent] != MessageIntentEnum.Send.ToString() && context.MessageHeaders[Headers.MessageIntent] != MessageIntentEnum.Publish.ToString())
+            if (context.GetMessageIntent() != MessageIntentEnum.Send && context.GetMessageIntent() != MessageIntentEnum.Publish)
             {
                 await next().ConfigureAwait(false);
                 return;
