@@ -42,9 +42,10 @@ namespace Aggregates.Internal
             // since downstream Bulk unpack and others will modify instance and header data
             var message = new FullMessage
             {
-                Message = context.Message.Instance.Copy(),
-                Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value)
+                Message = context.Message.Instance,
+                Headers = context.Headers.ToDictionary(kv => kv.Key, kv => kv.Value)
             };
+            context.MessageHeaders
 
             try
             {
