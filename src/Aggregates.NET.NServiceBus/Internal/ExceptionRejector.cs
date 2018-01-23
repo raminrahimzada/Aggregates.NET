@@ -1,5 +1,6 @@
 ﻿using Aggregates.Contracts;
 using Aggregates.Extensions;
+using Aggregates.Internal.Cloning;
 using Aggregates.Logging;
 using Aggregates.Messages;
 using NServiceBus;
@@ -41,7 +42,7 @@ namespace Aggregates.Internal
             // since downstream Bulk unpack and others will modify instance and header data
             var message = new FullMessage
             {
-                Message = context.Message.Instance,
+                Message = context.Message.Instance.Copy(),
                 Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value)
             };
 
@@ -63,7 +64,7 @@ namespace Aggregates.Internal
 
                 if (retries < _retries || _retries == -1)
                 {
-                    Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", context.MessageId,
+                    Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", messageId,
                         retries, _retries, e.GetType().Name, e.Message);
                     
                     RetryRegistry.TryAdd(messageId, retries + 1);                    
@@ -82,10 +83,10 @@ namespace Aggregates.Internal
                 // At this point message is dead - should be moved to error queue, send message to client that their request was rejected due to error 
                 _metrics.Mark("Message Faults", Unit.Errors);
                 
-                Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries} times\n{@Headers}\n{Body}\n{ExceptionType} - {ExceptionMessage}", context.MessageId, retries, context.MessageHeaders, _serializer.Serialize(context.Message.Instance).AsString().MaxLines(20), e.GetType().Name, e.Message);
+                Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries} times\n{@Headers}\n{Body}\n{ExceptionType} - {ExceptionMessage}", messageId, retries, message.Headers, _serializer.Serialize(message.Message).AsString().MaxLines(20), e.GetType().Name, e.Message);
                 // Only need to reply if the client expects it
-                if (!context.Headers.ContainsKey(Defaults.RequestResponse) ||
-                    context.Headers[Defaults.RequestResponse] != "1")
+                if (!message.Headers.ContainsKey(Defaults.RequestResponse) ||
+                    message.Headers[Defaults.RequestResponse] != "1")
                     throw;
 
                 // Tell the sender the command was not handled due to a service exception
