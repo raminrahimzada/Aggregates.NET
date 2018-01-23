@@ -8,29 +8,44 @@ using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
-    class LogContextProviderBehaviour : Behavior<IIncomingPhysicalMessageContext>
+    class LogContextProviderBehaviour : Behavior<IIncomingLogicalMessageContext>
     {
+        private static readonly ILog Logger = LogProvider.GetLogger("LogContextProvider");
 
-        public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
+        public override Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
             // Populate the logging context with useful data from the messaeg
             using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
             {
-                using (LogProvider.OpenMappedContext("MessageId", context.MessageId))
+                string messageId = "";
+                context.MessageHeaders.TryGetValue(Headers.MessageId, out messageId);
+
+                using (LogProvider.OpenMappedContext("MessageId", messageId))
                 {
                     string corrId = "";
                     context.MessageHeaders.TryGetValue(Headers.CorrelationId, out corrId);
                     if (string.IsNullOrEmpty(corrId))
-                        corrId = context.MessageId;
+                        corrId = messageId;
                     using (LogProvider.OpenMappedContext("CorrId", corrId))
                     {
                         using (LogProvider.OpenMappedContext("Endpoint", Configuration.Settings.Endpoint))
                         {
+                            Logger.Debug("Processing begins [{MessageId:l}] corr: [{CorrelationId:l}]", messageId, corrId);
                             return next();
                         }
                     }
                 }
             }
+        }
+    }
+    internal class LogContextProviderRegistration : RegisterStep
+    {
+        public LogContextProviderRegistration() : base(
+            stepId: "LogContextProvider",
+            behavior: typeof(LocalMessageUnpack),
+            description: "Provides useful message information to logger")
+        {
+            InsertAfter("LocalMessageUnpack");
         }
     }
 }

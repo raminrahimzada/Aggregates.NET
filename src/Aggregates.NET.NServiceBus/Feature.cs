@@ -55,11 +55,7 @@ namespace Aggregates
                     "Replaces default invoke handlers with one that supports our custom delayed invoker");
             }
 
-
-            context.Pipeline.Register(
-                new LogContextProviderBehaviour(),
-                "Provides useful message information to logger"
-                );
+            context.Pipeline.Register<LogContextProviderRegistration>();
 
             if (Configuration.Settings.SlowAlertThreshold.HasValue)
                 context.Pipeline.Register(
