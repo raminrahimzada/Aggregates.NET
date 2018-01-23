@@ -37,6 +37,14 @@ namespace Aggregates.Internal
             var messageId = context.MessageId;
             var retries = 0;
 
+            // Make a copy of the message to send for retries if needed
+            // since downstream Bulk unpack and others will modify instance and header data
+            var message = new FullMessage
+            {
+                Message = context.Message.Instance,
+                Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value)
+            };
+
             try
             {
                 RetryRegistry.TryRemove(messageId, out retries);
@@ -58,12 +66,7 @@ namespace Aggregates.Internal
                     Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", context.MessageId,
                         retries, _retries, e.GetType().Name, e.Message);
                     
-                    RetryRegistry.TryAdd(messageId, retries + 1);
-                    var message = new FullMessage
-                    {
-                        Message = context.Message.Instance,
-                        Headers = context.Headers
-                    };
+                    RetryRegistry.TryAdd(messageId, retries + 1);                    
                     _retry.QueueRetry(message, TimeSpan.FromMilliseconds(500));
                     // retry out of the pipeline so NSB can continue processing other messages & we can delay
                     //throw;
