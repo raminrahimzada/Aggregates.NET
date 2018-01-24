@@ -63,7 +63,7 @@ namespace Aggregates.Internal
                     
                     var message = new FullMessage
                     {
-                        Message = context.Message.Instance,
+                        Message = context.Message.Instance.Copy(),
                         Headers = context.Headers
                     };
                     _retry.QueueRetry(message, TimeSpan.FromMilliseconds(500));
