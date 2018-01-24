@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Aggregates.Contracts;
 using NServiceBus;
 
@@ -23,11 +24,13 @@ namespace Aggregates.Internal
             var messageId = Guid.NewGuid().ToString();
             message.Headers.TryGetValue(Headers.MessageId, out messageId);
 
-            Timer.Expire(() =>
+            Timer.Expire((state) =>
             {
+                var msg = (IFullMessage)state;
+
                 _metrics.Decrement("Retry Queue", Unit.Message);
-                return _dispatcher.SendLocal(message);
-            }, delay, $"message {messageId}");
+                return _dispatcher.SendLocal(msg);
+            }, message, delay, $"message {messageId}");
         }        
     }
 }
