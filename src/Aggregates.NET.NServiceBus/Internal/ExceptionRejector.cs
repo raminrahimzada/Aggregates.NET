@@ -19,7 +19,7 @@ namespace Aggregates.Internal
     {
         private static readonly ConcurrentDictionary<string, int> RetryRegistry = new ConcurrentDictionary<string, int>();
         private static readonly ILog Logger = LogProvider.GetLogger("ExceptionRejector");
-        
+
         private readonly IMetrics _metrics;
         private readonly int _retries;
         private readonly DelayedRetry _retry;
@@ -58,14 +58,24 @@ namespace Aggregates.Internal
                 {
                     Logger.LogEvent((retries > _retries / 2) ? LogLevel.Warn : LogLevel.Info, "Catch", e, "[{MessageId:l}] will retry {Retries}/{MaxRetries}: {ExceptionType} - {ExceptionMessage}", messageId,
                         retries, _retries, e.GetType().Name, e.Message);
-                    
+
                     RetryRegistry.TryAdd(messageId, retries + 1);
-                    
+
                     var message = new FullMessage
                     {
                         Message = context.Message.Instance,
                         Headers = context.Headers
                     };
+
+                    // todo: Not ideal for this to be here -
+                    // but unpacking these headers takes place further down the queue after UOW start
+                    // I don't want to start a new unit of work for each message in a bulk message (defeats the purpose)
+                    // So need to do something a little special here
+                    if (context.Extensions.TryGet(Defaults.BulkHeader, out IFullMessage[] delayedMessages))
+                        message.Message = new BulkMessage { Messages = delayedMessages };
+                    if (context.Extensions.TryGet(Defaults.LocalHeader, out object local))
+                        message.Message = local;
+
                     _retry.QueueRetry(message, TimeSpan.FromMilliseconds(500));
                     // retry out of the pipeline so NSB can continue processing other messages & we can delay
                     //throw;
@@ -73,14 +83,14 @@ namespace Aggregates.Internal
                 }
 
                 // at this point the message has failed, so a THROW will move it to the error queue
-                
+
                 // Only send reply if the message is a SEND, else we risk endless reply loops as message failures bounce back and forth
                 if (context.GetMessageIntent() != MessageIntentEnum.Send && context.GetMessageIntent() != MessageIntentEnum.Publish)
                     return;
 
                 // At this point message is dead - should be moved to error queue, send message to client that their request was rejected due to error 
                 _metrics.Mark("Message Faults", Unit.Errors);
-                
+
                 Logger.ErrorEvent("Fault", e, "[{MessageId:l}] has failed {Retries} times\n{@Headers}\n{ExceptionType} - {ExceptionMessage}", messageId, retries, context.Headers, e.GetType().Name, e.Message);
                 // Only need to reply if the client expects it
                 if (!context.Headers.ContainsKey(Defaults.RequestResponse) || context.Headers[Defaults.RequestResponse] != "1")

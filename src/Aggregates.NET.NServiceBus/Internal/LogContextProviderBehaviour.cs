@@ -1,4 +1,5 @@
-﻿using Aggregates.Logging;
+﻿using Aggregates.Extensions;
+using Aggregates.Logging;
 using NServiceBus;
 using NServiceBus.Pipeline;
 using System;
@@ -30,7 +31,7 @@ namespace Aggregates.Internal
                     {
                         using (LogProvider.OpenMappedContext("Endpoint", Configuration.Settings.Endpoint))
                         {
-                            Logger.Debug("Processing begins [{MessageId:l}] corr: [{CorrelationId:l}]", messageId, corrId);
+                            Logger.DebugEvent("Start", "Processing [{MessageId:l}] Corr: [{CorrelationId:l}]", messageId, corrId);
                             return next();
                         }
                     }
@@ -42,7 +43,7 @@ namespace Aggregates.Internal
     {
         public LogContextProviderRegistration() : base(
             stepId: "LogContextProvider",
-            behavior: typeof(LocalMessageUnpack),
+            behavior: typeof(LogContextProviderBehaviour),
             description: "Provides useful message information to logger")
         {
             InsertAfter("LocalMessageUnpack");
