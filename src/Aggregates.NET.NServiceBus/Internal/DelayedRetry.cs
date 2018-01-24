@@ -11,6 +11,7 @@ namespace Aggregates.Internal
     {
         private readonly IMetrics _metrics;
         private readonly IMessageDispatcher _dispatcher;
+        private static readonly Dictionary<string, Task> Tasks = new Dictionary<string, Task>();
 
         public DelayedRetry(IMetrics metrics, IMessageDispatcher dispatcher)
         {
@@ -24,10 +25,11 @@ namespace Aggregates.Internal
             var messageId = Guid.NewGuid().ToString();
             message.Headers.TryGetValue(Headers.MessageId, out messageId);
 
-            Timer.Expire((state) =>
+            Tasks[messageId] = Timer.Expire((state) =>
             {
                 var msg = (IFullMessage)state;
 
+                Tasks.Remove(messageId);
                 _metrics.Decrement("Retry Queue", Unit.Message);
                 return _dispatcher.SendLocal(msg);
             }, message, delay, $"message {messageId}");
