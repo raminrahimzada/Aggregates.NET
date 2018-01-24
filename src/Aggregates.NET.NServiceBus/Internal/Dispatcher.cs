@@ -100,8 +100,7 @@ namespace Aggregates.Internal
 
 
                 try
-                {
-                    
+                {                    
                     var messageContext = new MessageContext(messageId,
                         finalHeaders,
                         Marker, transportTransaction, tokenSource,

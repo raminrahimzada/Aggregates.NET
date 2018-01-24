@@ -70,6 +70,9 @@ namespace Aggregates.Internal
             else if (context.Message.MessageType == typeof(BulkMessage))
             {
                 var bulk = context.Message.Instance as BulkMessage;
+                // A bulk message thats retried will be in extensions LocalHeader
+                if (context.Extensions.TryGet(Defaults.LocalHeader, out object local))
+                    bulk = local as BulkMessage;
 
                 _metrics.Mark("Messages", Unit.Message, bulk.Messages.Length);
                 Logger.DebugEvent("Bulk", "Processing {Count}", bulk.Messages.Length);
