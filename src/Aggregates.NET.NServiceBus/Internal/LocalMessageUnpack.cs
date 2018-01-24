@@ -75,7 +75,7 @@ namespace Aggregates.Internal
                     bulk = local as BulkMessage;
 
                 _metrics.Mark("Messages", Unit.Message, bulk.Messages.Length);
-                Logger.DebugEvent("Bulk", "Processing {Count}", bulk.Messages.Length);
+                Logger.DebugEvent("Bulk", "Processing {Count} [{MessageId:l}]", bulk.Messages.Length, context.MessageId);
 
                 var index = 1;
                 try

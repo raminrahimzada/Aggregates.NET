@@ -130,6 +130,7 @@ namespace Aggregates
                     Version = State.Version,
                     Headers = new Dictionary<string, string>()
                 },
+                EventId = UnitOfWork.NextEventId(Uow.CommitId),
                 Event = @event
             });
         }
@@ -140,7 +141,6 @@ namespace Aggregates
             {
                 Descriptor = new EventDescriptor
                 {
-                    EventId = UnitOfWork.NextEventId(Uow.CommitId),
                     EntityType = typeof(TThis).AssemblyQualifiedName,
                     StreamType = StreamTypes.OOB,
                     Bucket = Bucket,
@@ -155,6 +155,7 @@ namespace Aggregates
                         {Defaults.OobDaysToLiveKey, daysToLive.ToString()}
                     }
                 },
+                EventId = UnitOfWork.NextEventId(Uow.CommitId),
                 Event = @event
             };
 
