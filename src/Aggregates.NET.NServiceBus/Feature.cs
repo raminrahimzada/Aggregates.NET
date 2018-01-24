@@ -45,7 +45,6 @@ namespace Aggregates
 
                 context.Pipeline.Register(new UowRegistration(container));
                 context.Pipeline.Register(new CommandAcceptorRegistration(container));
-                context.Pipeline.Register(new LocalMessageUnpackRegistration(container));
                 // Remove NSBs unit of work since we do it ourselves
                 context.Pipeline.Remove("ExecuteUnitOfWork");
 
@@ -55,6 +54,7 @@ namespace Aggregates
                     "Replaces default invoke handlers with one that supports our custom delayed invoker");
             }
 
+            context.Pipeline.Register(new LocalMessageUnpackRegistration(container));
             context.Pipeline.Register<LogContextProviderRegistration>();
 
             if (Configuration.Settings.SlowAlertThreshold.HasValue)

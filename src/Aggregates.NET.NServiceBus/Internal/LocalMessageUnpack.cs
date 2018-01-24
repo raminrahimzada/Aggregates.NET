@@ -136,7 +136,7 @@ namespace Aggregates.Internal
             factoryMethod: (b) => new LocalMessageUnpack(container.Resolve<IMetrics>())
         )
         {
-            InsertAfter("UnitOfWorkExecution");
+            InsertAfterIfExists("UnitOfWorkExecution");
         }
     }
 }
