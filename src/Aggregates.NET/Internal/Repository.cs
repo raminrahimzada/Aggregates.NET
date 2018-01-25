@@ -221,7 +221,7 @@ namespace Aggregates.Internal
                     try
                     {
                         if (oobEvents.Any())
-                            await _oobStore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, oobEvents, commitHeaders).ConfigureAwait(false);
+                            await _oobStore.WriteEvents<TEntity>(tracked.Bucket, tracked.Id, tracked.Parents, oobEvents, commitId, commitHeaders).ConfigureAwait(false);
 
                         if (tracked.State.ShouldSnapshot())
                         {

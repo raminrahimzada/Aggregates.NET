@@ -29,7 +29,7 @@ namespace Aggregates.Internal
                 if (string.IsNullOrEmpty(defaultHeader))
                     defaultHeader = NotFound;
 
-                var workHeader = $"{Defaults.PrefixHeader}.{header}";
+                var workHeader = $"{Defaults.OriginatingHeader}.{header}";
                 CurrentHeaders[workHeader] = defaultHeader;
             }
             CurrentHeaders[$"{Defaults.PrefixHeader}.OriginatingType"] = CurrentMessage.GetType().FullName;
@@ -51,20 +51,16 @@ namespace Aggregates.Internal
                 CurrentHeaders[header] = command.Headers[header];
             
             if (command.Headers.ContainsKey(Headers.CorrelationId))
-                CurrentHeaders[Headers.CorrelationId] = command.Headers[Headers.CorrelationId];
+                CurrentHeaders[$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"] = command.Headers[Headers.CorrelationId];
 
             string messageId;
             Guid commitId = Guid.NewGuid();
 
             // Attempt to get MessageId from NServicebus headers
             // If we maintain a good CommitId convention it should solve the message idempotentcy issue (assuming the storage they choose supports it)
-            if (CurrentHeaders.TryGetValue($"{Defaults.PrefixHeader}.{NSBDefaults.MessageIdHeader}", out messageId))
-                Guid.TryParse(messageId, out commitId);
-            if (CurrentHeaders.TryGetValue($"{Defaults.DelayedPrefixHeader}.{NSBDefaults.MessageIdHeader}", out messageId))
-                Guid.TryParse(messageId, out commitId);
-            if (CurrentHeaders.TryGetValue($"{Defaults.BulkPrefixHeader}.{NSBDefaults.MessageIdHeader}", out messageId))
-                Guid.TryParse(messageId, out commitId);
             if (CurrentHeaders.TryGetValue(NSBDefaults.MessageIdHeader, out messageId))
+                Guid.TryParse(messageId, out commitId);
+            if (CurrentHeaders.TryGetValue($"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}", out messageId))
                 Guid.TryParse(messageId, out commitId);
 
             // Allow the user to send a CommitId along with his message if he wants

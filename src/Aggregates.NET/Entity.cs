@@ -44,7 +44,7 @@ namespace Aggregates
         IEventFactory INeedEventFactory.EventFactory { get; set; }
         IStoreEvents INeedStore.Store { get; set; }
         IOobWriter INeedStore.OobWriter { get; set; }
-        
+
         void IEntity<TState>.Instantiate(TState state)
         {
             Id = state.Id;
@@ -117,6 +117,7 @@ namespace Aggregates
         void IEntity<TState>.Apply(IEvent @event)
         {
             State.Apply(@event);
+            var eventId = UnitOfWork.NextEventId(Uow.CommitId);
             _uncommitted.Add(new FullEvent
             {
                 Descriptor = new EventDescriptor
@@ -129,14 +130,19 @@ namespace Aggregates
                     Timestamp = DateTime.UtcNow,
                     Version = State.Version,
                     Headers = new Dictionary<string, string>()
+                    {
+                        [$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"] = eventId.ToString(),
+                        [$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"] = Uow.CommitId.ToString()
+                    }
                 },
-                EventId = UnitOfWork.NextEventId(Uow.CommitId),
+                EventId = eventId,
                 Event = @event
             });
         }
 
         void IEntity<TState>.Raise(IEvent @event, string id, bool transient, int? daysToLive, bool? single)
         {
+            var eventId = UnitOfWork.NextEventId(Uow.CommitId);
             var newEvent = new FullEvent
             {
                 Descriptor = new EventDescriptor
@@ -150,12 +156,14 @@ namespace Aggregates
                     Version = State.Version,
                     Headers = new Dictionary<string, string>()
                     {
-                        {Defaults.OobHeaderKey, id},
-                        {Defaults.OobTransientKey, transient.ToString()},
-                        {Defaults.OobDaysToLiveKey, daysToLive.ToString()}
+                        [$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"] = eventId.ToString(),
+                        [$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"] = Uow.CommitId.ToString(),
+                        [Defaults.OobHeaderKey] = id,
+                        [Defaults.OobTransientKey] = transient.ToString(),
+                        [Defaults.OobDaysToLiveKey] = daysToLive.ToString()
                     }
                 },
-                EventId = UnitOfWork.NextEventId(Uow.CommitId),
+                EventId = eventId,
                 Event = @event
             };
 

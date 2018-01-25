@@ -179,9 +179,9 @@ when({{
                         var headers =
                             new Dictionary<string, string>()
                             {
-                                [$"{Defaults.EventPrefixHeader}.EventId"] = @event.Item3.EventId.ToString(),
-                                [$"{Defaults.EventPrefixHeader}.EventStream"] = @event.Item1,
-                                [$"{Defaults.EventPrefixHeader}.EventPosition"] = @event.Item2.ToString()
+                                [$"{Defaults.PrefixHeader}.EventId"] = @event.Item3.EventId.ToString(),
+                                [$"{Defaults.PrefixHeader}.EventStream"] = @event.Item1,
+                                [$"{Defaults.PrefixHeader}.EventPosition"] = @event.Item2.ToString()
                             };
 
                         dispatcher.SendLocal(message, headers).ConfigureAwait(false).GetAwaiter().GetResult();

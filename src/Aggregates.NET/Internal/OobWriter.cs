@@ -44,7 +44,7 @@ namespace Aggregates.Internal
             return _store.GetEventsBackwards(stream, start, count);
         }
 
-        public async Task WriteEvents<TEntity>(string bucket, Id streamId, Id[] parents, IFullEvent[] events, IDictionary<string, string> commitHeaders) where TEntity : IEntity
+        public async Task WriteEvents<TEntity>(string bucket, Id streamId, Id[] parents, IFullEvent[] events, Guid CommitId, IDictionary<string, string> commitHeaders) where TEntity : IEntity
         {
             Logger.DebugEvent("Write", "{Events} stream [{Stream:l}] bucket [{Bucket:l}]", events.Length, streamId, bucket);
 
@@ -57,6 +57,8 @@ namespace Aggregates.Internal
 
                 var headers = new Dictionary<string, string>()
                 {
+                    [$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"] = @event.EventId.ToString(),
+                    [$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"] = CommitId.ToString(),
                     [$"{Defaults.PrefixHeader}.EventId"] = @event.EventId.ToString(),
                     [$"{Defaults.PrefixHeader}.EntityType"] = @event.Descriptor.EntityType,
                     [$"{Defaults.PrefixHeader}.Timestamp"] = @event.Descriptor.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture),
@@ -94,7 +96,7 @@ namespace Aggregates.Internal
                             Version = @event.Descriptor.Version,
                             Timestamp = @event.Descriptor.Timestamp,
                             Headers = @event.Descriptor.Headers.Merge(headers),
-                            CommitHeaders = @event.Descriptor.CommitHeaders
+                            CommitHeaders = @event.Descriptor.CommitHeaders.Merge(commitHeaders)
                         }
                     });
                 }
@@ -103,7 +105,7 @@ namespace Aggregates.Internal
                     transients.Add(new FullMessage
                     {
                         Message = @event.Event,
-                        Headers = @event.Descriptor.Headers.Merge(headers)
+                        Headers = @event.Descriptor.Headers.Merge(headers).Merge(commitHeaders)
                     });
                 }
             }

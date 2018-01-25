@@ -19,19 +19,12 @@ namespace Aggregates.Internal
             using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
             {
                 string messageId = "";
-                context.MessageHeaders.TryGetValue(Headers.MessageId, out messageId);
-                context.MessageHeaders.TryGetValue($"{Defaults.PrefixHeader}.{Headers.MessageId}", out messageId);
-                context.MessageHeaders.TryGetValue($"{Defaults.BulkPrefixHeader}.{Headers.MessageId}", out messageId);
-                context.MessageHeaders.TryGetValue($"{Defaults.EventPrefixHeader}.EventId", out messageId);
+                context.MessageHeaders.TryGetValue($"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}", out messageId);
 
                 using (LogProvider.OpenMappedContext("MessageId", messageId))
                 {
                     string corrId = "";
-                    context.MessageHeaders.TryGetValue(Headers.CorrelationId, out corrId);
-
-                    context.MessageHeaders.TryGetValue($"{Defaults.PrefixHeader}.{Headers.CorrelationId}", out corrId);
-                    context.MessageHeaders.TryGetValue($"{Defaults.BulkPrefixHeader}.{Headers.CorrelationId}", out corrId);
-                    context.MessageHeaders.TryGetValue($"{Defaults.EventPrefixHeader}.{Headers.CorrelationId}", out corrId);
+                    context.MessageHeaders.TryGetValue($"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}", out corrId);
 
                     if (string.IsNullOrEmpty(corrId))
                         corrId = messageId;

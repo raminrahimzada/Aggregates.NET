@@ -88,14 +88,11 @@ namespace Aggregates.Internal
 
             var messageId = Guid.NewGuid().ToString();
             var corrId = "";
-            if (finalHeaders.ContainsKey(Headers.MessageId))
-                messageId = finalHeaders[Headers.MessageId];
-            if (finalHeaders.ContainsKey(Headers.CorrelationId))
-                corrId = finalHeaders[Headers.CorrelationId];
-
-            if (finalHeaders.ContainsKey($"{Defaults.EventPrefixHeader}.EventId"))
-                messageId = finalHeaders[$"{Defaults.EventPrefixHeader}.EventId"];
-
+            if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"))
+                messageId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"];
+            if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"))
+                corrId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"];
+            
 
             finalHeaders[Headers.MessageId] = messageId;
             finalHeaders[Headers.CorrelationId] = corrId;
