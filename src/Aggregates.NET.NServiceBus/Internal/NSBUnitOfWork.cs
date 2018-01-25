@@ -51,7 +51,7 @@ namespace Aggregates.Internal
                 CurrentHeaders[header] = command.Headers[header];
             
             if (command.Headers.ContainsKey(Headers.CorrelationId))
-                CurrentHeaders[$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"] = command.Headers[Headers.CorrelationId];
+                CurrentHeaders[$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"] = command.Headers[Headers.CorrelationId];
 
             string messageId;
             Guid commitId = Guid.NewGuid();
