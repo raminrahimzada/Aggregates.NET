@@ -149,6 +149,7 @@ namespace Aggregates.Internal
 
                                 var headers = delayed.Headers.Merge(x.Item2.Descriptor.Headers);
                                 headers[Defaults.ChannelKey] = delayed.ChannelKey;
+                                headers[$"{Defaults.EventPrefixHeader}.EventId"] = x.Item2.Descriptor.EventId.ToString();
 
                                 return new FullMessage
                                 {

@@ -76,27 +76,34 @@ namespace Aggregates.Internal
             var processed = false;
             var numberOfDeliveryAttempts = 0;
 
+            var messageType = message.Message.GetType();
+            if (!messageType.IsInterface)
+                messageType = _mapper.GetMappedTypeFor(messageType) ?? messageType;
+
+
+            var finalHeaders = message.Headers.Merge(headers);
+            finalHeaders[Headers.EnclosedMessageTypes] = messageType.AssemblyQualifiedName;
+            finalHeaders[Headers.MessageIntent] = MessageIntentEnum.Send.ToString();
+
+
             var messageId = Guid.NewGuid().ToString();
             var corrId = "";
-            if (message?.Headers?.ContainsKey(Headers.MessageId) ?? false)
-                messageId = message.Headers[Headers.MessageId];
-            if (message?.Headers?.ContainsKey(Headers.CorrelationId) ?? false)
-                corrId = message.Headers[Headers.CorrelationId];
+            if (finalHeaders.ContainsKey(Headers.MessageId))
+                messageId = finalHeaders[Headers.MessageId];
+            if (finalHeaders.ContainsKey(Headers.CorrelationId))
+                corrId = finalHeaders[Headers.CorrelationId];
+
+            if (finalHeaders.ContainsKey($"{Defaults.EventPrefixHeader}.EventId"))
+                messageId = finalHeaders[$"{Defaults.EventPrefixHeader}.EventId"];
+
+
+            finalHeaders[Headers.MessageId] = messageId;
+            finalHeaders[Headers.CorrelationId] = corrId;
 
             while (!processed)
             {
                 var transportTransaction = new TransportTransaction();
                 var tokenSource = new CancellationTokenSource();
-
-                var messageType = message.Message.GetType();
-                if (!messageType.IsInterface)
-                    messageType = _mapper.GetMappedTypeFor(messageType) ?? messageType;
-
-                var finalHeaders = message.Headers.Merge(headers);
-                finalHeaders[Headers.EnclosedMessageTypes] = messageType.AssemblyQualifiedName;
-                finalHeaders[Headers.MessageIntent] = MessageIntentEnum.Send.ToString();
-                finalHeaders[Headers.MessageId] = messageId;
-                finalHeaders[Headers.CorrelationId] = corrId;
 
 
                 try
