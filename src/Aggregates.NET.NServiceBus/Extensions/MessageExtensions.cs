@@ -19,5 +19,16 @@ namespace Aggregates.Extensions
 
             return messageIntent;
         }
+        public static MessageIntentEnum GetMessageIntent(this IOutgoingLogicalMessageContext message)
+        {
+            var messageIntent = default(MessageIntentEnum);
+
+            if (message.Headers.TryGetValue(Headers.MessageIntent, out var messageIntentString))
+            {
+                Enum.TryParse(messageIntentString, true, out messageIntent);
+            }
+
+            return messageIntent;
+        }
     }
 }

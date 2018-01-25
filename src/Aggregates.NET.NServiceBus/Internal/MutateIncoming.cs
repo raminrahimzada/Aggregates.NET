@@ -17,6 +17,9 @@ namespace Aggregates.Internal
         
         public override Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
+            if (context.GetMessageIntent() == MessageIntentEnum.Reply)
+                return next();
+
             IMutating mutated = new Mutating(context.Message.Instance, context.Headers ?? new Dictionary<string, string>());
 
             var mutators = MutationManager.Registered.ToList();
