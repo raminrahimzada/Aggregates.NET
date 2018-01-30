@@ -37,9 +37,7 @@ namespace Aggregates.Internal
         private bool _disposed;
         private readonly IDictionary<string, IRepository> _repositories;
         private readonly IDictionary<string, IRepository> _pocoRepositories;
-
-        public int Retries { get; private set; }
-
+        
         public Guid CommitId { get; protected set; }
         public object CurrentMessage { get; protected set; }
         public IDictionary<string, string> CurrentHeaders { get; protected set; }
@@ -146,7 +144,6 @@ namespace Aggregates.Internal
 
                 Guid eventId;
                 EventIds.TryRemove(CommitId, out eventId);
-                Retries++;
                 return Task.CompletedTask;
             }
 

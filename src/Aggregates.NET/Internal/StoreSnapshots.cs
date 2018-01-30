@@ -37,7 +37,7 @@ namespace Aggregates.Internal
                 if (snapshot != null)
                 {
                     _metrics.Mark("Snapshot Cache Hits", Unit.Items);
-                    Logger.DebugEvent("Cached", "[{Stream:l}] version {Version} {@Snapshot}", streamName, snapshot.Version, snapshot);
+                    Logger.DebugEvent("Cached", "[{Stream:l}] version {Version}", streamName, snapshot.Version);
                     return snapshot;
                 }
             }
@@ -60,7 +60,7 @@ namespace Aggregates.Internal
                     Version = @event.Descriptor.Version,
                     Payload = @event.Event as IState
                 };
-                Logger.DebugEvent("Read", "[{Stream:l}] version {Version} {@Snapshot}", streamName, snapshot.Version, snapshot);
+                Logger.DebugEvent("Read", "[{Stream:l}] version {Version}", streamName, snapshot.Version);
                 return snapshot;
             }
             
