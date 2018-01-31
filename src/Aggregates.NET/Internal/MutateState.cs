@@ -39,21 +39,21 @@ namespace Aggregates.Internal
         where TState : IState
     {
         private readonly Dictionary<string, Action<TState, object>> _mutators;
-        private IEventMapper _mapper;
 
         public StateMutator()
         {
             _mutators = ReflectionExtensions.GetStateMutators<TState>();
-
-            // because this type is created from a static class its hard to get injection going right
-            _mapper = Configuration.Settings.Container.Resolve<IEventMapper>();
         }
 
         public void Handle(IState state, IEvent @event)
         {
+            // todo: resolving each event apply is not ideal
+            // because this type is created from a static class its hard to get injection going right
+            var mapper = Configuration.Settings.Container.Resolve<IEventMapper>();
+
             var eventType = @event.GetType();
             if(!eventType.IsInterface)
-                eventType = _mapper.GetMappedTypeFor(eventType);
+                eventType = mapper.GetMappedTypeFor(eventType);
             
             // Todo: can suport "named" events with an attribute here so instead of routing based on object type 
             // route based on event name.
@@ -64,9 +64,12 @@ namespace Aggregates.Internal
         }
         public void Conflict(IState state, IEvent @event)
         {
+            // because this type is created from a static class its hard to get injection going right
+            var mapper = Configuration.Settings.Container.Resolve<IEventMapper>();
+
             var eventType = @event.GetType();
             if (!eventType.IsInterface)
-                eventType = _mapper.GetMappedTypeFor(eventType);
+                eventType = mapper.GetMappedTypeFor(eventType);
 
             // Todo: the "conflict." and "handle." key prefixes are a hack
             // Todo: can suport "named" events with an attribute here so instead of routing based on object type 
