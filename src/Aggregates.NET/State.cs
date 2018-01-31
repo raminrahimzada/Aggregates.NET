@@ -83,13 +83,13 @@ namespace Aggregates
         {
             try
             {
-                _committed.Add(@event);
                 Mutator.Handle(this, @event);
             }
             catch (NoRouteException)
             {
                 Logger.Debug($"{typeof(TThis).Name} missing handler for event {@event.GetType().Name}");
             }
+            _committed.Add(@event);
 
             (this as IState).Version++;
         }
