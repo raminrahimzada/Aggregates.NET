@@ -83,8 +83,8 @@ namespace Aggregates
         {
             try
             {
-                Mutator.Handle(this, @event);
                 _committed.Add(@event);
+                Mutator.Handle(this, @event);
             }
             catch (NoRouteException)
             {
