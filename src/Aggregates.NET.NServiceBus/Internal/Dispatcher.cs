@@ -134,7 +134,7 @@ namespace Aggregates.Internal
                         messageId,
                         messageBytes, transportTransaction,
                         numberOfDeliveryAttempts);
-                    if (await Bus.OnError(errorContext).ConfigureAwait(false) ==
+                    if ((await Bus.OnError(errorContext).ConfigureAwait(false)) ==
                         ErrorHandleResult.Handled || tokenSource.IsCancellationRequested)
                         break;
                 }

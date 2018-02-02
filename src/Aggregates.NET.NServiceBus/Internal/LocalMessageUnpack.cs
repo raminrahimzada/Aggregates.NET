@@ -50,7 +50,7 @@ namespace Aggregates.Internal
                         context.Extensions.Set(Defaults.ChannelKey, x.Headers[Defaults.ChannelKey]);
 
                         context.UpdateMessageInstance(x.Message);
-                        await next().ConfigureAwait(false);
+                        await next().ConfigureAwait(true);
                         index++;
                     }
                 }
@@ -86,7 +86,7 @@ namespace Aggregates.Internal
                         context.Headers[Defaults.BulkHeader] = bulk.Messages.Length.ToString();
 
                         context.UpdateMessageInstance(x.Message);
-                        await next().ConfigureAwait(false);
+                        await next().ConfigureAwait(true);
                         index++;
                     }
                 }

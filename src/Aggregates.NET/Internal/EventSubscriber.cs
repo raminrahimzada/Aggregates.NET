@@ -185,7 +185,7 @@ when({{
                             };
 
                         dispatcher.SendLocal(message, headers).ConfigureAwait(false).GetAwaiter().GetResult();
-                        
+
                         consumer.Acknowledge(@event.Item1, @event.Item2, @event.Item3).ConfigureAwait(false)
                             .GetAwaiter().GetResult();
                     }
@@ -193,7 +193,7 @@ when({{
                     {
                         if (e.InnerException is OperationCanceledException)
                             throw e.InnerException;
-                        
+
                         // If not a canceled exception, just write to log and continue
                         // we dont want some random unknown exception to kill the whole event loop
                         Logger.ErrorEvent("Exception", e, "From event thread: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);

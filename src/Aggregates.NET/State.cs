@@ -6,6 +6,7 @@ using Aggregates.Internal;
 using Aggregates.Messages;
 using Aggregates.Logging;
 using Aggregates.Exceptions;
+using Aggregates.Extensions;
 
 namespace Aggregates
 {
@@ -87,7 +88,7 @@ namespace Aggregates
             }
             catch (NoRouteException)
             {
-                Logger.Debug($"{typeof(TThis).Name} missing handler for event {@event.GetType().Name}");
+                Logger.DebugEvent("NoRoute", "{State} has no route for {EventType}", typeof(TThis).FullName, @event.GetType().FullName);
             }
             _committed.Add(@event);
 

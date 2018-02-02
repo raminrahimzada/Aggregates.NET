@@ -272,7 +272,8 @@ namespace Aggregates.Internal
             try
             {
                 await EventAppeared(e, token, callback).ConfigureAwait(false);
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 Logger.ErrorEvent("AppearedException", ex, "Stream: [{Stream:l}] Position: {StreamPosition} {ExceptionType} - {ExceptionMessage}", e.Event.EventStreamId, e.Event.EventNumber, ex.GetType().Name, ex.Message);
                 sub.Fail(e, PersistentSubscriptionNakEventAction.Park, ex.GetType().Name);
