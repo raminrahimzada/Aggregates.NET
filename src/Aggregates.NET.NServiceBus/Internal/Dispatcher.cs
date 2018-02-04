@@ -109,7 +109,7 @@ namespace Aggregates.Internal
                         finalHeaders,
                         Marker, transportTransaction, tokenSource,
                         contextBag);
-                    await Bus.OnMessage(messageContext).ConfigureAwait(false);
+                    await Task.Run(() => Bus.OnMessage(messageContext)).ConfigureAwait(false);
                     _metrics.Mark("Dispatched Messages", Unit.Message);
                     processed = true;
                 }
@@ -189,7 +189,7 @@ namespace Aggregates.Internal
                             finalHeaders,
                             Marker, transportTransaction, tokenSource,
                             contextBag);
-                        await Bus.OnMessage(messageContext).ConfigureAwait(false);
+                        await Task.Run(() => Bus.OnMessage(messageContext)).ConfigureAwait(false);
                         _metrics.Mark("Dispatched Messages", Unit.Message, groupedMessages.Length);
                         processed = true;
                     }
