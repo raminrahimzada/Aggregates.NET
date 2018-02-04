@@ -21,6 +21,127 @@ namespace Aggregates.Internal
         private readonly IMessageSerializer _serializer;
         private readonly IEventMapper _mapper;
 
+        private static readonly BlockingCollection<Tuple<IFullMessage[], IDictionary<string, string>>> WaitingMessages = new BlockingCollection<Tuple<IFullMessage[], IDictionary<string, string>>>();
+        private static Thread Delivery = new Thread((_) =>
+        {
+            while (!Bus.BusOnline)
+                Thread.Sleep(100);
+
+            var metrics = Configuration.Settings.Container.Resolve<IMetrics>();
+            var mapper = Configuration.Settings.Container.Resolve<IEventMapper>();
+            var serializer = Configuration.Settings.Container.Resolve<IMessageSerializer>();
+
+            try
+            {
+                while (true)
+                {
+                    var messages = WaitingMessages.Take();
+
+                    var headers = messages.Item2 ?? new Dictionary<string, string>();
+
+                    var contextBag = new ContextBag();
+                    if (messages.Item1.Length == 1)
+                    {
+                        // Hack to get all the events to invoker without NSB deserializing 
+                        contextBag.Set(Defaults.LocalHeader, messages.Item1[0].Message);
+                        headers = headers.Merge(messages.Item1[0].Headers);
+                    }
+                    else
+                        // Hack to get all the events to invoker without NSB deserializing 
+                        contextBag.Set(Defaults.BulkHeader, messages.Item1);
+
+                    var processed = false;
+                    var numberOfDeliveryAttempts = 0;
+
+
+                    // All messages will be same type
+                    var messageType = messages.Item1[0].Message.GetType();
+                    if (!messageType.IsInterface)
+                        messageType = mapper.GetMappedTypeFor(messageType) ?? messageType;
+
+                    var finalHeaders = headers.Merge(new Dictionary<string, string>()
+                    {
+                        [Headers.EnclosedMessageTypes] = messageType.AssemblyQualifiedName,
+                        [Headers.MessageIntent] = MessageIntentEnum.Send.ToString(),
+                    });
+
+
+                    var messageId = Guid.NewGuid().ToString();
+                    var corrId = "";
+                    if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"))
+                        messageId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"];
+                    if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"))
+                        corrId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"];
+
+
+                    finalHeaders[Headers.MessageId] = messageId;
+                    finalHeaders[Headers.CorrelationId] = corrId;
+
+                    while (!processed)
+                    {
+                        var transportTransaction = new TransportTransaction();
+                        var tokenSource = new CancellationTokenSource();
+
+
+                        try
+                        {
+                            var messageContext = new MessageContext(messageId,
+                                finalHeaders,
+                                Marker, transportTransaction, tokenSource,
+                                contextBag);
+                            Bus.OnMessage(messageContext).ConfigureAwait(false)
+                                .GetAwaiter().GetResult();
+                            metrics.Mark("Dispatched Messages", Unit.Message);
+                            processed = true;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // NSB transport has been disconnected
+                            throw new OperationCanceledException();
+                        }
+                        catch (Exception ex)
+                        {
+                            metrics.Mark("Dispatched Errors", Unit.Errors);
+
+                            ++numberOfDeliveryAttempts;
+
+                            // Don't retry a cancelation
+                            if (tokenSource.IsCancellationRequested)
+                                numberOfDeliveryAttempts = Int32.MaxValue;
+
+                            var messageList = messages.Item1.ToList();
+                            foreach (var message in messages.Item1)
+                            {
+                                var messageBytes = serializer.Serialize(message.Message);
+                                var errorContext = new ErrorContext(ex, message.Headers.Merge(finalHeaders),
+                                    messageId,
+                                    messageBytes, transportTransaction,
+                                    numberOfDeliveryAttempts);
+
+                                var errorHandled = Bus.OnError(errorContext).ConfigureAwait(false)
+                                                    .GetAwaiter().GetResult();
+
+                                if (errorHandled == ErrorHandleResult.Handled || tokenSource.IsCancellationRequested)
+                                    messageList.Remove(message);
+                            }
+                            if (messageList.Count == 0)
+                                break;
+                            messages = Tuple.Create(messageList.ToArray(), messages.Item2);
+
+                        }
+                    }
+                }
+            }
+
+            catch (Exception e)
+            {
+                if (!(e is OperationCanceledException))
+                    Logger.ErrorEvent("Died", e, "Event thread closed: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
+            }
+
+        })
+        { Name = "SendLocal Delivery", IsBackground = true };
+
         // A fake message that will travel through the pipeline in order to process events from the context bag
         private static readonly byte[] Marker = new byte[] { 0x7b, 0x7d };
 
@@ -63,172 +184,19 @@ namespace Aggregates.Internal
         }
 
 
-        public async Task SendLocal(IFullMessage message, IDictionary<string, string> headers = null)
+        public Task SendLocal(IFullMessage message, IDictionary<string, string> headers = null)
         {
-            while (!Bus.BusOnline)
-                await Task.Delay(100).ConfigureAwait(false);
-
-            headers = headers ?? new Dictionary<string, string>();
-
-            var contextBag = new ContextBag();
-            // Hack to get all the events to invoker without NSB deserializing 
-            contextBag.Set(Defaults.LocalHeader, message.Message);
-
-
-            var processed = false;
-            var numberOfDeliveryAttempts = 0;
-
-            var messageType = message.Message.GetType();
-            if (!messageType.IsInterface)
-                messageType = _mapper.GetMappedTypeFor(messageType) ?? messageType;
-
-
-            var finalHeaders = message.Headers.Merge(headers);
-            finalHeaders[Headers.EnclosedMessageTypes] = messageType.AssemblyQualifiedName;
-            finalHeaders[Headers.MessageIntent] = MessageIntentEnum.Send.ToString();
-
-
-            var messageId = Guid.NewGuid().ToString();
-            var corrId = "";
-            if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"))
-                messageId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"];
-            if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"))
-                corrId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"];
-
-
-            finalHeaders[Headers.MessageId] = messageId;
-            finalHeaders[Headers.CorrelationId] = corrId;
-
-            while (!processed)
-            {
-                var transportTransaction = new TransportTransaction();
-                var tokenSource = new CancellationTokenSource();
-
-
-                try
-                {
-                    var messageContext = new MessageContext(messageId,
-                        finalHeaders,
-                        Marker, transportTransaction, tokenSource,
-                        contextBag);
-                    await Bus.OnMessage(messageContext).ConfigureAwait(false);
-                    _metrics.Mark("Dispatched Messages", Unit.Message);
-                    processed = true;
-                }
-                catch (ObjectDisposedException)
-                {
-                    // NSB transport has been disconnected
-                    throw new OperationCanceledException();
-                }
-                catch (Exception ex)
-                {
-                    _metrics.Mark("Dispatched Errors", Unit.Errors);
-
-                    ++numberOfDeliveryAttempts;
-
-                    // Don't retry a cancelation
-                    if (tokenSource.IsCancellationRequested)
-                        numberOfDeliveryAttempts = Int32.MaxValue;
-
-                    var messageBytes = _serializer.Serialize(message.Message);
-
-                    var errorContext = new ErrorContext(ex, finalHeaders,
-                        messageId,
-                        messageBytes, transportTransaction,
-                        numberOfDeliveryAttempts);
-                    if ((await Bus.OnError(errorContext).ConfigureAwait(false)) ==
-                        ErrorHandleResult.Handled || tokenSource.IsCancellationRequested)
-                        break;
-                }
-
-
-            }
+            WaitingMessages.Add(Tuple.Create(new[] { message }, headers));
+            return Task.CompletedTask;
         }
 
-        public async Task SendLocal(IFullMessage[] messages, IDictionary<string, string> headers = null)
+        public Task SendLocal(IFullMessage[] messages, IDictionary<string, string> headers = null)
         {
-            while (!Bus.BusOnline)
-                await Task.Delay(100).ConfigureAwait(false);
-
-            headers = headers ?? new Dictionary<string, string>();
-
-            await messages.GroupBy(x => x.Message.GetType()).ToArray().StartEachAsync(3, async (group) =>
+            foreach (var group in messages.GroupBy(x => x.Message.GetType()))
             {
-                var groupedMessages = group.ToArray();
-
-                var contextBag = new ContextBag();
-                // Hack to get all the events to invoker without NSB deserializing 
-                contextBag.Set(Defaults.BulkHeader, groupedMessages);
-
-
-                var processed = false;
-                var numberOfDeliveryAttempts = 0;
-
-                var messageId = Guid.NewGuid().ToString();
-
-                while (!processed)
-                {
-                    var transportTransaction = new TransportTransaction();
-                    var tokenSource = new CancellationTokenSource();
-
-                    var messageType = group.Key;
-                    if (!messageType.IsInterface)
-                        messageType = _mapper.GetMappedTypeFor(messageType) ?? messageType;
-
-                    var finalHeaders = headers.Merge(new Dictionary<string, string>()
-                    {
-                        [Headers.EnclosedMessageTypes] = messageType.AssemblyQualifiedName,
-                        [Headers.MessageIntent] = MessageIntentEnum.Send.ToString(),
-                        [Headers.MessageId] = messageId
-                    });
-
-
-                    try
-                    {
-
-                        // Don't re-use the event id for the message id
-                        var messageContext = new MessageContext(messageId,
-                            finalHeaders,
-                            Marker, transportTransaction, tokenSource,
-                            contextBag);
-                        await Bus.OnMessage(messageContext).ConfigureAwait(false);
-                        _metrics.Mark("Dispatched Messages", Unit.Message, groupedMessages.Length);
-                        processed = true;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // NSB transport has been disconnected
-                        throw new OperationCanceledException();
-                    }
-                    catch (Exception ex)
-                    {
-                        _metrics.Mark("Dispatched Errors", Unit.Errors, groupedMessages.Length);
-
-                        ++numberOfDeliveryAttempts;
-
-                        // Don't retry a cancelation
-                        if (tokenSource.IsCancellationRequested)
-                            numberOfDeliveryAttempts = Int32.MaxValue;
-
-                        var messageList = groupedMessages.ToList();
-                        foreach (var message in groupedMessages)
-                        {
-                            var messageBytes = _serializer.Serialize(message.Message);
-                            var errorContext = new ErrorContext(ex, message.Headers.Merge(finalHeaders),
-                                messageId,
-                                messageBytes, transportTransaction,
-                                numberOfDeliveryAttempts);
-                            if ((await Bus.OnError(errorContext).ConfigureAwait(false)) == ErrorHandleResult.Handled)
-                                messageList.Remove(message);
-                        }
-                        if (messageList.Count == 0)
-                            break;
-                        groupedMessages = messageList.ToArray();
-                    }
-
-                }
-            }).ConfigureAwait(false);
-
+                WaitingMessages.Add(Tuple.Create(group.ToArray(), headers));
+            }
+            return Task.CompletedTask;
         }
     }
 }
