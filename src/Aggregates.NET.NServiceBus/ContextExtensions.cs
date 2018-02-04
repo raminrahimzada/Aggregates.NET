@@ -46,12 +46,14 @@ namespace Aggregates
         {
             var container = context.Extensions.Get<IContainer>();
             var dispatcher = container.Resolve<IMessageDispatcher>();
+
             var message = new FullMessage
             {
                 Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value),
                 Message = command
             };
-            return dispatcher.SendLocal(message);
+            Task.Run(() => dispatcher.SendLocal(message));
+            return Task.CompletedTask;
         }
     }
 }

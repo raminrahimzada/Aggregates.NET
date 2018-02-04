@@ -5,6 +5,7 @@ using NServiceBus;
 using NServiceBus.Extensibility;
 using NServiceBus.Transport;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -61,6 +62,7 @@ namespace Aggregates.Internal
             return Bus.Instance.Send(message, options);
         }
 
+
         public async Task SendLocal(IFullMessage message, IDictionary<string, string> headers = null)
         {
             while (!Bus.BusOnline)
@@ -92,7 +94,7 @@ namespace Aggregates.Internal
                 messageId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}"];
             if (finalHeaders.ContainsKey($"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"))
                 corrId = finalHeaders[$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"];
-            
+
 
             finalHeaders[Headers.MessageId] = messageId;
             finalHeaders[Headers.CorrelationId] = corrId;
@@ -104,12 +106,12 @@ namespace Aggregates.Internal
 
 
                 try
-                {                    
+                {
                     var messageContext = new MessageContext(messageId,
                         finalHeaders,
                         Marker, transportTransaction, tokenSource,
                         contextBag);
-                    await Task.Run(() => Bus.OnMessage(messageContext)).ConfigureAwait(false);
+                    await Bus.OnMessage(messageContext).ConfigureAwait(false);
                     _metrics.Mark("Dispatched Messages", Unit.Message);
                     processed = true;
                 }
@@ -189,7 +191,7 @@ namespace Aggregates.Internal
                             finalHeaders,
                             Marker, transportTransaction, tokenSource,
                             contextBag);
-                        await Task.Run(() => Bus.OnMessage(messageContext)).ConfigureAwait(false);
+                        await Bus.OnMessage(messageContext).ConfigureAwait(false);
                         _metrics.Mark("Dispatched Messages", Unit.Message, groupedMessages.Length);
                         processed = true;
                     }
@@ -216,7 +218,7 @@ namespace Aggregates.Internal
                                 messageId,
                                 messageBytes, transportTransaction,
                                 numberOfDeliveryAttempts);
-                            if (await Bus.OnError(errorContext).ConfigureAwait(false) == ErrorHandleResult.Handled)
+                            if ((await Bus.OnError(errorContext).ConfigureAwait(false)) == ErrorHandleResult.Handled)
                                 messageList.Remove(message);
                         }
                         if (messageList.Count == 0)
