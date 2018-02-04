@@ -136,7 +136,7 @@ namespace Aggregates.Internal
             catch (Exception e)
             {
                 if (!(e is OperationCanceledException))
-                    Logger.ErrorEvent("Died", e, "Event thread closed: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
+                    Logger.ErrorEvent("Died", e, "SendLocal thread closed: {ExceptionType} - {ExceptionMessage}", e.GetType().Name, e.Message);
             }
 
         })
@@ -150,6 +150,9 @@ namespace Aggregates.Internal
             _metrics = metrics;
             _serializer = serializer;
             _mapper = mapper;
+            
+            if (!Delivery.IsAlive)
+                Delivery.Start();
         }
 
         public Task Publish(IFullMessage[] messages)
