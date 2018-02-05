@@ -52,7 +52,8 @@ namespace Aggregates
                 Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value),
                 Message = command
             };
-            return dispatcher.SendLocal(message);
+            Task.Run(() => dispatcher.SendLocal(message));
+            return Task.CompletedTask;
         }
     }
 }
