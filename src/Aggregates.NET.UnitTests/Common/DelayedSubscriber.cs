@@ -99,7 +99,6 @@ namespace Aggregates.UnitTests.Common
                         eventCb = onEvent;
                     })
                 .Returns(Task.FromResult(true));
-            _consumer.Setup(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>())).Returns(Task.FromResult(true));
 
             var cts = new CancellationTokenSource();
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -125,8 +124,7 @@ namespace Aggregates.UnitTests.Common
             }, Is.EqualTo(true).After(1000).PollEvery(100));
             
             
-
-            _consumer.Verify(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>()), Moq.Times.Once);
+            
 
             cts.Cancel();
         }
@@ -378,7 +376,6 @@ namespace Aggregates.UnitTests.Common
                         eventCb = onEvent;
                     })
                 .Returns(Task.FromResult(true));
-            _consumer.Setup(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>())).Returns(Task.FromResult(true));
 
             var cts = new CancellationTokenSource();
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -406,8 +403,7 @@ namespace Aggregates.UnitTests.Common
                 return true;
             }, Is.EqualTo(true).After(1000).PollEvery(100));
 
-
-            _consumer.Verify(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>()), Moq.Times.Exactly(4));
+            
 
             
             cts.Cancel();
@@ -430,7 +426,6 @@ namespace Aggregates.UnitTests.Common
                         eventCb = onEvent;
                     })
                 .Returns(Task.FromResult(true));
-            _consumer.Setup(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>())).Returns(Task.FromResult(true));
 
             var cts = new CancellationTokenSource();
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -456,8 +451,6 @@ namespace Aggregates.UnitTests.Common
                 catch { return false; }
                 return true;
             }, Is.EqualTo(true).After(1000).PollEvery(100));
-
-            _consumer.Verify(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>()), Moq.Times.Exactly(4));
             
 
             cts.Cancel();

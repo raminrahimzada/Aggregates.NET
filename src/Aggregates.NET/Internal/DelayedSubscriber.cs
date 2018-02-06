@@ -160,10 +160,7 @@ namespace Aggregates.Internal
 
                             // Same stream ids should modify the same models, processing this way reduces write collisions on commit
                             await dispatcher.SendLocal(messages.ToArray()).ConfigureAwait(false);
-
-                            foreach (var @event in flushedEvents)
-                                await consumer.Acknowledge(stream, @event.Item1, @event.Item2)
-                                    .ConfigureAwait(false);
+                            
 
                         }, param.Token).Wait();
                     }

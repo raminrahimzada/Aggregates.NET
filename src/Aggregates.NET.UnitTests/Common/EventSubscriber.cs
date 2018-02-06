@@ -106,7 +106,6 @@ namespace Aggregates.UnitTests.Common
                         eventCb = onEvent;
                     })
                 .Returns(Task.FromResult(true));
-            _consumer.Setup(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>())).Returns(Task.FromResult(true));
 
             var cts = new CancellationTokenSource();
             await _subscriber.Setup("test", Version.Parse("0.0.0")).ConfigureAwait(false);
@@ -125,7 +124,6 @@ namespace Aggregates.UnitTests.Common
 
             _dispatcher.Verify(x => x.SendLocal(Moq.It.IsAny<IFullMessage>(), Moq.It.IsAny<IDictionary<string, string>>()), Moq.Times.Once);
             
-            _consumer.Verify(x => x.Acknowledge(Moq.It.IsAny<string>(), Moq.It.IsAny<long>(), Moq.It.IsAny<IFullEvent>()), Moq.Times.Once);
 
             cts.Cancel();
         }

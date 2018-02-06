@@ -21,6 +21,8 @@ namespace Aggregates.Internal
 
         private static readonly ILog Logger = LogProvider.GetLogger("EventSubscriber");
         
+        // todo: events don't stay here long, but if there are events here and the instance crashes the events won't 
+        // be processed
         private readonly BlockingCollection<Tuple<string, long, IFullEvent>>[] _waitingEvents;
 
         private class ThreadParam
@@ -185,9 +187,6 @@ when({{
                             };
 
                         dispatcher.SendLocal(message, headers).ConfigureAwait(false).GetAwaiter().GetResult();
-
-                        consumer.Acknowledge(@event.Item1, @event.Item2, @event.Item3).ConfigureAwait(false)
-                            .GetAwaiter().GetResult();
                     }
                     catch (System.AggregateException e)
                     {
