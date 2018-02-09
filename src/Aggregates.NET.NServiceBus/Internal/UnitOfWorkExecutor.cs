@@ -132,7 +132,7 @@ namespace Aggregates.Internal
             factoryMethod: (b) => new UnitOfWorkExecutor(container.Resolve<IMetrics>())
         )
         {
-            //InsertAfterIfExists("ExecuteUnitOfWork");
+            InsertAfterIfExists("ExceptionRejector");
         }
     }
 }
