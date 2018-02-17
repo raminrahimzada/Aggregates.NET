@@ -23,7 +23,8 @@ namespace Aggregates.Internal
 
         public JsonMessageSerializer(
             IEventMapper messageMapper,
-            IEventFactory messageFactory)
+            IEventFactory messageFactory,
+            JsonConverter[] extraConverters)
         {
             this.messageMapper = messageMapper;
             this.messageFactory = messageFactory;
@@ -31,7 +32,7 @@ namespace Aggregates.Internal
             var settings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
-                Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter(), new IdJsonConverter() },
+                Converters = new JsonConverter[] { new Newtonsoft.Json.Converters.StringEnumConverter(), new IdJsonConverter() }.Concat(extraConverters).ToArray(),
                 Error = new EventHandler<Newtonsoft.Json.Serialization.ErrorEventArgs>(HandleError),
                 ContractResolver = new EventContractResolver(messageMapper, messageFactory),
                 SerializationBinder = new EventSerializationBinder(messageMapper),

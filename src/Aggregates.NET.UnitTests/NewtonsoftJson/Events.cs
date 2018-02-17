@@ -54,7 +54,7 @@ namespace Aggregates.NewtonsoftJson
             _factory.Setup(x => x.Create(typeof(IContain))).Returns(new Contain_impl());
             _factory.Setup(x => x.Create(typeof(Contain_impl))).Returns(new Contain_impl());
 
-            _serializer = new JsonMessageSerializer(_mapper.Object, _factory.Object);
+            _serializer = new JsonMessageSerializer(_mapper.Object, _factory.Object, new Newtonsoft.Json.JsonConverter[] { });
         }
 
         [Test]

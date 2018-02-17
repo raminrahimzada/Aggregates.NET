@@ -36,7 +36,7 @@ namespace Aggregates.UnitTests.Common
             _factory = new Moq.Mock<IEventFactory>();
             _uow = new Moq.Mock<IDomainUnitOfWork>();
 
-            _serializer = new JsonMessageSerializer(_mapper.Object, _factory.Object);
+            _serializer = new JsonMessageSerializer(_mapper.Object, _factory.Object, new Newtonsoft.Json.JsonConverter[] { });
 
             var fake = new FakeConfiguration();
 

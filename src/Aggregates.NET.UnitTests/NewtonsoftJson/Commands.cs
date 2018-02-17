@@ -35,7 +35,7 @@ namespace Aggregates.NewtonsoftJson
             _mapper = new Moq.Mock<IEventMapper>();
             _factory = new Moq.Mock<IEventFactory>();
 
-            _serializer = new JsonMessageSerializer(_mapper.Object, _factory.Object);
+            _serializer = new JsonMessageSerializer(_mapper.Object, _factory.Object, new Newtonsoft.Json.JsonConverter[] { });
         }
 
         [Test]
