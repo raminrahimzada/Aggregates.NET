@@ -123,7 +123,7 @@ namespace Aggregates.Internal
                 StreamId = e.Descriptor.StreamId,
                 Timestamp = e.Descriptor.Timestamp,
                 Version = e.Descriptor.Version,
-                Payload = e.Event as IState
+                Payload = e.Event
             };
             
             Logger.DebugEvent("GotSnapshot", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", snapshot.StreamId, snapshot.Bucket, snapshot.EntityType, snapshot.Version);

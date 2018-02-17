@@ -109,7 +109,7 @@ namespace Aggregates.UnitTests.Common
             await eventCb("test", 0, message.Object);
 
             var read = await _subscriber.Retreive("test").ConfigureAwait(false);
-            Assert.AreEqual(1, read.Payload.Version);
+            Assert.AreEqual(1, (read.Payload as IState).Version);
 
 
             cts.Cancel();
@@ -150,7 +150,7 @@ namespace Aggregates.UnitTests.Common
 
             // A change to the base memento shouldn't change what we get from snapshot reader (it should have cloned the snapshot)
             memento.Version = 2;
-            Assert.AreEqual(1, read.Payload.Version);
+            Assert.AreEqual(1, (read.Payload as IState).Version);
 
             cts.Cancel();
         }
@@ -202,7 +202,7 @@ namespace Aggregates.UnitTests.Common
             await eventCb("test", 0, message.Object);
 
             var snapshot = await _subscriber.Retreive("test").ConfigureAwait(false);
-            Assert.AreEqual(2, snapshot.Payload.Version);
+            Assert.AreEqual(2, (snapshot.Payload as IState).Version);
 
 
             cts.Cancel();
