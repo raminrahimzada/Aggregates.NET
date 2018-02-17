@@ -27,7 +27,7 @@ namespace Aggregates.Internal
         
         // Todo: upgrade to LRU cache?
         // Store snapshots as strings, so that each request returns a new object which doesn't need to be deep copied
-        private static readonly ConcurrentDictionary<string, Tuple<DateTime, ISnapshot>> Snapshots = new ConcurrentDictionary<string, Tuple<DateTime, ISnapshot>>();
+        private static readonly ConcurrentDictionary<string, Tuple<DateTime, string>> Snapshots = new ConcurrentDictionary<string, Tuple<DateTime, string>>();
         private static readonly ConcurrentDictionary<string, long> TruncateBefore = new ConcurrentDictionary<string, long>();
 
         private static Task _truncate;
@@ -40,11 +40,13 @@ namespace Aggregates.Internal
 
         private readonly IMetrics _metrics;
         private readonly IEventStoreConsumer _consumer;
+        private readonly IMessageSerializer _serializer;
 
-        public SnapshotReader(IMetrics metrics, IStoreEvents store, IEventStoreConsumer consumer)
+        public SnapshotReader(IMetrics metrics, IStoreEvents store, IEventStoreConsumer consumer, IMessageSerializer serializer)
         {
             _metrics = metrics;
             _consumer = consumer;
+            _serializer = serializer;
 
             if (Interlocked.CompareExchange(ref _truncating, 1, 0) == 1) return;
 
@@ -77,7 +79,7 @@ namespace Aggregates.Internal
                 var expired = Snapshots.Where(x => (DateTime.UtcNow - x.Value.Item1) > TimeSpan.FromMinutes(5)).Select(x => x.Key)
                     .ToList();
 
-                Tuple<DateTime, ISnapshot> temp;
+                Tuple<DateTime, string> temp;
                 foreach (var key in expired)
                     if (Snapshots.TryRemove(key, out temp))
                         m.Decrement("Snapshots Stored", Unit.Items);
@@ -128,18 +130,18 @@ namespace Aggregates.Internal
             Snapshots.AddOrUpdate(stream, (key) =>
             {
                 _metrics.Increment("Snapshots Stored", Unit.Items);
-                return new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot);
+                return new Tuple<DateTime, string>(DateTime.UtcNow, _serializer.Serialize(snapshot).AsString());
             }, (key, existing) =>
             {
                 TruncateBefore[key] = position;
-                return new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot);
+                return new Tuple<DateTime, string>(DateTime.UtcNow, _serializer.Serialize(snapshot).AsString());
             });
             return Task.CompletedTask;
         }
 
         public Task<ISnapshot> Retreive(string stream)
         {
-            Tuple<DateTime, ISnapshot> snapshot;
+            Tuple<DateTime, string> snapshot;
             if (!Snapshots.TryGetValue(stream, out snapshot))
                 return Task.FromResult((ISnapshot)null);
 
@@ -147,7 +149,7 @@ namespace Aggregates.Internal
             // let all snapshots eventually expire
             //Snapshots.TryUpdate(stream, new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot.Item2), snapshot);
             
-            return Task.FromResult(snapshot.Item2.Copy());
+            return Task.FromResult((ISnapshot)_serializer.Deserialize<Snapshot>(snapshot.Item2.AsByteArray()));
         }
 
         public void Dispose()
