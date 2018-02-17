@@ -49,7 +49,7 @@ namespace Aggregates
 
             var message = new FullMessage
             {
-                Headers = context.MessageHeaders.ToDictionary(kv => kv.Key, kv => kv.Value),
+                Headers = context.MessageHeaders.Where(x => x.Key != $"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}").ToDictionary(kv => kv.Key, kv => kv.Value),
                 Message = command
             };
             Task.Run(() => dispatcher.SendLocal(message));
