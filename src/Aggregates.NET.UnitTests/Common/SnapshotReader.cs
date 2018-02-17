@@ -27,9 +27,13 @@ namespace Aggregates.UnitTests.Common
             _metrics = new Moq.Mock<IMetrics>();
             _consumer = new Moq.Mock<IEventStoreConsumer>();
 
+            var factory = new Moq.Mock<IEventFactory>();
+            var mapper = new Moq.Mock<IEventMapper>();
+            var serializer = new JsonMessageSerializer(mapper.Object, factory.Object, new JsonConverter[] { });
+
             var store = new Moq.Mock<IStoreEvents>();
             
-            _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object);
+            _subscriber = new Aggregates.Internal.SnapshotReader(_metrics.Object, store.Object, _consumer.Object, serializer);
             Bus.BusOnline = true;
 
         }
