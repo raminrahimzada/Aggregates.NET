@@ -148,8 +148,21 @@ namespace Aggregates.Internal
             // Update timestamp so snapshot doesn't expire
             // let all snapshots eventually expire
             //Snapshots.TryUpdate(stream, new Tuple<DateTime, ISnapshot>(DateTime.UtcNow, snapshot.Item2), snapshot);
-            
-            return Task.FromResult((ISnapshot)_serializer.Deserialize<Snapshot>(snapshot.Item2.AsByteArray()));
+
+            // Explanation:
+            // Snapshots are stored as strings do that each retreive creates a new object (deep copy in C# doesn't work very well)
+            // snapshots have a 'Snapshot' property which is supposed to be a clean copy of the state for use in event handlers
+            // think: 
+            //
+            // void Handle(Events.FooBar e)
+            //    // this.Snapshot is the unmodified state 
+            //
+            // to support that unmodified state we need to deserialize the snapshot twice - once for the state
+            // second for the snapshot property on the state.
+            // Todo: is there a way to mark the whole object as readonly?
+            var result = (ISnapshot)_serializer.Deserialize<Snapshot>(snapshot.Item2.AsByteArray());
+            (result.Payload as IState).Snapshot = (IState)(_serializer.Deserialize<Snapshot>(snapshot.Item2.AsByteArray()).Payload);
+            return Task.FromResult(result);
         }
 
         public void Dispose()

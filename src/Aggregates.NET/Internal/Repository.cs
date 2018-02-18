@@ -312,6 +312,9 @@ namespace Aggregates.Internal
 
         private Task<TEntity> GetClean(TEntity dirty)
         {
+            // Todo: this will restore the state to the previous snapshot, but
+            // this object won't have a Snapshot for its own
+            // Might need to pull a new snapshot?
             var snapshot = dirty.State.Snapshot;
             var events = dirty.State.Committed;
 

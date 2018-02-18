@@ -58,7 +58,8 @@ namespace Aggregates.Internal
             state.Bucket = bucket;
 
             state.Parents = parents;
-            state.Snapshot = snapshotState?.Copy();
+            // this is set from SnapshotReader.cs L:164
+            //state.Snapshot = snapshotState?.Copy();
 
             if (snapshotState != null)
             {
