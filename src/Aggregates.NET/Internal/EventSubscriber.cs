@@ -23,7 +23,7 @@ namespace Aggregates.Internal
         
         // todo: events don't stay here long, but if there are events here and the instance crashes the events won't 
         // be processed
-        private readonly BlockingCollection<Tuple<string, long, IFullEvent>>[] _waitingEvents;
+        private static readonly BlockingCollection<Tuple<string, long, IFullEvent>> WaitingEvents= new BlockingCollection<Tuple<string, long, IFullEvent>>();
 
         private class ThreadParam
         {
@@ -31,7 +31,6 @@ namespace Aggregates.Internal
             public CancellationToken Token { get; set; }
             public IMessaging Messaging { get; set; }
             public int Index { get; set; }
-            public BlockingCollection<Tuple<string, long, IFullEvent>> Queue { get; set; }
         }
 
 
@@ -55,11 +54,6 @@ namespace Aggregates.Internal
             _messaging = messaging;
             _consumer = consumer;
             _concurrency = concurrency;
-
-            // Initiate multiple event queues, 1 for each concurrent eventstream
-            _waitingEvents = new BlockingCollection<Tuple<string, long, IFullEvent>>[_concurrency];
-            for (var i = 0; i < _concurrency; i++)
-                _waitingEvents[i] = new BlockingCollection<Tuple<string, long, IFullEvent>>();
         }
 
         public async Task Setup(string endpoint, Version version)
@@ -120,7 +114,7 @@ when({{
                 _pinnedThreads[i] = new Thread(Threaded)
                 { IsBackground = true, Name = $"Event Thread {i}" };
 
-                _pinnedThreads[i].Start(new ThreadParam { Token = _cancelation.Token, Messaging = _messaging, Concurrency = _concurrency, Index = i, Queue = _waitingEvents[i] });
+                _pinnedThreads[i].Start(new ThreadParam { Token = _cancelation.Token, Messaging = _messaging, Concurrency = _concurrency, Index = i });
             }
 
 
@@ -144,8 +138,7 @@ when({{
         {
             _metrics.Increment("Events Queued", Unit.Event);
             
-            var bucket = Math.Abs(stream.GetHash() % _concurrency);
-            _waitingEvents[bucket].Add(new Tuple<string, long, IFullEvent>(stream, position, e));
+            WaitingEvents.Add(new Tuple<string, long, IFullEvent>(stream, position, e));
             return Task.CompletedTask;
         }
 
@@ -167,7 +160,7 @@ when({{
                 {
                     param.Token.ThrowIfCancellationRequested();
 
-                    var @event = param.Queue.Take(param.Token);
+                    var @event = WaitingEvents.Take(param.Token);
                     metrics.Decrement("Events Queued", Unit.Event);
 
                     try
