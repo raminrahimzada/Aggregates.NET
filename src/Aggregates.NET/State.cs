@@ -20,7 +20,7 @@ namespace Aggregates
         // todo: with the private contract resolver is this needed?
         public Id Id
         {
-            get => (this as IState).Id;
+            get => (this as IState)?.Id;
             set => (this as IState).Id = value;
         }
         public string Bucket
