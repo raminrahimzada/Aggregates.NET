@@ -13,7 +13,7 @@ namespace Aggregates.Internal
     {
         private static readonly ILog Logger = LogProvider.GetLogger("LogContextProvider");
 
-        public override Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
+        public override async Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
             // Populate the logging context with useful data from the messaeg
             using (LogProvider.OpenMappedContext("Instance", Defaults.Instance.ToString()))
@@ -33,7 +33,8 @@ namespace Aggregates.Internal
                         using (LogProvider.OpenMappedContext("Endpoint", Configuration.Settings.Endpoint))
                         {
                             Logger.DebugEvent("Start", "Processing [{MessageId:l}] Corr: [{CorrelationId:l}]", messageId, corrId);
-                            return next();
+                            await next().ConfigureAwait(false);
+                            Logger.DebugEvent("End", "Processing [{MessageId:l}] Corr: [{CorrelationId:l}]", messageId, corrId);
                         }
                     }
                 }
