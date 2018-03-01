@@ -233,7 +233,21 @@ namespace Aggregates.Internal
             }
             return true;
         }
-        
+
+        public Task Acknowledge(string stream, long position, IFullEvent @event)
+        {
+            var eventId = $"{@event.EventId.Value}:{stream}:{position}";
+            Tuple<EventStorePersistentSubscriptionBase, Guid> outstanding;
+            if (!@event.EventId.HasValue || !_outstandingEvents.TryRemove(eventId, out outstanding))
+            {
+                Logger.WarnEvent("ACK", "Unknown ack {EventId}", @event.EventId);
+                return Task.CompletedTask;
+            }
+            _metrics.Decrement("Outstanding Events", Unit.Event);
+
+            outstanding.Item1.Acknowledge(outstanding.Item2);
+            return Task.CompletedTask;
+        }
 
         private async Task EventAppeared(EventStorePersistentSubscriptionBase sub, ResolvedEvent e, CancellationToken token,
             Func<string, long, IFullEvent, Task> callback)
@@ -258,7 +272,6 @@ namespace Aggregates.Internal
             try
             {
                 await EventAppeared(e, token, callback).ConfigureAwait(false);
-                sub.Acknowledge(e);
             }
             catch (Exception ex)
             {
@@ -308,6 +321,8 @@ namespace Aggregates.Internal
             _mapper.Initialize(eventType);
 
             var payload = _serializer.Deserialize(eventType, data);
+
+            _metrics.Increment("Outstanding Events", Unit.Event);
 
             return callback(e.Event.EventStreamId, e.Event.EventNumber, new FullEvent
             {
