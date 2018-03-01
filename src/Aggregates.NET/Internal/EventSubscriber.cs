@@ -180,6 +180,9 @@ when({{
                             };
 
                         dispatcher.SendLocal(message, headers).ConfigureAwait(false).GetAwaiter().GetResult();
+
+                        consumer.Acknowledge(@event.Item1, @event.Item2, @event.Item3).ConfigureAwait(false)
+                            .GetAwaiter().GetResult();
                     }
                     catch (System.AggregateException e)
                     {

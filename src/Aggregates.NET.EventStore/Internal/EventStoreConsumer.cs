@@ -141,8 +141,8 @@ namespace Aggregates.Internal
                     .WithReadBatchOf(_readSize)
                     .WithBufferSizeOf(_readSize * 3)
                     .WithLiveBufferSizeOf(_readSize)
-                    //.DontTimeoutMessages()
-                    .WithMessageTimeoutOf(TimeSpan.FromMinutes(2))
+                    .DontTimeoutMessages()
+                    //.WithMessageTimeoutOf(TimeSpan.FromMinutes(2))
                     .CheckPointAfter(TimeSpan.FromSeconds(30))
                     .MaximumCheckPointCountOf(_readSize * 3)
                     .ResolveLinkTos()
@@ -194,8 +194,8 @@ namespace Aggregates.Internal
                     .WithReadBatchOf(_readSize)
                     .WithBufferSizeOf(_readSize * 3)
                     .WithLiveBufferSizeOf(_readSize)
-                    //.DontTimeoutMessages()
-                    .WithMessageTimeoutOf(TimeSpan.FromMinutes(2))
+                    .DontTimeoutMessages()
+                    //.WithMessageTimeoutOf(TimeSpan.FromMinutes(2))
                     .CheckPointAfter(TimeSpan.FromSeconds(30))
                     .MaximumCheckPointCountOf(_readSize * 3)
                     .ResolveLinkTos()
@@ -243,7 +243,6 @@ namespace Aggregates.Internal
                 Logger.WarnEvent("ACK", "Unknown ack {EventId}", @event.EventId);
                 return Task.CompletedTask;
             }
-            _metrics.Decrement("Outstanding Events", Unit.Event);
 
             outstanding.Item1.Acknowledge(outstanding.Item2);
             return Task.CompletedTask;
@@ -321,8 +320,6 @@ namespace Aggregates.Internal
             _mapper.Initialize(eventType);
 
             var payload = _serializer.Deserialize(eventType, data);
-
-            _metrics.Increment("Outstanding Events", Unit.Event);
 
             return callback(e.Event.EventStreamId, e.Event.EventNumber, new FullEvent
             {
