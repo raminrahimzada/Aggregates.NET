@@ -47,7 +47,10 @@ namespace Aggregates.Internal
                     lock (Lock)
                     {
                         foreach (var expired in CacheAttempts.Where(x => (DateTime.UtcNow - x.Value.Item1).TotalMinutes > 10).Select(x => x.Key).ToList())
+                        {
                             CacheAttempts.Remove(expired);
+                            MemCache.Remove(expired);
+                        }
                     }
                 }
 
@@ -120,16 +123,19 @@ namespace Aggregates.Internal
                 if (!CacheAttempts.ContainsKey(key))
                     CacheAttempts[key] = new Tuple<DateTime, int>(DateTime.UtcNow, 1);
                 else
+                {
                     CacheAttempts[key] =
                         new Tuple<DateTime, int>(DateTime.UtcNow, Math.Min(20, CacheAttempts[key].Item2 + 1));
+
+                    if (CacheAttempts[key].Item2 >= 20)
+                    {
+                        Logger.DebugEvent("Cachable", "{Key} is cachable now", key);
+                        Cachable.Add(key);
+                    }
+                }
             }
 
 
-            if (CacheAttempts[key].Item2 >= 20)
-            {
-                Logger.DebugEvent("Cachable", "{Key} is cachable now", key);
-                Cachable.Add(key);
-            }
 
 
         }
