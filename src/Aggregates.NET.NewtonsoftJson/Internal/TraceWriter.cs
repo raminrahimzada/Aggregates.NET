@@ -2,7 +2,7 @@
 using System;
 using Aggregates.Logging;
 using Aggregates.Extensions;
-using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace Aggregates.Internal
 {

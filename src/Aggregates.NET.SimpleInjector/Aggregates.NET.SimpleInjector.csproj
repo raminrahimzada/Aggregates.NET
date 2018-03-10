@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SimpleInjector" Version="4.0.12" />
+    <PackageReference Include="SimpleInjector" Version="4.1.0-alpha1" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SourceLink.Create.GitHub" Version="2.8.0" PrivateAssets="All" />
