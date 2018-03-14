@@ -74,8 +74,8 @@ namespace Aggregates.Internal
             factoryMethod: (b) => new CommandAcceptor(container.Resolve<IMetrics>())
         )
         {
-            // Needs to be after message unpack so Message.Instance is correct
-            InsertAfter("LocalMessageUnpack");
+            // If a command fails business exception uow still needs to error out
+            InsertBefore("UnitOfWorkExecution");
         }
     }
 }
