@@ -310,12 +310,11 @@ namespace Aggregates.Internal
             return entity;
         }
 
-        private Task<TEntity> GetClean(TEntity dirty)
+        private async Task<TEntity> GetClean(TEntity dirty)
         {
-            // Todo: this will restore the state to the previous snapshot, but
-            // this object won't have a Snapshot for its own
-            // Might need to pull a new snapshot?
-            var snapshot = dirty.State.Snapshot;
+            // pull a new snapshot so snapshot.Snapshot is not null
+            // if we just use dity.State.Snapshot then dirty.State.Snapshot.Snapshot will be null which will cause issues
+            var snapshot = await _snapstore.GetSnapshot<TEntity>(dirty.Bucket, dirty.Id, dirty.Parents).ConfigureAwait(false);
             var events = dirty.State.Committed;
 
             var entity = Factory.Create(dirty.Bucket, dirty.Id, dirty.Parents, events, snapshot);
@@ -326,7 +325,7 @@ namespace Aggregates.Internal
             (entity as INeedStore).OobWriter = _oobStore;
 
             Logger.DebugEvent("GetClean", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", dirty.Id, dirty.Bucket, typeof(TEntity).FullName, entity.Version);
-            return Task.FromResult(entity);
+            return entity;
         }
 
         public virtual Task<TEntity> New(Id id)
