@@ -317,7 +317,7 @@ namespace Aggregates.Internal
             var snapshot = await _snapstore.GetSnapshot<TEntity>(dirty.Bucket, dirty.Id, dirty.Parents).ConfigureAwait(false);
             var events = dirty.State.Committed;
 
-            var entity = Factory.Create(dirty.Bucket, dirty.Id, dirty.Parents, events, snapshot);
+            var entity = Factory.Create(dirty.Bucket, dirty.Id, dirty.Parents, events, snapshot?.Payload);
 
             (entity as INeedDomainUow).Uow = _uow;
             (entity as INeedEventFactory).EventFactory = _factory;
