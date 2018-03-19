@@ -26,7 +26,7 @@ namespace Aggregates.Internal
     }
     internal class BulkInvokeHandlerTerminator : PipelineTerminator<IInvokeHandlerContext>
     {
-        private static readonly ILog Logger = LogProvider.GetLogger("BulkInvokeHandlerTerminator");
+        private static readonly ILog Logger = LogProvider.GetLogger("BulkInvokeHandler");
         private static readonly ILog SlowLogger = LogProvider.GetLogger("Slow Alarm");
         
         private static readonly ConcurrentDictionary<string, DelayedAttribute> IsDelayed = new ConcurrentDictionary<string, DelayedAttribute>();
@@ -116,6 +116,7 @@ namespace Aggregates.Internal
                 };
 
                 await channel.AddToQueue(channelKey, msgPkg, key: specificKey).ConfigureAwait(false);
+                Logger.DebugEvent("QueueAdd", "Message added to delayed queue [{Channel:l}] key [{Key:l}]", channelKey, specificKey);
 
                 bool bulkInvoked;
                 if (context.Extensions.TryGet<bool>("BulkInvoked", out bulkInvoked) && bulkInvoked)
