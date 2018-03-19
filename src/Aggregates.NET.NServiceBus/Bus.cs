@@ -7,13 +7,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Extensions;
+using Aggregates.Logging;
 using NServiceBus;
+using NServiceBus.Pipeline;
 using NServiceBus.Transport;
 
 namespace Aggregates
 {
     public static class Bus
     {
+        private static readonly ILog Logger = LogProvider.GetLogger("Bus");
+
         public static IEndpointInstance Instance;
         internal static Func<MessageContext, Task> OnMessage;
         internal static Func<ErrorContext, Task<ErrorHandleResult>> OnError;
@@ -71,12 +75,15 @@ namespace Aggregates
                     main.GetType()
                         .GetField("recoverabilityExecutor", BindingFlags.Instance | BindingFlags.NonPublic)
                         .GetValue(main);
+                var behaviors = pipelineExecutor
+                                    .GetType()
+                                    .GetField("behaviors", BindingFlags.Instance | BindingFlags.NonPublic)
+                                    .GetValue(pipelineExecutor) as IBehavior[];
 
                 var pipelineMethod = pipelineExecutor.GetType().GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public)
                     .MakeFuncDelegateWithTarget<MessageContext, Task>(pipelineExecutor.GetType());
 
                 OnMessage = (c) => pipelineMethod(pipelineExecutor, c);
-
 
                 var recoverabilityMethod = recoverabilityExecutor.GetType()
                         .GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public)
@@ -87,6 +94,11 @@ namespace Aggregates
                 PushSettings = (PushRuntimeSettings)main.GetType()
                         .GetField("pushRuntimeSettings", BindingFlags.Instance | BindingFlags.NonPublic)
                         .GetValue(main);
+
+                Logger.InfoEvent("Online", "NServiceBus is online");
+
+                for(var i = 0; i < behaviors.Length; i++)
+                    Logger.DebugEvent("PipelineStep", "{Index}: {StepType}", i, behaviors[i].GetType().FullName);
 
                 BusOnline = true;
                 return Instance;
