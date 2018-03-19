@@ -75,10 +75,14 @@ namespace Aggregates
                     main.GetType()
                         .GetField("recoverabilityExecutor", BindingFlags.Instance | BindingFlags.NonPublic)
                         .GetValue(main);
-                var behaviors = pipelineExecutor
+                var mainPipeline = pipelineExecutor
+                                    .GetType()
+                                    .GetField("mainPipeline", BindingFlags.Instance | BindingFlags.NonPublic)
+                                    .GetValue(pipelineExecutor);
+                var behaviors = mainPipeline
                                     .GetType()
                                     .GetField("behaviors", BindingFlags.Instance | BindingFlags.NonPublic)
-                                    .GetValue(pipelineExecutor) as IBehavior[];
+                                    .GetValue(mainPipeline) as IBehavior[];
 
                 var pipelineMethod = pipelineExecutor.GetType().GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public)
                     .MakeFuncDelegateWithTarget<MessageContext, Task>(pipelineExecutor.GetType());
