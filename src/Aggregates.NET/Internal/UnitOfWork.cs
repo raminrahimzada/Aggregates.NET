@@ -91,7 +91,7 @@ namespace Aggregates.Internal
         }
         public IRepository<TEntity, TParent> For<TEntity, TParent>(TParent parent) where TEntity : class, IChildEntity<TParent> where TParent : class, IHaveEntities<TParent>
         {
-            var key = $"{typeof(TParent).FullName}.{typeof(TEntity).FullName}";
+            var key = $"{typeof(TParent).FullName}.{parent.Id}.{typeof(TEntity).FullName}";
 
             IRepository repository;
             if (_repositories.TryGetValue(key, out repository))
@@ -110,7 +110,7 @@ namespace Aggregates.Internal
         }
         public IPocoRepository<T, TParent> Poco<T, TParent>(TParent parent) where T : class, new() where TParent : class, IHaveEntities<TParent>
         {
-            var key = $"{typeof(TParent).FullName}.{typeof(T).FullName}";
+            var key = $"{typeof(TParent).FullName}.{parent.Id}.{typeof(T).FullName}";
 
             IRepository repository;
             if (_pocoRepositories.TryGetValue(key, out repository))
