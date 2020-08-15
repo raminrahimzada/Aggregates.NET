@@ -1,8 +1,6 @@
 ﻿using Aggregates.Extensions;
 using NServiceBus;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Sagas
@@ -28,7 +26,7 @@ namespace Aggregates.Sagas
             public string SagaId { get; set; }
         }
 
-        protected override void ConfigureHowToFindSaga(SagaPropertyMapper<CommandSagaHandler.SagaData> mapper)
+        protected override void ConfigureHowToFindSaga(SagaPropertyMapper<SagaData> mapper)
         {
             mapper.ConfigureMapping<StartCommandSaga>(x => x.SagaId).ToSaga(x => x.SagaId);
             mapper.ConfigureMapping<ContinueCommandSaga>(x => x.SagaId).ToSaga(x => x.SagaId);

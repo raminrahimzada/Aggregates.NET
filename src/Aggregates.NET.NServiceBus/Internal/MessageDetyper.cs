@@ -3,9 +3,7 @@ using Aggregates.Extensions;
 using Aggregates.Logging;
 using NServiceBus.Pipeline;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
@@ -13,10 +11,10 @@ namespace Aggregates.Internal
     public class MessageDetyper : Behavior<IOutgoingPhysicalMessageContext>
     {
         private static readonly ILog Logger = LogProvider.GetLogger("MessageDetyper");
-        private readonly Contracts.IVersionRegistrar _registrar;
-        private readonly Contracts.IEventMapper _mapper;
+        private readonly IVersionRegistrar _registrar;
+        private readonly IEventMapper _mapper;
 
-        public MessageDetyper(Contracts.IVersionRegistrar registrar, IEventMapper mapper)
+        public MessageDetyper(IVersionRegistrar registrar, IEventMapper mapper)
         {
             _registrar = registrar;
             _mapper = mapper;
@@ -61,7 +59,7 @@ namespace Aggregates.Internal
             stepId: "MessageDetyper",
             behavior: typeof(MessageDetyper),
             description: "detypes outgoing messages to Versioned commands/events",
-            factoryMethod: (b) => new MessageDetyper(b.Build<Contracts.IVersionRegistrar>(), b.Build<Contracts.IEventMapper>()))
+            factoryMethod: b => new MessageDetyper(b.Build<IVersionRegistrar>(), b.Build<IEventMapper>()))
         {
         }
     }

@@ -1,11 +1,6 @@
 ﻿using Aggregates.Contracts;
-using FakeItEasy;
 using FluentAssertions;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -39,7 +34,7 @@ namespace Aggregates.Common
             await Aggregates.Configuration.Build(config =>
             {
                 config.Container = Fake<IContainer>();
-                config.RegistrationTasks.Add((_) =>
+                config.RegistrationTasks.Add(_ =>
                 {
                     called = true;
                     return Task.CompletedTask;
@@ -55,7 +50,7 @@ namespace Aggregates.Common
             await Aggregates.Configuration.Build(config =>
             {
                 config.Container = Fake<IContainer>();
-                config.SetupTasks.Add((_) =>
+                config.SetupTasks.Add(_ =>
                 {
                     called = true;
                     return Task.CompletedTask;
@@ -70,7 +65,7 @@ namespace Aggregates.Common
             var e = await Record.ExceptionAsync(() => Aggregates.Configuration.Build(config =>
             {
                 config.Container = Fake<IContainer>();
-                config.RegistrationTasks.Add((_) =>
+                config.RegistrationTasks.Add(_ =>
                 {
                     throw new Exception();
                 });
@@ -85,7 +80,7 @@ namespace Aggregates.Common
             await Aggregates.Configuration.Build(config =>
             {
                 config.Container = Fake<IContainer>();
-                config.SetupTasks.Add((_) =>
+                config.SetupTasks.Add(_ =>
                 {
                     throw new Exception();
                 });

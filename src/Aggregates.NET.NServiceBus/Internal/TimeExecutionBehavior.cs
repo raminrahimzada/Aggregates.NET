@@ -35,8 +35,7 @@ namespace Aggregates.Internal
 
             var verbose = false;
 
-            string messageTypeIdentifier;
-            if (!context.MessageHeaders.TryGetValue(Headers.EnclosedMessageTypes, out messageTypeIdentifier))
+            if (!context.MessageHeaders.TryGetValue(Headers.EnclosedMessageTypes, out var messageTypeIdentifier))
                 messageTypeIdentifier = "<UNKNOWN>";
             messageTypeIdentifier += ",";
             messageTypeIdentifier = messageTypeIdentifier.Substring(0, messageTypeIdentifier.IndexOf(','));

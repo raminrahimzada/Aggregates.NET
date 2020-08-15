@@ -5,7 +5,6 @@ using NServiceBus.Unicast.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
@@ -44,7 +43,8 @@ namespace Aggregates.Internal
             context.Message.Headers[messageTypeKey] = SerializeEnclosedMessageTypes(mappedType);
             return next();
         }
-        string SerializeEnclosedMessageTypes(Type messageType)
+
+        private string SerializeEnclosedMessageTypes(Type messageType)
         {
             var metadata = _registry.GetMessageMetadata(messageType);
 
@@ -70,7 +70,7 @@ namespace Aggregates.Internal
             stepId: "MessageIdentifier",
             behavior: typeof(MessageIdentifier),
             description: "identifies incoming messages as Versioned commands/events",
-            factoryMethod: (b) => new MessageIdentifier(b.Build<MessageMetadataRegistry>(), b.Build<Contracts.IVersionRegistrar>()))
+            factoryMethod: b => new MessageIdentifier(b.Build<MessageMetadataRegistry>(), b.Build<Contracts.IVersionRegistrar>()))
         {
         }
     }

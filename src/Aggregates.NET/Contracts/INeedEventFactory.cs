@@ -1,7 +1,7 @@
 ﻿
 namespace Aggregates.Contracts
 {
-    interface INeedEventFactory
+    internal interface INeedEventFactory
     {
         IEventFactory EventFactory { get; set; }
     }

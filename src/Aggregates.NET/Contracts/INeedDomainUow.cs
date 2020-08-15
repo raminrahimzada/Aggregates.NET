@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Aggregates.Contracts
+﻿namespace Aggregates.Contracts
 {
-    interface INeedDomainUow
+    internal interface INeedDomainUow
     {
         UnitOfWork.IDomain Uow { get; set; }
     }

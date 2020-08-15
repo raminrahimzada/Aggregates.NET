@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Aggregates.Internal
+﻿namespace Aggregates.Internal
 {
-    static class StreamPosition
+    internal static class StreamPosition
     {
         //
         // Summary:

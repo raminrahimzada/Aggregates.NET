@@ -1,9 +1,5 @@
-﻿using Aggregates.Contracts;
-using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,7 +8,7 @@ namespace Aggregates.Common
 {
     public class Timer : Test
     {
-        class FakeState
+        private class FakeState
         {
             public int counter;
         }
@@ -73,7 +69,7 @@ namespace Aggregates.Common
         {
             // needs to be a reference type for this purpose
             var fake = new FakeState();
-            var task = Internal.Timer.Repeat((state) =>
+            var task = Internal.Timer.Repeat(state =>
             {
                 var _count = state as FakeState;
                 _count.counter++;
@@ -136,7 +132,7 @@ namespace Aggregates.Common
         {
             // needs to be a reference type for this purpose
             var fake = new FakeState();
-            var task = Internal.Timer.Expire((state) =>
+            var task = Internal.Timer.Expire(state =>
             {
                 var _count = state as FakeState;
                 _count.counter++;

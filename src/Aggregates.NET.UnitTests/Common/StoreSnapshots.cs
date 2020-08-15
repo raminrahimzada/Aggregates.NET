@@ -1,10 +1,7 @@
 ﻿using Aggregates.Contracts;
 using Aggregates.Internal;
 using FakeItEasy;
-using FluentAssertions;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -16,7 +13,7 @@ namespace Aggregates.Common
         public async Task ShouldGetSnapshotFromEventStore()
         {
             var reader = Fake<ISnapshotReader>();
-            A.CallTo(() => reader.Retreive(A<string>.Ignored)).Returns((ISnapshot)null);
+            A.CallTo(() => reader.Retrieve(A<string>.Ignored)).Returns((ISnapshot)null);
             Inject(reader);
             var store = Fake<IStoreEvents>();
             A.CallTo(() => store.GetEventsBackwards(A<string>.Ignored, A<long?>.Ignored, 1)).Returns(new[] { Fake<IFullEvent>() });
@@ -30,14 +27,14 @@ namespace Aggregates.Common
         public async Task ShouldGetSnapshotFromReader()
         {
             var reader = Fake<ISnapshotReader>();
-            A.CallTo(() => reader.Retreive(A<string>.Ignored)).Returns(Fake<ISnapshot>());
+            A.CallTo(() => reader.Retrieve(A<string>.Ignored)).Returns(Fake<ISnapshot>());
             Inject(reader);
             var store = Fake<IStoreEvents>();
             Inject(store);
 
             await Sut.GetSnapshot<FakeEntity>("test", "test", new Id[] { }).ConfigureAwait(false);
 
-            A.CallTo(() => reader.Retreive(A<string>.Ignored)).MustHaveHappened();
+            A.CallTo(() => reader.Retrieve(A<string>.Ignored)).MustHaveHappened();
             A.CallTo(() => store.GetEventsBackwards(A<string>.Ignored, A<long?>.Ignored, A<int?>.Ignored)).MustNotHaveHappened();
         }
         [Fact]

@@ -54,19 +54,19 @@ namespace Aggregates
 
         public bool Equals(Id other)
         {
-            if (ReferenceEquals(null, other) && this.Value == null) return true;
+            if (ReferenceEquals(null, other) && Value == null) return true;
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            if (this.Value == null && other.Value == null) return true;
+            if (Value == null && other.Value == null) return true;
             return Equals(Value, other.Value);
         }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj) && this.Value == null) return true;
+            if (ReferenceEquals(null, obj) && Value == null) return true;
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == this.GetType() && Equals((Id)obj);
+            return obj.GetType() == GetType() && Equals((Id)obj);
         }
 
         public override int GetHashCode()

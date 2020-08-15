@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using NServiceBus;
-using NServiceBus.Pipeline;
 using NServiceBus.Transport;
 
 namespace Aggregates
@@ -94,13 +90,13 @@ namespace Aggregates
                 var pipelineMethod = pipelineExecutor.GetType().GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public)
                     .MakeFuncDelegateWithTarget<MessageContext, Task>(pipelineExecutor.GetType());
 
-                OnMessage = (c) => pipelineMethod(pipelineExecutor, c);
+                OnMessage = c => pipelineMethod(pipelineExecutor, c);
 
                 var recoverabilityMethod = recoverabilityExecutor.GetType()
                         .GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public)
                     .MakeFuncDelegateWithTarget<ErrorContext, Task<ErrorHandleResult>>(recoverabilityExecutor.GetType());
 
-                OnError = (c) => recoverabilityMethod(recoverabilityExecutor, c);
+                OnError = c => recoverabilityMethod(recoverabilityExecutor, c);
 
                 PushSettings = (PushRuntimeSettings)main.GetType()
                         .GetField("pushRuntimeSettings", BindingFlags.Instance | BindingFlags.NonPublic)

@@ -1,11 +1,5 @@
 ﻿using Aggregates.Contracts;
-using FakeItEasy;
 using FluentAssertions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Aggregates.Common
@@ -15,10 +9,10 @@ namespace Aggregates.Common
         [Fact]
         public void EntityHasId()
         {
-            Aggregates.Id id = "test";
+            Id id = "test";
             Inject(id);
 
-            Sut.Id.Should().Be((Aggregates.Id)"test");
+            Sut.Id.Should().Be((Id)"test");
         }
         [Fact]
         public void EntityHasBucket()

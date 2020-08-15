@@ -4,7 +4,6 @@ using Aggregates.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
@@ -35,7 +34,7 @@ namespace Aggregates.Internal
             Logger.DebugEvent("Get", "[{Stream:l}]", streamName);
             if (_snapshots != null)
             {
-                var snapshot = await _snapshots.Retreive(streamName).ConfigureAwait(false);
+                var snapshot = await _snapshots.Retrieve(streamName).ConfigureAwait(false);
                 if (snapshot != null)
                 {
                     _metrics.Mark("Snapshot Cache Hits", Unit.Items);

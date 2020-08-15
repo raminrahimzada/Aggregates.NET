@@ -2,7 +2,6 @@
 using NServiceBus;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 
 namespace Aggregates.Internal
@@ -26,12 +25,12 @@ namespace Aggregates.Internal
         public void ConfigureComponent<T>(Func<T> componentFactory, DependencyLifecycle dependencyLifecycle) 
         {
             var componentType = typeof(T);
-            Container.Register<T>((_) => componentFactory(), Map(dependencyLifecycle));
+            Container.Register<T>(_ => componentFactory(), Map(dependencyLifecycle));
         }
 
         public void ConfigureComponent<T>(Func<IBuilder, T> componentFactory, DependencyLifecycle dependencyLifecycle)
         {
-            Container.Register<T>((c) => componentFactory(this), Map(dependencyLifecycle));
+            Container.Register<T>(c => componentFactory(this), Map(dependencyLifecycle));
         }
 
         public bool HasComponent<T>()
@@ -54,7 +53,7 @@ namespace Aggregates.Internal
             RegisterSingleton(typeof(T), instance);
         }
 
-        static Contracts.Lifestyle Map(DependencyLifecycle lifetime)
+        private static Contracts.Lifestyle Map(DependencyLifecycle lifetime)
         {
             switch (lifetime)
             {
@@ -101,7 +100,7 @@ namespace Aggregates.Internal
         {
         }
 
-        class ChildScopeAdapter : IBuilder
+        private class ChildScopeAdapter : IBuilder
         {
             private readonly Contracts.IContainer _container;
             public ChildScopeAdapter(Contracts.IContainer container)

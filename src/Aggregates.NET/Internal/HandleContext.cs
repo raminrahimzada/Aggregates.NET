@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
 using Aggregates.Contracts;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class HandleContext : IServiceContext
+    internal class HandleContext : IServiceContext
     {
         public HandleContext(Aggregates.UnitOfWork.IDomain domain, Aggregates.UnitOfWork.IApplication app, IProcessor processor, IContainer container)
         {

@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Aggregates.Messages;
 using Aggregates.Internal;
 using Aggregates.Contracts;
 using Aggregates.Exceptions;
 using Xunit;
 using FakeItEasy;
 using FluentAssertions;
-using AutoFixture.Xunit2;
 
 namespace Aggregates.Common.ConflictResolvers
 {
     public class EasyConflictResolvers : Test
     {
         [Fact]
-        async Task ThrowConflictResolverThrowsOnConflict()
+        private async Task ThrowConflictResolverThrowsOnConflict()
         {
             var sut = new ThrowConflictResolver();
 
@@ -28,7 +24,7 @@ namespace Aggregates.Common.ConflictResolvers
             e.Should().BeOfType<ConflictResolutionFailedException>();
         }
         [Fact]
-        async Task DiscardConflictResolverDoesntThrowOrSave()
+        private async Task DiscardConflictResolverDoesntThrowOrSave()
         {
             var store = Fake<IStoreEvents>();
             var sut = new DiscardConflictResolver();
@@ -40,7 +36,7 @@ namespace Aggregates.Common.ConflictResolvers
                 .Should().NotHaveHappened();
         }
         [Fact]
-        async Task IgnoreConflictResolverWritesEvents()
+        private async Task IgnoreConflictResolverWritesEvents()
         {
             var store = Fake<IStoreEvents>();
             var sut = new IgnoreConflictResolver(store, Fake<IOobWriter>());
@@ -53,7 +49,7 @@ namespace Aggregates.Common.ConflictResolvers
         }
 
         [Fact]
-        async Task IgnoreConflictResolverWritesOobEvents()
+        private async Task IgnoreConflictResolverWritesOobEvents()
         {
             var store = Fake<IStoreEvents>();
             var oob = Fake<IOobWriter>();

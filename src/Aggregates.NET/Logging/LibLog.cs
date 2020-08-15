@@ -56,7 +56,7 @@ namespace Aggregates.Logging
 #if LIBLOG_PROVIDERS_ONLY
     using Aggregates.LibLog.LogProviders;
 #else
-    using Aggregates.Logging.LogProviders;
+    using LogProviders;
 #endif
     using System;
 #if !LIBLOG_PROVIDERS_ONLY
@@ -539,7 +539,7 @@ namespace Aggregates.Logging
 #endif
         static ILog GetLogger(string name)
         {
-            ILogProvider logProvider = CurrentLogProvider ?? ResolveLogProvider();
+            var logProvider = CurrentLogProvider ?? ResolveLogProvider();
             return logProvider == null
                 ? NoOpLogger.Instance
                 : (ILog)new LoggerExecutionWrapper(logProvider.GetLogger(name), () => IsDisabled);
@@ -558,7 +558,7 @@ namespace Aggregates.Logging
 #endif
         static IDisposable OpenNestedContext(string message)
         {
-            ILogProvider logProvider = CurrentLogProvider ?? ResolveLogProvider();
+            var logProvider = CurrentLogProvider ?? ResolveLogProvider();
 
             return logProvider == null
                 ? new DisposableAction(() => { })
@@ -579,7 +579,7 @@ namespace Aggregates.Logging
 #endif
         static IDisposable OpenMappedContext(string key, string value)
         {
-            ILogProvider logProvider = CurrentLogProvider ?? ResolveLogProvider();
+            var logProvider = CurrentLogProvider ?? ResolveLogProvider();
 
             return logProvider == null
                 ? new DisposableAction(() => { })
@@ -813,29 +813,29 @@ namespace Aggregates.Logging.LogProviders
 
         protected override OpenNdc GetOpenNdcMethod()
         {
-            Type ndcContextType = Type.GetType("NLog.NestedDiagnosticsContext, NLog");
+            var ndcContextType = Type.GetType("NLog.NestedDiagnosticsContext, NLog");
             MethodInfo pushMethod = ndcContextType.GetMethodPortable("Push", typeof(string));
-            ParameterExpression messageParam = Expression.Parameter(typeof(string), "message");
-            MethodCallExpression pushMethodCall = Expression.Call(null, pushMethod, messageParam);
+            var messageParam = Expression.Parameter(typeof(string), "message");
+            var pushMethodCall = Expression.Call(null, pushMethod, messageParam);
             return Expression.Lambda<OpenNdc>(pushMethodCall, messageParam).Compile();
         }
 
         protected override OpenMdc GetOpenMdcMethod()
         {
-            Type mdcContextType = Type.GetType("NLog.MappedDiagnosticsContext, NLog");
+            var mdcContextType = Type.GetType("NLog.MappedDiagnosticsContext, NLog");
 
             MethodInfo setMethod = mdcContextType.GetMethodPortable("Set", typeof(string), typeof(string));
             MethodInfo removeMethod = mdcContextType.GetMethodPortable("Remove", typeof(string));
-            ParameterExpression keyParam = Expression.Parameter(typeof(string), "key");
-            ParameterExpression valueParam = Expression.Parameter(typeof(string), "value");
+            var keyParam = Expression.Parameter(typeof(string), "key");
+            var valueParam = Expression.Parameter(typeof(string), "value");
 
-            MethodCallExpression setMethodCall = Expression.Call(null, setMethod, keyParam, valueParam);
-            MethodCallExpression removeMethodCall = Expression.Call(null, removeMethod, keyParam);
+            var setMethodCall = Expression.Call(null, setMethod, keyParam, valueParam);
+            var removeMethodCall = Expression.Call(null, removeMethod, keyParam);
 
-            Action<string, string> set = Expression
+            var set = Expression
                 .Lambda<Action<string, string>>(setMethodCall, keyParam, valueParam)
                 .Compile();
-            Action<string> remove = Expression
+            var remove = Expression
                 .Lambda<Action<string>>(removeMethodCall, keyParam)
                 .Compile();
 
@@ -853,10 +853,10 @@ namespace Aggregates.Logging.LogProviders
 
         private static Func<string, object> GetGetLoggerMethodCall()
         {
-            Type logManagerType = GetLogManagerType();
+            var logManagerType = GetLogManagerType();
             MethodInfo method = logManagerType.GetMethodPortable("GetLogger", typeof(string));
-            ParameterExpression nameParam = Expression.Parameter(typeof(string), "name");
-            MethodCallExpression methodCall = Expression.Call(null, method, nameParam);
+            var nameParam = Expression.Parameter(typeof(string), "name");
+            var methodCall = Expression.Call(null, method, nameParam);
             return Expression.Lambda<Func<string, object>>(methodCall, nameParam).Compile();
         }
 
@@ -898,12 +898,12 @@ namespace Aggregates.Logging.LogProviders
                     }
                     MethodInfo createLogEventInfoMethodInfo = logEventInfoType.GetMethodPortable("Create",
                         logEventLevelType, typeof(string), typeof(Exception), typeof(IFormatProvider), typeof(string), typeof(object[]));
-                    ParameterExpression loggerNameParam = Expression.Parameter(typeof(string));
-                    ParameterExpression levelParam = Expression.Parameter(typeof(object));
-                    ParameterExpression messageParam = Expression.Parameter(typeof(string));
-                    ParameterExpression exceptionParam = Expression.Parameter(typeof(Exception));
-                    UnaryExpression levelCast = Expression.Convert(levelParam, logEventLevelType);
-                    MethodCallExpression createLogEventInfoMethodCall = Expression.Call(null,
+                    var loggerNameParam = Expression.Parameter(typeof(string));
+                    var levelParam = Expression.Parameter(typeof(object));
+                    var messageParam = Expression.Parameter(typeof(string));
+                    var exceptionParam = Expression.Parameter(typeof(Exception));
+                    var levelCast = Expression.Convert(levelParam, logEventLevelType);
+                    var createLogEventInfoMethodCall = Expression.Call(null,
                         createLogEventInfoMethodInfo,
                         levelCast, loggerNameParam, exceptionParam,
                         Expression.Constant(null, typeof(IFormatProvider)), messageParam, Expression.Constant(null, typeof(object[])));
@@ -931,7 +931,7 @@ namespace Aggregates.Logging.LogProviders
                 {
                     if (IsLogLevelEnable(logLevel))
                     {
-                        var nlogLevel = this.TranslateLevel(logLevel);
+                        var nlogLevel = TranslateLevel(logLevel);
                         Type s_callerStackBoundaryType;
 #if !LIBLOG_PORTABLE
                         StackTrace stack = new StackTrace();
@@ -1156,18 +1156,18 @@ namespace Aggregates.Logging.LogProviders
 
         protected override OpenNdc GetOpenNdcMethod()
         {
-            Type logicalThreadContextType = Type.GetType("log4net.LogicalThreadContext, log4net");
+            var logicalThreadContextType = Type.GetType("log4net.LogicalThreadContext, log4net");
             PropertyInfo stacksProperty = logicalThreadContextType.GetPropertyPortable("Stacks");
-            Type logicalThreadContextStacksType = stacksProperty.PropertyType;
+            var logicalThreadContextStacksType = stacksProperty.PropertyType;
             PropertyInfo stacksIndexerProperty = logicalThreadContextStacksType.GetPropertyPortable("Item");
-            Type stackType = stacksIndexerProperty.PropertyType;
+            var stackType = stacksIndexerProperty.PropertyType;
             MethodInfo pushMethod = stackType.GetMethodPortable("Push");
 
-            ParameterExpression messageParameter =
+            var messageParameter =
                 Expression.Parameter(typeof(string), "message");
 
             // message => LogicalThreadContext.Stacks.Item["NDC"].Push(message);
-            MethodCallExpression callPushBody =
+            var callPushBody =
                 Expression.Call(
                     Expression.Property(Expression.Property(null, stacksProperty),
                                         stacksIndexerProperty,
@@ -1175,7 +1175,7 @@ namespace Aggregates.Logging.LogProviders
                     pushMethod,
                     messageParameter);
 
-            OpenNdc result =
+            var result =
                 Expression.Lambda<OpenNdc>(callPushBody, messageParameter)
                           .Compile();
 
@@ -1184,29 +1184,29 @@ namespace Aggregates.Logging.LogProviders
 
         protected override OpenMdc GetOpenMdcMethod()
         {
-            Type logicalThreadContextType = Type.GetType("log4net.LogicalThreadContext, log4net");
+            var logicalThreadContextType = Type.GetType("log4net.LogicalThreadContext, log4net");
             PropertyInfo propertiesProperty = logicalThreadContextType.GetPropertyPortable("Properties");
-            Type logicalThreadContextPropertiesType = propertiesProperty.PropertyType;
+            var logicalThreadContextPropertiesType = propertiesProperty.PropertyType;
             PropertyInfo propertiesIndexerProperty = logicalThreadContextPropertiesType.GetPropertyPortable("Item");
 
             MethodInfo removeMethod = logicalThreadContextPropertiesType.GetMethodPortable("Remove");
 
-            ParameterExpression keyParam = Expression.Parameter(typeof(string), "key");
-            ParameterExpression valueParam = Expression.Parameter(typeof(string), "value");
+            var keyParam = Expression.Parameter(typeof(string), "key");
+            var valueParam = Expression.Parameter(typeof(string), "value");
 
-            MemberExpression propertiesExpression = Expression.Property(null, propertiesProperty);
+            var propertiesExpression = Expression.Property(null, propertiesProperty);
 
             // (key, value) => LogicalThreadContext.Properties.Item[key] = value;
-            BinaryExpression setProperties = Expression.Assign(Expression.Property(propertiesExpression, propertiesIndexerProperty, keyParam), valueParam);
+            var setProperties = Expression.Assign(Expression.Property(propertiesExpression, propertiesIndexerProperty, keyParam), valueParam);
 
             // key => LogicalThreadContext.Properties.Remove(key);
-            MethodCallExpression removeMethodCall = Expression.Call(propertiesExpression, removeMethod, keyParam);
+            var removeMethodCall = Expression.Call(propertiesExpression, removeMethod, keyParam);
 
-            Action<string, string> set = Expression
+            var set = Expression
                 .Lambda<Action<string, string>>(setProperties, keyParam, valueParam)
                 .Compile();
 
-            Action<string> remove = Expression
+            var remove = Expression
                 .Lambda<Action<string>>(removeMethodCall, keyParam)
                 .Compile();
 
@@ -1224,10 +1224,10 @@ namespace Aggregates.Logging.LogProviders
 
         private static Func<string, object> GetGetLoggerMethodCall()
         {
-            Type logManagerType = GetLogManagerType();
+            var logManagerType = GetLogManagerType();
             MethodInfo method = logManagerType.GetMethodPortable("GetLogger", typeof(string));
-            ParameterExpression nameParam = Expression.Parameter(typeof(string), "name");
-            MethodCallExpression methodCall = Expression.Call(null, method, nameParam);
+            var nameParam = Expression.Parameter(typeof(string), "name");
+            var methodCall = Expression.Call(null, method, nameParam);
             return Expression.Lambda<Func<string, object>>(methodCall, nameParam).Compile();
         }
 
@@ -1271,13 +1271,13 @@ namespace Aggregates.Logging.LogProviders
                 {
                     throw new InvalidOperationException("Type log4net.Core.ILogger, was not found.");
                 }
-                ParameterExpression instanceParam = Expression.Parameter(typeof(object));
-                UnaryExpression instanceCast = Expression.Convert(instanceParam, loggerType);
-                ParameterExpression levelParam = Expression.Parameter(typeof(object));
-                UnaryExpression levelCast = Expression.Convert(levelParam, logEventLevelType);
+                var instanceParam = Expression.Parameter(typeof(object));
+                var instanceCast = Expression.Convert(instanceParam, loggerType);
+                var levelParam = Expression.Parameter(typeof(object));
+                var levelCast = Expression.Convert(levelParam, logEventLevelType);
                 _isEnabledForDelegate = GetIsEnabledFor(loggerType, logEventLevelType, instanceCast, levelCast, instanceParam, levelParam);
 
-                Type loggingEventType = Type.GetType("log4net.Core.LoggingEvent, log4net");
+                var loggingEventType = Type.GetType("log4net.Core.LoggingEvent, log4net");
 
                 _createLoggingEvent = GetCreateLoggingEvent(instanceParam, instanceCast, levelParam, levelCast, loggingEventType);
 
@@ -1294,10 +1294,10 @@ namespace Aggregates.Logging.LogProviders
                 MethodInfo writeExceptionMethodInfo = loggerType.GetMethodPortable("Log",
                                                                                    loggingEventType);
 
-                ParameterExpression loggingEventParameter =
+                var loggingEventParameter =
                     Expression.Parameter(typeof(object), "loggingEvent");
 
-                UnaryExpression loggingEventCasted =
+                var loggingEventCasted =
                     Expression.Convert(loggingEventParameter, loggingEventType);
 
                 var writeMethodExp = Expression.Call(
@@ -1315,9 +1315,9 @@ namespace Aggregates.Logging.LogProviders
 
             private static Func<object, Type, object, string, Exception, object> GetCreateLoggingEvent(ParameterExpression instanceParam, UnaryExpression instanceCast, ParameterExpression levelParam, UnaryExpression levelCast, Type loggingEventType)
             {
-                ParameterExpression callerStackBoundaryDeclaringTypeParam = Expression.Parameter(typeof(Type));
-                ParameterExpression messageParam = Expression.Parameter(typeof(string));
-                ParameterExpression exceptionParam = Expression.Parameter(typeof(Exception));
+                var callerStackBoundaryDeclaringTypeParam = Expression.Parameter(typeof(Type));
+                var messageParam = Expression.Parameter(typeof(string));
+                var exceptionParam = Expression.Parameter(typeof(Exception));
 
                 PropertyInfo repositoryProperty = loggingEventType.GetPropertyPortable("Repository");
                 PropertyInfo levelProperty = loggingEventType.GetPropertyPortable("Level");
@@ -1327,7 +1327,7 @@ namespace Aggregates.Logging.LogProviders
 
                 //Func<object, object, string, Exception, object> Log =
                 //(logger, callerStackBoundaryDeclaringType, level, message, exception) => new LoggingEvent(callerStackBoundaryDeclaringType, ((ILogger)logger).Repository, ((ILogger)logger).Name, (Level)level, message, exception); }
-                NewExpression newLoggingEventExpression =
+                var newLoggingEventExpression =
                     Expression.New(loggingEventConstructor,
                                    callerStackBoundaryDeclaringTypeParam,
                                    Expression.Property(instanceCast, "Repository"),
@@ -1356,9 +1356,9 @@ namespace Aggregates.Logging.LogProviders
                                                                       ParameterExpression levelParam)
             {
                 MethodInfo isEnabledMethodInfo = loggerType.GetMethodPortable("IsEnabledFor", logEventLevelType);
-                MethodCallExpression isEnabledMethodCall = Expression.Call(instanceCast, isEnabledMethodInfo, levelCast);
+                var isEnabledMethodCall = Expression.Call(instanceCast, isEnabledMethodInfo, levelCast);
 
-                Func<object, object, bool> result =
+                var result =
                     Expression.Lambda<Func<object, object, bool>>(isEnabledMethodCall, instanceParam, levelParam)
                               .Compile();
 
@@ -1367,9 +1367,9 @@ namespace Aggregates.Logging.LogProviders
 
             private static Action<object, string, object> GetLoggingEventPropertySetter(Type loggingEventType)
             {
-                ParameterExpression loggingEventParameter = Expression.Parameter(typeof(object), "loggingEvent");
-                ParameterExpression keyParameter = Expression.Parameter(typeof(string), "key");
-                ParameterExpression valueParameter = Expression.Parameter(typeof(object), "value");
+                var loggingEventParameter = Expression.Parameter(typeof(object), "loggingEvent");
+                var keyParameter = Expression.Parameter(typeof(string), "key");
+                var valueParameter = Expression.Parameter(typeof(object), "value");
 
                 PropertyInfo propertiesProperty = loggingEventType.GetPropertyPortable("Properties");
                 PropertyInfo item = propertiesProperty.PropertyType.GetPropertyPortable("Item");
@@ -1381,7 +1381,7 @@ namespace Aggregates.Logging.LogProviders
                             Expression.Property(Expression.Convert(loggingEventParameter, loggingEventType),
                                                 propertiesProperty), item, keyParameter), valueParameter);
 
-                Action<object, string, object> result =
+                var result =
                     Expression.Lambda<Action<object, string, object>>
                               (body, loggingEventParameter, keyParameter,
                                valueParameter)
@@ -1402,14 +1402,12 @@ namespace Aggregates.Logging.LogProviders
                     return false;
                 }
 
-                string message = messageFunc();
+                var message = messageFunc();
 
-                IEnumerable<string> patternMatches;
-
-                string formattedMessage =
+                var formattedMessage =
                     LogMessageFormatter.FormatStructuredMessage(message,
                                                                 formatParameters,
-                                                                out patternMatches);
+                                                                out var patternMatches);
 
                 // determine correct caller - this might change due to jit optimizations with method inlining
                 if (s_callerStackBoundaryType == null)
@@ -1447,11 +1445,11 @@ namespace Aggregates.Logging.LogProviders
 
             private void PopulateProperties(object loggingEvent, IEnumerable<string> patternMatches, object[] formatParameters)
             {
-                IEnumerable<KeyValuePair<string, object>> keyToValue =
+                var keyToValue =
                     patternMatches.Zip(formatParameters,
                                        (key, value) => new KeyValuePair<string, object>(key, value));
 
-                foreach (KeyValuePair<string, object> keyValuePair in keyToValue)
+                foreach (var keyValuePair in keyToValue)
                 {
                     _loggingEventPropertySetter(loggingEvent, keyValuePair.Key, keyValuePair.Value);
                 }
@@ -1559,7 +1557,7 @@ namespace Aggregates.Logging.LogProviders
             var messageParameter = Expression.Parameter(typeof(string), "message");
             var severityParameter = Expression.Parameter(typeof(int), "severity");
 
-            MemberInitExpression memberInit = GetWriteLogExpression(
+            var memberInit = GetWriteLogExpression(
                 messageParameter,
                 Expression.Convert(severityParameter, TraceEventTypeType),
                 logNameParameter);
@@ -1581,7 +1579,7 @@ namespace Aggregates.Logging.LogProviders
             var logNameParameter = Expression.Parameter(typeof(string), "logName");
             var severityParameter = Expression.Parameter(typeof(int), "severity");
 
-            MemberInitExpression memberInit = GetWriteLogExpression(
+            var memberInit = GetWriteLogExpression(
                 Expression.Constant("***dummy***"),
                 Expression.Convert(severityParameter, TraceEventTypeType),
                 logNameParameter);
@@ -1600,7 +1598,7 @@ namespace Aggregates.Logging.LogProviders
             Expression severityParameter, ParameterExpression logNameParameter)
         {
             var entryType = LogEntryType;
-            MemberInitExpression memberInit = Expression.MemberInit(Expression.New(entryType),
+            var memberInit = Expression.MemberInit(Expression.New(entryType),
                 Expression.Bind(entryType.GetPropertyPortable("Message"), message),
                 Expression.Bind(entryType.GetPropertyPortable("Severity"), severityParameter),
                 Expression.Bind(
@@ -1717,7 +1715,7 @@ namespace Aggregates.Logging.LogProviders
 
         private static Func<string, string, IDisposable> GetPushProperty()
         {
-            Type ndcContextType = Type.GetType("Serilog.Context.LogContext, Serilog") ??
+            var ndcContextType = Type.GetType("Serilog.Context.LogContext, Serilog") ??
                                   Type.GetType("Serilog.Context.LogContext, Serilog.FullNetFx");
 
             MethodInfo pushPropertyMethod = ndcContextType.GetMethodPortable(
@@ -1726,10 +1724,10 @@ namespace Aggregates.Logging.LogProviders
                 typeof(object),
                 typeof(bool));
 
-            ParameterExpression nameParam = Expression.Parameter(typeof(string), "name");
-            ParameterExpression valueParam = Expression.Parameter(typeof(object), "value");
-            ParameterExpression destructureObjectParam = Expression.Parameter(typeof(bool), "destructureObjects");
-            MethodCallExpression pushPropertyMethodCall = Expression
+            var nameParam = Expression.Parameter(typeof(string), "name");
+            var valueParam = Expression.Parameter(typeof(object), "value");
+            var destructureObjectParam = Expression.Parameter(typeof(bool), "destructureObjects");
+            var pushPropertyMethodCall = Expression
                 .Call(null, pushPropertyMethod, nameParam, valueParam, destructureObjectParam);
             var pushProperty = Expression
                 .Lambda<Func<string, object, bool, IDisposable>>(
@@ -1749,12 +1747,12 @@ namespace Aggregates.Logging.LogProviders
 
         private static Func<string, object> GetForContextMethodCall()
         {
-            Type logManagerType = GetLogManagerType();
+            var logManagerType = GetLogManagerType();
             MethodInfo method = logManagerType.GetMethodPortable("ForContext", typeof(string), typeof(object), typeof(bool));
-            ParameterExpression propertyNameParam = Expression.Parameter(typeof(string), "propertyName");
-            ParameterExpression valueParam = Expression.Parameter(typeof(object), "value");
-            ParameterExpression destructureObjectsParam = Expression.Parameter(typeof(bool), "destructureObjects");
-            MethodCallExpression methodCall = Expression.Call(null, method, new Expression[]
+            var propertyNameParam = Expression.Parameter(typeof(string), "propertyName");
+            var valueParam = Expression.Parameter(typeof(object), "value");
+            var destructureObjectsParam = Expression.Parameter(typeof(bool), "destructureObjects");
+            var methodCall = Expression.Call(null, method, new Expression[]
             {
                 propertyNameParam,
                 valueParam,
@@ -1808,19 +1806,19 @@ namespace Aggregates.Logging.LogProviders
                     throw new InvalidOperationException("Type Serilog.ILogger was not found.");
                 }
                 MethodInfo isEnabledMethodInfo = loggerType.GetMethodPortable("IsEnabled", logEventLevelType);
-                ParameterExpression instanceParam = Expression.Parameter(typeof(object));
-                UnaryExpression instanceCast = Expression.Convert(instanceParam, loggerType);
-                ParameterExpression levelParam = Expression.Parameter(typeof(object));
-                UnaryExpression levelCast = Expression.Convert(levelParam, logEventLevelType);
-                MethodCallExpression isEnabledMethodCall = Expression.Call(instanceCast, isEnabledMethodInfo, levelCast);
+                var instanceParam = Expression.Parameter(typeof(object));
+                var instanceCast = Expression.Convert(instanceParam, loggerType);
+                var levelParam = Expression.Parameter(typeof(object));
+                var levelCast = Expression.Convert(levelParam, logEventLevelType);
+                var isEnabledMethodCall = Expression.Call(instanceCast, isEnabledMethodInfo, levelCast);
                 IsEnabled = Expression.Lambda<Func<object, object, bool>>(isEnabledMethodCall, instanceParam, levelParam).Compile();
 
                 // Action<object, object, string> Write =
                 // (logger, level, message, params) => { ((SeriLog.ILoggerILogger)logger).Write(level, message, params); }
                 MethodInfo writeMethodInfo = loggerType.GetMethodPortable("Write", logEventLevelType, typeof(string), typeof(object[]));
-                ParameterExpression messageParam = Expression.Parameter(typeof(string));
-                ParameterExpression propertyValuesParam = Expression.Parameter(typeof(object[]));
-                MethodCallExpression writeMethodExp = Expression.Call(
+                var messageParam = Expression.Parameter(typeof(string));
+                var propertyValuesParam = Expression.Parameter(typeof(object[]));
+                var writeMethodExp = Expression.Call(
                     instanceCast,
                     writeMethodInfo,
                     levelCast,
@@ -1841,7 +1839,7 @@ namespace Aggregates.Logging.LogProviders
                     typeof(Exception),
                     typeof(string),
                     typeof(object[]));
-                ParameterExpression exceptionParam = Expression.Parameter(typeof(Exception));
+                var exceptionParam = Expression.Parameter(typeof(Exception));
                 writeMethodExp = Expression.Call(
                     instanceCast,
                     writeExceptionMethodInfo,
@@ -1981,9 +1979,9 @@ namespace Aggregates.Logging.LogProviders
 
         private static WriteDelegate GetLogWriteDelegate()
         {
-            Type logManagerType = GetLogManagerType();
-            Type logMessageSeverityType = Type.GetType("Gibraltar.Agent.LogMessageSeverity, Gibraltar.Agent");
-            Type logWriteModeType = Type.GetType("Gibraltar.Agent.LogWriteMode, Gibraltar.Agent");
+            var logManagerType = GetLogManagerType();
+            var logMessageSeverityType = Type.GetType("Gibraltar.Agent.LogMessageSeverity, Gibraltar.Agent");
+            var logWriteModeType = Type.GetType("Gibraltar.Agent.LogWriteMode, Gibraltar.Agent");
 
             MethodInfo method = logManagerType.GetMethodPortable(
                 "Write",
@@ -2109,15 +2107,14 @@ namespace Aggregates.Logging.LogProviders
 
             return () =>
             {
-                string targetMessage = messageBuilder();
-                IEnumerable<string> patternMatches;
-                return FormatStructuredMessage(targetMessage, formatParameters, out patternMatches);
+                var targetMessage = messageBuilder();
+                return FormatStructuredMessage(targetMessage, formatParameters, out var patternMatches);
             };
         }
 
         private static string ReplaceFirst(string text, string search, string replace)
         {
-            int pos = text.IndexOf(search, StringComparison.Ordinal);
+            var pos = text.IndexOf(search, StringComparison.Ordinal);
             if (pos < 0)
             {
                 return text;
@@ -2133,17 +2130,16 @@ namespace Aggregates.Logging.LogProviders
                 return targetMessage;
             }
 
-            List<string> processedArguments = new List<string>();
+            var processedArguments = new List<string>();
             patternMatches = processedArguments;
 
             foreach (Match match in Pattern.Matches(targetMessage))
             {
                 var arg = match.Groups["arg"].Value;
 
-                int notUsed;
-                if (!int.TryParse(arg, out notUsed))
+                if (!int.TryParse(arg, out var notUsed))
                 {
-                    int argumentIndex = processedArguments.IndexOf(arg);
+                    var argumentIndex = processedArguments.IndexOf(arg);
                     if (argumentIndex == -1)
                     {
                         argumentIndex = processedArguments.Count;

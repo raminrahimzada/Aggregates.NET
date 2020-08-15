@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates
@@ -117,11 +116,11 @@ namespace Aggregates
 
         public void AcceptCommand<TCommand>() where TCommand : class, Aggregates.Messages.ICommand
         {
-            AcceptCommand<TCommand>((command) => command.GetType() == typeof(TCommand));
+            AcceptCommand<TCommand>(command => command.GetType() == typeof(TCommand));
         }
         public void RejectCommand<TCommand>() where TCommand : class, Aggregates.Messages.ICommand
         {
-            RejectCommand<TCommand>((command) => command.GetType() == typeof(TCommand));
+            RejectCommand<TCommand>(command => command.GetType() == typeof(TCommand));
         }
         public void AcceptCommand<TCommand>(Func<TCommand, bool> match) where TCommand : class, Aggregates.Messages.ICommand
         {

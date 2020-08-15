@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Aggregates.Contracts
+﻿namespace Aggregates.Contracts
 {
-    interface INeedChildTracking
+    internal interface INeedChildTracking
     {
         ITrackChildren Tracker { get; set; }
     }

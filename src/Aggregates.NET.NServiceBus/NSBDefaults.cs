@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Aggregates
 {
@@ -9,7 +7,7 @@ namespace Aggregates
     public static class NSBDefaults
     {
         // Header information to take from incoming messages
-        public static readonly IReadOnlyCollection<string> CarryOverHeaders = new string[]
+        public static readonly IReadOnlyCollection<string> CarryOverHeaders = new[]
         {
             "NServiceBus.MessageId",
             "NServiceBus.CorrelationId",

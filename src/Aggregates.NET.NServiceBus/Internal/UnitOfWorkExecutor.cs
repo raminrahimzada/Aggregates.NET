@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using NServiceBus;
-using NServiceBus.Extensibility;
 using NServiceBus.Pipeline;
 
 namespace Aggregates.Internal
@@ -122,7 +120,7 @@ namespace Aggregates.Internal
                 if (trailingExceptions.Any())
                 {
                     trailingExceptions.Insert(0, e);
-                    throw new System.AggregateException(trailingExceptions);
+                    throw new AggregateException(trailingExceptions);
                 }
                 throw;
 
@@ -142,7 +140,7 @@ namespace Aggregates.Internal
             stepId: "UnitOfWorkExecution",
             behavior: typeof(UnitOfWorkExecutor),
             description: "Begins and Ends unit of work for your application",
-            factoryMethod: (b) => new UnitOfWorkExecutor(b.Build<IMetrics>())
+            factoryMethod: b => new UnitOfWorkExecutor(b.Build<IMetrics>())
         )
         {
             InsertAfterIfExists("ExceptionRejector");

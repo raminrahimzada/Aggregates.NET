@@ -5,12 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class ServiceCollection : IContainer
+    internal class ServiceCollection : IContainer
     {
         private readonly IServiceCollection _serviceCollection;
 
@@ -23,44 +22,44 @@ namespace Aggregates.Internal
         {
         }
 
-        private ServiceLifetime ConvertLifestyle(Contracts.Lifestyle lifestyle)
+        private ServiceLifetime ConvertLifestyle(Lifestyle lifestyle)
         {
             switch (lifestyle)
             {
-                case Contracts.Lifestyle.PerInstance:
+                case Lifestyle.PerInstance:
                     return ServiceLifetime.Transient;
-                case Contracts.Lifestyle.Singleton:
+                case Lifestyle.Singleton:
                     return ServiceLifetime.Singleton;
-                case Contracts.Lifestyle.UnitOfWork:
+                case Lifestyle.UnitOfWork:
                     return ServiceLifetime.Scoped;
             }
             throw new ArgumentException($"Unknown lifestyle {lifestyle}");
         }
 
-        public void Register(Type concrete, Contracts.Lifestyle lifestyle)
+        public void Register(Type concrete, Lifestyle lifestyle)
         {
             _serviceCollection.TryAdd(new ServiceDescriptor(concrete, concrete, ConvertLifestyle(lifestyle)));
             RegisterInterfaces(concrete);
         }
-        public void Register<TInterface>(TInterface instance, Contracts.Lifestyle lifestyle) 
+        public void Register<TInterface>(TInterface instance, Lifestyle lifestyle) 
         {
-            _serviceCollection.TryAdd(new ServiceDescriptor(instance.GetType(), (_) => instance, ConvertLifestyle(lifestyle))); 
+            _serviceCollection.TryAdd(new ServiceDescriptor(instance.GetType(), _ => instance, ConvertLifestyle(lifestyle))); 
             RegisterInterfaces(typeof(TInterface));
         }
-        public void Register(Type componentType, object instance, Contracts.Lifestyle lifestyle)
+        public void Register(Type componentType, object instance, Lifestyle lifestyle)
         {
-            _serviceCollection.TryAdd(new ServiceDescriptor(componentType, (_) => instance, ConvertLifestyle(lifestyle)));
+            _serviceCollection.TryAdd(new ServiceDescriptor(componentType, _ => instance, ConvertLifestyle(lifestyle)));
             RegisterInterfaces(componentType);
         }
 
-        public void Register<TInterface>(Func<IContainer, TInterface> factory, Contracts.Lifestyle lifestyle, string name = null) 
+        public void Register<TInterface>(Func<IContainer, TInterface> factory, Lifestyle lifestyle, string name = null) 
         {
             // todo: support name? or remove name?
 
-            _serviceCollection.TryAdd(new ServiceDescriptor(typeof(TInterface), (provider) => factory(new ServiceProvider(provider)), ConvertLifestyle(lifestyle)));
+            _serviceCollection.TryAdd(new ServiceDescriptor(typeof(TInterface), provider => factory(new ServiceProvider(provider)), ConvertLifestyle(lifestyle)));
             RegisterInterfaces(typeof(TInterface));
         }
-        public void Register<TInterface, TConcrete>(Contracts.Lifestyle lifestyle, string name = null)
+        public void Register<TInterface, TConcrete>(Lifestyle lifestyle, string name = null)
         {
             _serviceCollection.TryAdd(new ServiceDescriptor(typeof(TInterface), typeof(TConcrete), ConvertLifestyle(lifestyle)));
             RegisterInterfaces(typeof(TInterface));
@@ -69,7 +68,8 @@ namespace Aggregates.Internal
         {
             return _serviceCollection.Any(sd => sd.ServiceType == componentType && sd.ImplementationType != null);
         }
-        void RegisterInterfaces(Type component)
+
+        private void RegisterInterfaces(Type component)
         {
             var interfaces = component.GetInterfaces();
             foreach (var serviceType in interfaces)

@@ -4,7 +4,7 @@ using Aggregates.Contracts;
 
 namespace Aggregates.Internal
 {
-    class EventDescriptor : IEventDescriptor
+    internal class EventDescriptor : IEventDescriptor
     {
         public Guid EventId { get; set; }
 

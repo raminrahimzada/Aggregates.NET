@@ -3,16 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using Aggregates.Contracts;
-using Aggregates.Messages;
 using System.Threading.Tasks;
 using Aggregates.Internal;
 using Aggregates.Logging;
 
 namespace Aggregates.Extensions
 {
-    static class ReflectionExtensions
+    internal static class ReflectionExtensions
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Reflection");
 
@@ -47,12 +45,11 @@ namespace Aggregates.Extensions
         public static Func<object, TService, IServiceContext, Task<TResponse>> MakeServiceHandler<TService, TResponse>(Type queryHandler) where TService : IService<TResponse>
         {
             var method = queryHandler
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .Where(
-                    m => (m.Name == "Handle") && 
-                    m.GetParameters()[0].ParameterType == typeof(TService) && 
-                    m.ReturnType == typeof(Task<TResponse>))
-                .SingleOrDefault();
+                .GetMethods(
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .SingleOrDefault(m => m.Name == "Handle" && 
+                                      m.GetParameters()[0].ParameterType == typeof(TService) && 
+                                      m.ReturnType == typeof(Task<TResponse>));
 
             if (method == null) return null;
 
@@ -99,11 +96,11 @@ namespace Aggregates.Extensions
         public static Func<IStoreEntities, IRepository<TEntity>> BuildRepositoryFunc<TEntity>()
             where TEntity : IEntity
         {
-            var stateType = typeof(TEntity).BaseType.GetGenericArguments()[1];
+            var stateType = typeof(TEntity).BaseType?.GetGenericArguments()[1];
             var repoType = typeof(Repository<,>).MakeGenericType(typeof(TEntity), stateType);
 
             // doing my own open-generics implementation so I don't have to depend on an IoC container supporting it
-            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(IStoreEntities) }, null);
+            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(IStoreEntities) }, null);
             if (ctor == null)
                 throw new AggregateException("No constructor found for repository");
 
@@ -117,12 +114,12 @@ namespace Aggregates.Extensions
         public static Func<TParent, IStoreEntities, IRepository<TEntity, TParent>> BuildParentRepositoryFunc<TEntity, TParent>()
             where TEntity : IChildEntity<TParent> where TParent : IEntity
         {
-            var stateType = typeof(TEntity).BaseType.GetGenericArguments()[1];
-            var stateParentType = typeof(TParent).BaseType.GetGenericArguments()[1];
+            var stateType = typeof(TEntity).BaseType?.GetGenericArguments()[1];
+            var stateParentType = typeof(TParent).BaseType?.GetGenericArguments()[1];
             var repoType = typeof(Repository<,,,>).MakeGenericType(typeof(TEntity), stateType, typeof(TParent), stateParentType);
 
             // doing my own open-generics implementation so I don't have to depend on an IoC container supporting it
-            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(TParent), typeof(IStoreEntities) }, null);
+            var ctor = repoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(TParent), typeof(IStoreEntities) }, null);
             if (ctor == null)
                 throw new AggregateException("No constructor found for repository");
 

@@ -2,11 +2,9 @@
 using Aggregates.Logging;
 using Aggregates.Extensions;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,15 +13,15 @@ namespace Aggregates.Internal
 
     public class DelayedCache : IDelayedCache, IDisposable
     {
-        class CacheKey
+        private class CacheKey
         {
             public CacheKey(string channel, string key)
             {
                 Channel = channel;
                 Key = key;
             }
-            public string Channel { get; set; }
-            public string Key { get; set; }
+            public string Channel { get; }
+            public string Key { get; }
 
             public class EqualityComparer : IEqualityComparer<CacheKey>
             {
@@ -40,13 +38,14 @@ namespace Aggregates.Internal
 
             }
         }
-        class CachedList
+
+        private class CachedList
         {
-            private object _lock { get; set; }
+            private object _lock { get; }
             private readonly ITimeProvider _time;
             private readonly Queue<IDelayedMessage> _messages;
 
-            public long Created { get; private set; }
+            public long Created { get; }
             public long Pulled { get; private set; }
 
             public int Count => _messages.Count;
@@ -219,8 +218,7 @@ namespace Aggregates.Internal
 
             // Get age from memcache
             var specificKey = new CacheKey(channel, key);
-            CachedList temp;
-            if (_memCache.TryGetValue(specificKey, out temp))
+            if (_memCache.TryGetValue(specificKey, out var temp))
                 specificAge = TimeSpan.FromTicks(_time.Now.Ticks - temp.Pulled);
             
 
@@ -232,8 +230,7 @@ namespace Aggregates.Internal
             var specificSize = 0;
             // Get size from memcache
             var specificKey = new CacheKey(channel, key);
-            CachedList temp;
-            if (_memCache.TryGetValue(specificKey, out temp))
+            if (_memCache.TryGetValue(specificKey, out var temp))
                 specificSize = temp.Count;
             
             return Task.FromResult(specificSize);
@@ -274,7 +271,7 @@ namespace Aggregates.Internal
                     .Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5))
                     .ToArray();
 
-            await expiredSpecificChannels.StartEachAsync(3, async (expired) =>
+            await expiredSpecificChannels.StartEachAsync(3, async expired =>
             {
                 var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 
@@ -346,7 +343,7 @@ namespace Aggregates.Internal
                     if (!toFlush.Any())
                         toFlush = _memCache.OrderBy(x => x.Value.Pulled).Select(x => x.Key).Take(Math.Max(1, _memCache.Keys.Count / 5)).ToArray();
 
-                    await toFlush.StartEachAsync(3, async (expired) =>
+                    await toFlush.StartEachAsync(3, async expired =>
                     {
                         var messages = pullFromMemCache(expired.Channel, expired.Key, max: _flushSize);
 

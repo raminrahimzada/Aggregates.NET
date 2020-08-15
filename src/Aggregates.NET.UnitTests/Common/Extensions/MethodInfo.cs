@@ -1,10 +1,4 @@
-﻿using Aggregates.Contracts;
-using FakeItEasy;
-using FluentAssertions;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using FluentAssertions;
 using Xunit;
 using Aggregates.Extensions;
 
@@ -12,7 +6,7 @@ namespace Aggregates.Common.Extensions
 {
     public class MethodInfo : Test
     {
-        class FakeClass
+        private class FakeClass
         {
             public int One(int target) { return target; }
         }

@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Aggregates.Messages;
 using Aggregates.Contracts;
 using Aggregates.Exceptions;
 using Xunit;
 using FakeItEasy;
 using FluentAssertions;
-using AutoFixture.Xunit2;
-using AutoFixture;
 
 namespace Aggregates.Common.ConflictResolvers
 {
     public class ResolveStronglyConflictResolver : Test
     {
         [Fact]
-        async Task ShouldResolveConflict()
+        private async Task ShouldResolveConflict()
         {
             var store = Fake<IStoreEntities>();
             var entity = Fake<FakeEntity>();
@@ -38,7 +34,7 @@ namespace Aggregates.Common.ConflictResolvers
             cleanEntity.State.Conflicts.Should().Be(3);
         }
         [Fact]
-        async Task NoRouteExceptionShouldThrowConflictResolutionFailedException()
+        private async Task NoRouteExceptionShouldThrowConflictResolutionFailedException()
         {
             var entity = Fake<FakeEntity>();
             (entity as INeedVersionRegistrar).Registrar = Fake<IVersionRegistrar>();
@@ -51,7 +47,7 @@ namespace Aggregates.Common.ConflictResolvers
             e.Should().BeOfType<ConflictResolutionFailedException>();
         }
         [Fact]
-        async Task ShouldThrowAbandonConflictResolutionException()
+        private async Task ShouldThrowAbandonConflictResolutionException()
         {
             var entity = Fake<FakeEntity>();
             (entity as INeedVersionRegistrar).Registrar = Fake<IVersionRegistrar>();
@@ -70,7 +66,7 @@ namespace Aggregates.Common.ConflictResolvers
             e.Should().BeOfType<AbandonConflictException>();
         }
         [Fact]
-        async Task ShouldDiscardEventsWhichThrowDiscardEventException()
+        private async Task ShouldDiscardEventsWhichThrowDiscardEventException()
         {
             var entity = Fake<FakeEntity>();
             (entity as INeedVersionRegistrar).Registrar = Fake<IVersionRegistrar>();
@@ -89,7 +85,7 @@ namespace Aggregates.Common.ConflictResolvers
             cleanEntity.Uncommitted.Should().HaveCount(0);
         }
         [Fact]
-        async Task ShouldIncludeOobEvents()
+        private async Task ShouldIncludeOobEvents()
         {
             var entity = Fake<FakeEntity>();
             (entity as INeedVersionRegistrar).Registrar = Fake<IVersionRegistrar>();
@@ -110,7 +106,7 @@ namespace Aggregates.Common.ConflictResolvers
             cleanEntity.Uncommitted.Where(x => x.Descriptor.StreamType == StreamTypes.OOB).Should().HaveCount(3);
         }
         [Fact]
-        async Task ShouldTransferOobParameters()
+        private async Task ShouldTransferOobParameters()
         {
             var entity = Fake<FakeEntity>();
             (entity as INeedVersionRegistrar).Registrar = Fake<IVersionRegistrar>();

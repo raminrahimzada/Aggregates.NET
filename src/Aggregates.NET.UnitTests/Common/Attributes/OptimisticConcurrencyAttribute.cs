@@ -1,9 +1,6 @@
-﻿using Aggregates.Contracts;
-using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,7 +8,7 @@ namespace Aggregates.Common
 {
     public class OptimisticConcurrencyAttribute : Test
     {
-        class FakeCustomResolver : IResolveConflicts
+        private class FakeCustomResolver : IResolveConflicts
         {
             Task IResolveConflicts.Resolve<TEntity, TState>(TEntity entity, Guid commitId, IDictionary<string, string> commitHeaders)
             {

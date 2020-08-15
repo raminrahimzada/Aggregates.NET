@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class EventContractResolver : DefaultContractResolver
+    internal class EventContractResolver : DefaultContractResolver
     {
         private readonly IEventMapper _mapper;
         private readonly IEventFactory _factory;
@@ -64,7 +64,7 @@ namespace Aggregates.Internal
     }
 
     [ExcludeFromCodeCoverage]
-    class EventSerializationBinder : DefaultSerializationBinder
+    internal class EventSerializationBinder : DefaultSerializationBinder
     {
         private readonly IEventMapper _mapper;
 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Messages;
 
 namespace Aggregates
 {

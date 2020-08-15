@@ -5,6 +5,6 @@ namespace Aggregates.Contracts
 {
     public interface ISnapshotReader
     {
-        Task<ISnapshot> Retreive(string stream);
+        Task<ISnapshot> Retrieve(string stream);
     }
 }

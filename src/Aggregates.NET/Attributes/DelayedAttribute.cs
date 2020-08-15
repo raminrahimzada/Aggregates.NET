@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 
@@ -30,48 +29,51 @@ namespace Aggregates.Attributes
     {
         public DelayedAttribute(Type type, int count = -1, int delayMs = -1, DeliveryMode mode = DeliveryMode.Single, bool useKeyProperties = true)
         {
-            this.Type = type;
+            Type = type;
             if(count != -1)
-                this.Count = count;
+                Count = count;
             if(delayMs != -1)
-                this.Delay = delayMs;
-            this.Mode = mode;
+                Delay = delayMs;
+            Mode = mode;
 
             if (Count > 10000)
                 throw new ArgumentException($"{nameof(Count)} too large - maximum is 10000");
 
-            if (!this.Count.HasValue && !this.Delay.HasValue)
+            if (!Count.HasValue && !Delay.HasValue)
                 throw new ArgumentException($"{nameof(Count)} or {nameof(delayMs)} is required to use Delayed attribute");
-            
-            
+
+
             var keys =
-                type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => new Tuple<PropertyInfo, KeyProperty>(x, x.GetCustomAttribute<KeyProperty>(false)));
+                type
+                    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Select(x => new Tuple<PropertyInfo, KeyProperty>(x, x.GetCustomAttribute<KeyProperty>(false)))
+                    .ToArray();
             
             // Slightly complex logic to select properties having `KeyProperty` attributes to combine into a string.
             // if `useKeyProperties` is false, only use `KeyProperty` attributes having `Always` be true
             if (keys.Any(x => x.Item2 != null && (useKeyProperties || x.Item2.Always)))
             {
-                this.KeyPropertyFunc =
-                    (o) =>
+                KeyPropertyFunc =
+                    o =>
                     {
-                        if (o.GetType() != this.Type)
-                            throw new ArgumentException($"Incorrect type - {this.Type.FullName} expected, {o.GetType().FullName} given");
+                        if (o.GetType() != Type)
+                            throw new ArgumentException($"Incorrect type - {Type.FullName} expected, {o.GetType().FullName} given");
 
                         return keys.Where(x => x.Item2 != null && (useKeyProperties || x.Item2.Always)).Select(x => x.Item1.GetValue(o).ToString()).Aggregate((cur, next) => $"{cur}:{next}");
                     };
             }
             else
             {
-                this.KeyPropertyFunc = (_) => "";
+                KeyPropertyFunc = _ => "";
             }
             
         }
 
-        public Type Type { get; private set; }
-        public int? Count { get; private set; }
-        public int? Delay { get; private set; }
-        public DeliveryMode? Mode { get; private set; }
-        public Func<object, string> KeyPropertyFunc { get; private set; }
+        public Type Type { get; }
+        public int? Count { get; }
+        public int? Delay { get; }
+        public DeliveryMode? Mode { get; }
+        public Func<object, string> KeyPropertyFunc { get; }
     }
     
 }

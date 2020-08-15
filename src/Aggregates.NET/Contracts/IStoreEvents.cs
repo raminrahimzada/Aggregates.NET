@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Aggregates.Messages;
 
 namespace Aggregates.Contracts
 {

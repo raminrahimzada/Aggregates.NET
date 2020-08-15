@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Aggregates.Contracts;
 using SimpleInjector.Lifestyles;
 using SimpleInjector;
@@ -12,7 +10,7 @@ namespace Aggregates.Internal
 {
     // somewhat from https://github.com/WilliamBZA/NServicebus.SimpleInjector/blob/master/src/NServiceBus.SimpleInjector/SimpleInjectorObjectBuilder.cs
     [ExcludeFromCodeCoverage]
-    class Container : IContainer, IDisposable
+    internal class Container : IContainer, IDisposable
     {
         private readonly SimpleInjector.Container _container;
         private readonly bool _child;
@@ -170,21 +168,23 @@ namespace Aggregates.Internal
         {
             return GetExistingRegistrationsFor(componentType).Any();
         }
-        IEnumerable<Registration> GetExistingRegistrationsFor(Type implementedInterface)
+
+        private IEnumerable<Registration> GetExistingRegistrationsFor(Type implementedInterface)
         {
             return _container.GetCurrentRegistrations().Where(r => r.ServiceType == implementedInterface).Select(r => r.Registration);
         }
-        Registration GetRegistrationFromDependencyLifecycle(Contracts.Lifestyle dependencyLifecycle, Type component)
+
+        private Registration GetRegistrationFromDependencyLifecycle(Contracts.Lifestyle dependencyLifecycle, Type component)
         {
             return ConvertLifestyle(dependencyLifecycle).CreateRegistration(component, _container);
         }
 
-        Registration GetRegistrationFromDependencyLifecycle(Contracts.Lifestyle dependencyLifecycle, Type component, Func<object> creator)
+        private Registration GetRegistrationFromDependencyLifecycle(Contracts.Lifestyle dependencyLifecycle, Type component, Func<object> creator)
         {
             return ConvertLifestyle(dependencyLifecycle).CreateRegistration(component, creator, _container);
         }
 
-        Registration GetRegistrationFromDependencyLifecycle(Contracts.Lifestyle dependencyLifecycle, Type component, object instance)
+        private Registration GetRegistrationFromDependencyLifecycle(Contracts.Lifestyle dependencyLifecycle, Type component, object instance)
         {
             return GetRegistrationFromDependencyLifecycle(dependencyLifecycle, component, () => instance);
         }

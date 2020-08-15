@@ -1,11 +1,10 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.Internal;
 using System;
 using System.Linq;
 
 namespace Aggregates.Extensions
 {
-    static class StringExtensions
+    internal static class StringExtensions
     {
         public static string MaxLength(this string source, int max)
         {
@@ -39,8 +38,8 @@ namespace Aggregates.Extensions
             // Unchecked, allow overflow
             unchecked
             {
-                int hash = 23;
-                foreach (char c in stream)
+                var hash = 23;
+                foreach (var c in stream)
                 {
                     hash = hash * 31 + c;
                 }
@@ -57,8 +56,8 @@ namespace Aggregates.Extensions
         {
             if (!(entity is IChildEntity))
                 return new Id[] { };
-            var parents = (entity as IChildEntity).Parent.GetParentIds().ToList();
-            parents.Add((entity as IChildEntity).Parent.Id);
+            var parents = ((IChildEntity) entity).Parent.GetParentIds().ToList();
+            parents.Add(((IChildEntity) entity).Parent.Id);
             return parents.ToArray();
         }
     }

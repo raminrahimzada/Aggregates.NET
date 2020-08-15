@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
-using Aggregates.Extensions;
 using Aggregates.Internal;
 using Aggregates.Logging;
 using Aggregates.Messages;

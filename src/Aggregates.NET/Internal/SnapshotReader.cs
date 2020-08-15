@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 
@@ -20,7 +15,7 @@ namespace Aggregates.Internal
     /// (Faster than ReadEventsBackwards everytime we want to get a snapshot from ES [especially for larger snapshots])
     /// We could just cache snapshots for a certian period of time but then we'll have to deal with eviction options
     /// </summary>
-    class SnapshotReader : ISnapshotReader, IEventSubscriber
+    internal class SnapshotReader : ISnapshotReader, IEventSubscriber
     {
         private static readonly ILog Logger = LogProvider.GetLogger("SnapshotReader");
 
@@ -44,8 +39,7 @@ namespace Aggregates.Internal
 
                 await truncates.WhenAllAsync(async x =>
                 {
-                    long tb;
-                    if (!TruncateBefore.TryRemove(x, out tb))
+                    if (!TruncateBefore.TryRemove(x, out var tb))
                         return;
 
                     try
@@ -70,9 +64,8 @@ namespace Aggregates.Internal
                 var expired = Snapshots.Where(x => (DateTime.UtcNow - x.Value.Item1) > TimeSpan.FromMinutes(5)).Select(x => x.Key)
                     .ToList();
 
-                Tuple<DateTime, string> temp;
                 foreach (var key in expired)
-                    if (Snapshots.TryRemove(key, out temp))
+                    if (Snapshots.TryRemove(key, out var temp))
                         m.Decrement("Snapshots Stored", Unit.Items);
 
                 return Task.CompletedTask;
@@ -130,7 +123,7 @@ namespace Aggregates.Internal
             };
 
             Logger.DebugEvent("GotSnapshot", "[{Stream:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", snapshot.StreamId, snapshot.Bucket, snapshot.EntityType, snapshot.Version);
-            Snapshots.AddOrUpdate(stream, (key) =>
+            Snapshots.AddOrUpdate(stream, key =>
             {
                 _metrics.Increment("Snapshots Stored", Unit.Items);
                 return new Tuple<DateTime, string>(DateTime.UtcNow, _serializer.Serialize(snapshot).AsString());
@@ -142,10 +135,9 @@ namespace Aggregates.Internal
             return Task.CompletedTask;
         }
 
-        public Task<ISnapshot> Retreive(string stream)
+        public Task<ISnapshot> Retrieve(string stream)
         {
-            Tuple<DateTime, string> snapshot;
-            if (!Snapshots.TryGetValue(stream, out snapshot))
+            if (!Snapshots.TryGetValue(stream, out var snapshot))
                 return Task.FromResult((ISnapshot)null);
 
             // Update timestamp so snapshot doesn't expire

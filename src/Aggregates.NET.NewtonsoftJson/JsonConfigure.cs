@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Aggregates.Contracts;
 using Aggregates.Internal;
 using System.Threading.Tasks;
@@ -17,11 +14,11 @@ namespace Aggregates
             extraConverters = extraConverters ?? new JsonConverter[] { };
 
             config.MessageContentType = "json";
-            config.RegistrationTasks.Add((c) =>
+            config.RegistrationTasks.Add(c =>
             {
                 var container = c.Container;
                                 
-                container.Register<IMessageSerializer>((factory) => new JsonMessageSerializer(factory.Resolve<IEventMapper>(), factory.Resolve<IEventFactory>(), extraConverters), Lifestyle.Singleton);
+                container.Register<IMessageSerializer>(factory => new JsonMessageSerializer(factory.Resolve<IEventMapper>(), factory.Resolve<IEventFactory>(), extraConverters), Lifestyle.Singleton);
 
                 return Task.CompletedTask;
             });

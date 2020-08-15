@@ -1,6 +1,4 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.Exceptions;
-using Aggregates.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -14,23 +12,23 @@ namespace Aggregates.Internal
 {
     // https://github.com/Particular/NServiceBus.Newtonsoft.Json/blob/develop/src/NServiceBus.Newtonsoft.Json/JsonMessageSerializer.cs
     [ExcludeFromCodeCoverage]
-    class JsonMessageSerializer : IMessageSerializer
+    internal class JsonMessageSerializer : IMessageSerializer
     {
         public static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
-        IEventMapper messageMapper;
-        IEventFactory messageFactory;
-        Func<Stream, JsonReader> readerCreator;
-        Func<Stream, JsonWriter> writerCreator;
-        NewtonSerializer jsonSerializer;
+        private readonly IEventMapper _messageMapper;
+        //private IEventFactory _messageFactory;
+        private readonly Func<Stream, JsonReader> _readerCreator;
+        private readonly Func<Stream, JsonWriter> _writerCreator;
+        private readonly NewtonSerializer _jsonSerializer;
 
         public JsonMessageSerializer(
             IEventMapper messageMapper,
             IEventFactory messageFactory,
             JsonConverter[] extraConverters)
         {
-            this.messageMapper = messageMapper;
-            this.messageFactory = messageFactory;
+            _messageMapper = messageMapper;
+            //this._messageFactory = messageFactory;
 
             var settings = new JsonSerializerSettings
             {
@@ -44,7 +42,7 @@ namespace Aggregates.Internal
                 NullValueHandling = NullValueHandling.Include
             };
 
-            this.writerCreator = (stream =>
+            _writerCreator = (stream =>
             {
                 var streamWriter = new StreamWriter(stream, Utf8NoBom);
                 return new JsonTextWriter(streamWriter)
@@ -54,14 +52,14 @@ namespace Aggregates.Internal
                 };
             });
 
-            this.readerCreator = (stream =>
+            _readerCreator = (stream =>
             {
                 var streamReader = new StreamReader(stream, Utf8NoBom);
                 return new JsonTextReader(streamReader);
             });
 
             ContentType = "Json";
-            jsonSerializer = NewtonSerializer.Create(settings);
+            _jsonSerializer = NewtonSerializer.Create(settings);
         }
 
         //private static void HandleError(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
@@ -72,10 +70,10 @@ namespace Aggregates.Internal
 
         public void Serialize(object message, Stream stream)
         {
-            using (var writer = writerCreator(stream))
+            using (var writer = _writerCreator(stream))
             {
                 writer.CloseOutput = false;
-                jsonSerializer.Serialize(writer, message);
+                _jsonSerializer.Serialize(writer, message);
                 writer.Flush();
             }
         }
@@ -95,14 +93,14 @@ namespace Aggregates.Internal
             };
         }
 
-        object ReadObject(Stream stream, bool isArrayStream, Type type)
+        private object ReadObject(Stream stream, bool isArrayStream, Type type)
         {
-            using (var reader = readerCreator(stream))
+            using (var reader = _readerCreator(stream))
             {
                 reader.CloseInput = false;
                 if (isArrayStream)
                 {
-                    var objects = (object[])jsonSerializer.Deserialize(reader, type.MakeArrayType());
+                    var objects = (object[])_jsonSerializer.Deserialize(reader, type.MakeArrayType());
                     if (objects.Length > 1)
                     {
                         throw new Exception("Multiple messages in the same stream are not supported.");
@@ -110,13 +108,13 @@ namespace Aggregates.Internal
                     return objects[0];
                 }
 
-                return jsonSerializer.Deserialize(reader, type);
+                return _jsonSerializer.Deserialize(reader, type);
             }
         }
 
         public string ContentType { get; }
 
-        object[] DeserializeMultipleMessageTypes(Stream stream, IList<Type> messageTypes, bool isArrayStream)
+        private object[] DeserializeMultipleMessageTypes(Stream stream, IList<Type> messageTypes, bool isArrayStream)
         {
             var rootTypes = FindRootTypes(messageTypes).ToList();
             var messages = new object[rootTypes.Count];
@@ -131,11 +129,11 @@ namespace Aggregates.Internal
             return messages;
         }
 
-        Type GetMappedType(Type messageType)
+        private Type GetMappedType(Type messageType)
         {
             if (messageType.IsInterface)
             {
-                var mappedTypeFor = messageMapper.GetMappedTypeFor(messageType);
+                var mappedTypeFor = _messageMapper.GetMappedTypeFor(messageType);
                 if (mappedTypeFor != null)
                 {
                     return mappedTypeFor;
@@ -144,9 +142,9 @@ namespace Aggregates.Internal
             return messageType;
         }
 
-        bool IsArrayStream(Stream stream)
+        private bool IsArrayStream(Stream stream)
         {
-            using (var reader = readerCreator(stream))
+            using (var reader = _readerCreator(stream))
             {
                 reader.CloseInput = false;
                 reader.Read();
@@ -155,7 +153,7 @@ namespace Aggregates.Internal
             }
         }
 
-        static IEnumerable<Type> FindRootTypes(IEnumerable<Type> messageTypesToDeserialize)
+        private static IEnumerable<Type> FindRootTypes(IEnumerable<Type> messageTypesToDeserialize)
         {
             Type currentRoot = null;
             foreach (var type in messageTypesToDeserialize)

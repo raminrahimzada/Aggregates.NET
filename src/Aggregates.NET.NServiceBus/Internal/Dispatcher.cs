@@ -5,16 +5,14 @@ using NServiceBus;
 using NServiceBus.Extensibility;
 using NServiceBus.Transport;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
-    class Dispatcher : IMessageDispatcher
+    internal class Dispatcher : IMessageDispatcher
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Dispatcher");
         private readonly IMetrics _metrics;
@@ -155,7 +153,7 @@ namespace Aggregates.Internal
 
             headers = headers ?? new Dictionary<string, string>();
 
-            await messages.GroupBy(x => x.Message.GetType()).ToArray().StartEachAsync(3, async (group) =>
+            await messages.GroupBy(x => x.Message.GetType()).ToArray().StartEachAsync(3, async group =>
             {
                 var groupedMessages = group.ToArray();
 

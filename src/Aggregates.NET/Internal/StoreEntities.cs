@@ -7,7 +7,6 @@ using Aggregates.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
@@ -17,19 +16,19 @@ namespace Aggregates.Internal
         private static readonly ILog Logger = LogProvider.GetLogger("StoreEntities");
 
         private readonly IMetrics _metrics;
-        private readonly IStoreEvents _eventstore;
-        private readonly IStoreSnapshots _snapstore;
-        private readonly IOobWriter _oobstore;
+        private readonly IStoreEvents _eventStore;
+        private readonly IStoreSnapshots _snapStore;
+        private readonly IOobWriter _oobStore;
         private readonly IEventFactory _factory;
         private readonly IVersionRegistrar _registrar;
         private readonly ITrackChildren _childTracker;
 
-        public StoreEntities(IMetrics metrics, IStoreEvents eventstore, IStoreSnapshots snapstore, IOobWriter oobstore, IEventFactory factory, IVersionRegistrar registrar, ITrackChildren childTracker)
+        public StoreEntities(IMetrics metrics, IStoreEvents eventStore, IStoreSnapshots snapStore, IOobWriter oobStore, IEventFactory factory, IVersionRegistrar registrar, ITrackChildren childTracker)
         {
             _metrics = metrics;
-            _eventstore = eventstore;
-            _snapstore = snapstore;
-            _oobstore = oobstore;
+            _eventStore = eventStore;
+            _snapStore = snapStore;
+            _oobStore = oobStore;
             _factory = factory;
             _registrar = registrar;
             _childTracker = childTracker;
@@ -54,12 +53,12 @@ namespace Aggregates.Internal
 
             var entity = factory.Create(bucket, id, getParents(parent));
 
-            (entity as INeedDomainUow).Uow = uow;
-            (entity as INeedEventFactory).EventFactory = _factory;
-            (entity as INeedStore).Store = _eventstore;
-            (entity as INeedStore).OobWriter = _oobstore;
-            (entity as INeedVersionRegistrar).Registrar = _registrar;
-            (entity as INeedChildTracking).Tracker = _childTracker;
+            ((INeedDomainUow) entity).Uow = uow;
+            ((INeedEventFactory) entity).EventFactory = _factory;
+            ((INeedStore) entity).Store = _eventStore;
+            ((INeedStore) entity).OobWriter = _oobStore;
+            ((INeedVersionRegistrar) entity).Registrar = _registrar;
+            ((INeedChildTracking) entity).Tracker = _childTracker;
 
             return Task.FromResult(entity);
         }
@@ -71,18 +70,18 @@ namespace Aggregates.Internal
 
             var parents = getParents(parent);
             // Todo: pass parent instead of Id[]?
-            var snapshot = await _snapstore.GetSnapshot<TEntity>(bucket, id, parents?.Select(x => x.StreamId).ToArray()).ConfigureAwait(false);
-            var events = await _eventstore.GetEvents<TEntity>(bucket, id, parents?.Select(x => x.StreamId).ToArray(), start: snapshot?.Version).ConfigureAwait(false);
+            var snapshot = await _snapStore.GetSnapshot<TEntity>(bucket, id, parents?.Select(x => x.StreamId).ToArray()).ConfigureAwait(false);
+            var events = await _eventStore.GetEvents<TEntity>(bucket, id, parents?.Select(x => x.StreamId).ToArray(), start: snapshot?.Version).ConfigureAwait(false);
 
             var entity = factory.Create(bucket, id, parents, events.Select(x => x.Event as IEvent).ToArray(), snapshot?.Payload);
 
 
-            (entity as INeedDomainUow).Uow = uow;
-            (entity as INeedEventFactory).EventFactory = _factory;
-            (entity as INeedStore).Store = _eventstore;
-            (entity as INeedStore).OobWriter = _oobstore;
-            (entity as INeedVersionRegistrar).Registrar = _registrar;
-            (entity as INeedChildTracking).Tracker = _childTracker;
+            ((INeedDomainUow) entity).Uow = uow;
+            ((INeedEventFactory) entity).EventFactory = _factory;
+            ((INeedStore) entity).Store = _eventStore;
+            ((INeedStore) entity).OobWriter = _oobStore;
+            ((INeedVersionRegistrar) entity).Registrar = _registrar;
+            ((INeedChildTracking) entity).Tracker = _childTracker;
 
             Logger.DebugEvent("Get", "[{EntityId:l}] bucket [{Bucket:l}] entity [{EntityType:l}] version {Version}", id, bucket, typeof(TEntity).FullName, entity.Version);
 
@@ -93,7 +92,7 @@ namespace Aggregates.Internal
             if (entity.Dirty)
                 throw new ArgumentException($"Cannot verify version for a dirty entity");
 
-            return _eventstore.VerifyVersion<TEntity>(entity.Bucket, entity.Id, entity.GetParentIds(), entity.Version);
+            return _eventStore.VerifyVersion<TEntity>(entity.Bucket, entity.Id, entity.GetParentIds(), entity.Version);
         }
         public async Task Commit<TEntity, TState>(TEntity entity, Guid commitId, IDictionary<string, string> commitHeaders) where TEntity : IEntity<TState> where TState : class, IState, new()
         {
@@ -109,7 +108,7 @@ namespace Aggregates.Internal
             {
                 if (domainEvents.Any())
                 {
-                    await _eventstore.WriteEvents<TEntity>(entity.Bucket, entity.Id, entity.GetParentIds(),
+                    await _eventStore.WriteEvents<TEntity>(entity.Bucket, entity.Id, entity.GetParentIds(),
                         domainEvents, commitHeaders, entity.Version).ConfigureAwait(false);
                 }
             }
@@ -165,14 +164,14 @@ namespace Aggregates.Internal
             try
             {
                 if (oobEvents.Any())
-                    await _oobstore.WriteEvents<TEntity>(entity.Bucket, entity.Id, entity.GetParentIds(), oobEvents, commitId, commitHeaders).ConfigureAwait(false);
+                    await _oobStore.WriteEvents<TEntity>(entity.Bucket, entity.Id, entity.GetParentIds(), oobEvents, commitId, commitHeaders).ConfigureAwait(false);
 
                 if (entity.State.ShouldSnapshot())
                 {
                     // Notify the entity and state that we are taking a snapshot
                     (entity as IEntity<TState>).Snapshotting();
                     entity.State.Snapshotting();
-                    await _snapstore.WriteSnapshots<TEntity>(entity.State, commitHeaders).ConfigureAwait(false);
+                    await _snapStore.WriteSnapshots<TEntity>(entity.State, commitHeaders).ConfigureAwait(false);
                 }
             }
             catch (Exception e)

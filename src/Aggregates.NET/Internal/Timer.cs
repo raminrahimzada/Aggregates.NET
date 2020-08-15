@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Logging;
@@ -9,7 +6,7 @@ using Aggregates.Extensions;
 
 namespace Aggregates.Internal
 {
-    static class Timer
+    internal static class Timer
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Timer");
 
@@ -19,7 +16,7 @@ namespace Aggregates.Internal
         }
         public static Task Repeat(Func<Task> action, TimeSpan interval, CancellationToken cancellationToken, string description)
         {
-            return Repeat((_) => action(), null, interval, cancellationToken, description);
+            return Repeat(_ => action(), null, interval, cancellationToken, description);
         }
 
         public static Task Repeat(Func<object, Task> action, object state, TimeSpan interval, string description)
@@ -83,7 +80,7 @@ namespace Aggregates.Internal
         }
         public static Task Expire(Func<Task> action, TimeSpan when, CancellationToken cancellationToken, string description)
         {
-            return Expire((_) => action(), null, when, cancellationToken, description);
+            return Expire(_ => action(), null, when, cancellationToken, description);
         }
     }
 }

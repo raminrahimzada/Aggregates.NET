@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
 using Aggregates.Attributes;
@@ -11,8 +10,6 @@ using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
-using NServiceBus.MessageInterfaces;
-using NServiceBus.ObjectBuilder;
 using NServiceBus.Pipeline;
 using NServiceBus.Sagas;
 
@@ -55,8 +52,7 @@ namespace Aggregates.Internal
             IDelayedChannel channel = null;
             try
             {
-                IContainer container;
-                if (context.Extensions.TryGet<IContainer>(out container))
+                if (context.Extensions.TryGet<IContainer>(out var container))
                     channel = container.Resolve<IDelayedChannel>();
             }
             catch (Exception)
@@ -97,8 +93,7 @@ namespace Aggregates.Internal
 
             if (IsDelayed.ContainsKey(channelKey))
             {
-                DelayedAttribute delayed;
-                IsDelayed.TryGetValue(channelKey, out delayed);
+                IsDelayed.TryGetValue(channelKey, out var delayed);
 
 
                 var specificKey = "";
@@ -127,8 +122,7 @@ namespace Aggregates.Internal
                 await channel.AddToQueue(channelKey, msgPkg, key: specificKey).ConfigureAwait(false);
                 Logger.DebugEvent("QueueAdd", "Message added to delayed queue [{Channel:l}] key [{Key:l}]", channelKey, specificKey);
 
-                bool bulkInvoked;
-                if (context.Extensions.TryGet<bool>("BulkInvoked", out bulkInvoked) && bulkInvoked)
+                if (context.Extensions.TryGet<bool>("BulkInvoked", out var bulkInvoked) && bulkInvoked)
                 {
                     // Prevents a single message from triggering a dozen different bulk invokes
                     return;

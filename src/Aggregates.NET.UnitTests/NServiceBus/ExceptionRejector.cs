@@ -1,15 +1,10 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.Internal;
 using Aggregates.Messages;
 using FakeItEasy;
 using FluentAssertions;
 using NServiceBus;
-using NServiceBus.Pipeline;
 using NServiceBus.Testing;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -93,7 +88,7 @@ namespace Aggregates.NServiceBus
             e.Should().BeOfType<Exception>();
             A.CallTo(() => retrier.QueueRetry(A<IFullMessage>.Ignored, A<TimeSpan>.Ignored)).MustNotHaveHappened();
             context.RepliedMessages.Should().NotBeEmpty();
-            context.RepliedMessages[0].Message.Should().BeAssignableTo<Messages.Error>();
+            context.RepliedMessages[0].Message.Should().BeAssignableTo<Error>();
         }
         [Fact]
         public async Task ShouldNotSendErrorReplyIfNotSendOrPublish()

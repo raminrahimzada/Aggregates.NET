@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Messages;
 using Aggregates.Exceptions;
-using System.Linq;
 
 namespace Aggregates.Internal
 {
@@ -59,8 +57,7 @@ namespace Aggregates.Internal
 
             // Todo: can suport "named" events with an attribute here so instead of routing based on object type 
             // route based on event name.
-            Action<TState, object> eventMutator;
-            if(!_mutators.TryGetValue($"Handle.{eventType}", out eventMutator))
+            if(!_mutators.TryGetValue($"Handle.{eventType}", out var eventMutator))
                 throw new NoRouteException(typeof(TState), $"Handle({eventType})");
             eventMutator((TState)state, @event);
         }
@@ -79,8 +76,7 @@ namespace Aggregates.Internal
             // Todo: the "conflict." and "handle." key prefixes are a hack
             // Todo: can suport "named" events with an attribute here so instead of routing based on object type 
             // route based on event name.
-            Action<TState, object> eventMutator;
-            if (!_mutators.TryGetValue($"Conflict.{eventType}", out eventMutator))
+            if (!_mutators.TryGetValue($"Conflict.{eventType}", out var eventMutator))
                 throw new NoRouteException(typeof(TState), $"Conflict({eventType})");
             eventMutator((TState)state, @event);
         }

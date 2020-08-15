@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class TestableVersionRegistrar : Contracts.IVersionRegistrar
+    internal class TestableVersionRegistrar : Contracts.IVersionRegistrar
     {
         public Type GetNamedType(string versionedName)
         {

@@ -1,11 +1,6 @@
-﻿using Aggregates.Contracts;
-using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Aggregates.Common
@@ -51,36 +46,32 @@ namespace Aggregates.Common
         [Fact]
         public void ShouldParseUsingDisplayName()
         {
-            FakeEnumeration temp;
             FakeEnumeration.Parse("one").Should().Be(FakeEnumeration.One);
-            FakeEnumeration.TryParse("one", out temp).Should().BeTrue();
+            FakeEnumeration.TryParse("one", out var temp).Should().BeTrue();
         }
         [Fact]
         public void ShouldParseUsingFromValue()
         {
-            FakeEnumeration temp;
             FakeEnumeration.FromValue(1).Should().Be(FakeEnumeration.One);
-            FakeEnumeration.TryParse(1, out temp).Should().BeTrue();
+            FakeEnumeration.TryParse(1, out var temp).Should().BeTrue();
         }
         [Fact]
         public void ShouldThrowArgumentExceptionWhenBadDisplayName()
         {
-            FakeEnumeration temp;
             var e = Record.Exception(() => FakeEnumeration.Parse("test"));
             e.Should().BeOfType<ArgumentException>();
             e.Message.Should().Contain(typeof(FakeEnumeration).FullName);
             e.Message.Should().Contain("test");
-            FakeEnumeration.TryParse("temp", out temp).Should().BeFalse();
+            FakeEnumeration.TryParse("temp", out var temp).Should().BeFalse();
         }
         [Fact]
         public void ShouldThrowArgumentExceptionWhenBadValue()
         {
-            FakeEnumeration temp;
             var e = Record.Exception(() => FakeEnumeration.FromValue(-1));
             e.Should().BeOfType<ArgumentException>();
             e.Message.Should().Contain((-1).ToString());
             e.Message.Should().Contain(typeof(FakeEnumeration).FullName);
-            FakeEnumeration.TryParse(-1, out temp).Should().BeFalse();
+            FakeEnumeration.TryParse(-1, out var temp).Should().BeFalse();
         }
         [Fact]
         public void ShouldSortList()

@@ -2,16 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using Aggregates.Messages;
 
 
 namespace Aggregates.Internal
@@ -87,7 +82,7 @@ namespace Aggregates.Internal
         private Task onEvent(string stream, long position, IFullEvent e)
         {
             _metrics.Increment("Delayed Queued", Unit.Event);
-            WaitingEvents.AddOrUpdate(stream, (key) => new LinkedList<Tuple<long, IFullEvent>>(new[] { new Tuple<long, IFullEvent>(position, e) }.AsEnumerable()), (key, existing) =>
+            WaitingEvents.AddOrUpdate(stream, key => new LinkedList<Tuple<long, IFullEvent>>(new[] { new Tuple<long, IFullEvent>(position, e) }.AsEnumerable()), (key, existing) =>
                {
                    existing.AddLast(new Tuple<long, IFullEvent>(position, e));
                    return existing;
@@ -119,7 +114,7 @@ namespace Aggregates.Internal
                     }
 
                     LinkedList<Tuple<long, IFullEvent>> flushedEvents;
-                    string stream = "";
+                    var stream = "";
                     // Pull a random delayed stream for processing
                     try
                     {
@@ -166,7 +161,7 @@ namespace Aggregates.Internal
 
                         }, param.Token).Wait();
                     }
-                    catch (System.AggregateException e)
+                    catch (AggregateException e)
                     {
                         if (e.InnerException is OperationCanceledException)
                             throw e.InnerException;

@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Messages;
 using System.Collections.Concurrent;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -13,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class Processor : IProcessor
+    internal class Processor : IProcessor
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Processor");
         private static readonly ConcurrentDictionary<Type, object> Processors = new ConcurrentDictionary<Type, object>();

@@ -1,11 +1,8 @@
 ﻿using Aggregates.Contracts;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 
 namespace Aggregates.Internal
 {
@@ -22,15 +19,15 @@ namespace Aggregates.Internal
         {
         }
 
-        private ServiceLifetime ConvertLifestyle(Contracts.Lifestyle lifestyle)
+        private ServiceLifetime ConvertLifestyle(Lifestyle lifestyle)
         {
             switch (lifestyle)
             {
-                case Contracts.Lifestyle.PerInstance:
+                case Lifestyle.PerInstance:
                     return ServiceLifetime.Transient;
-                case Contracts.Lifestyle.Singleton:
+                case Lifestyle.Singleton:
                     return ServiceLifetime.Singleton;
-                case Contracts.Lifestyle.UnitOfWork:
+                case Lifestyle.UnitOfWork:
                     return ServiceLifetime.Scoped;
             }
             throw new ArgumentException($"Unknown lifestyle {lifestyle}");
@@ -116,7 +113,7 @@ namespace Aggregates.Internal
             }
         }
 
-        class ChildScope : IContainer, IDisposable
+        private class ChildScope : IContainer, IDisposable
         {
             private readonly IServiceScope _scope;
             public ChildScope(IServiceScope scope)

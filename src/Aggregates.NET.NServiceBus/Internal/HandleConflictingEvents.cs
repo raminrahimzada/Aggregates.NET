@@ -1,17 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Aggregates.Contracts;
-using Aggregates.Exceptions;
-using Aggregates.Extensions;
-using Aggregates.Internal;
-using Aggregates.Logging;
-using NServiceBus;
-using IEvent = Aggregates.Messages.IEvent;
-
-namespace Aggregates.Internal
+﻿namespace Aggregates.Internal
 {
     /// <summary>
     /// When the above pushes a conflicting event package onto the delayed queue it can end up 

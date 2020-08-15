@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Aggregates.Extensions
 {
-    static class ExceptionExtensions
+    internal static class ExceptionExtensions
     {
         public static string AsString(this Exception exception)
         {
@@ -25,7 +22,7 @@ namespace Aggregates.Extensions
                 sb.AppendLine("---END Inner Exception---");
 
             }
-            var aggregateException = exception as System.AggregateException;
+            var aggregateException = exception as AggregateException;
             if (aggregateException == null)
                 return sb.ToString();
 

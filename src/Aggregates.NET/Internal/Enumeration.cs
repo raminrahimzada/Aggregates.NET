@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace Aggregates.Internal
 {
@@ -115,11 +113,9 @@ namespace Aggregates.Internal
 
         private static TEnumeration Parse(object value, string description, Func<TEnumeration, bool> predicate)
         {
-            TEnumeration result;
-
-            if (!TryParse(predicate, out result))
+            if (!TryParse(predicate, out var result))
             {
-                string message = $"'{value}' is not a valid {description} in {typeof(TEnumeration)}";
+                var message = $"'{value}' is not a valid {description} in {typeof(TEnumeration)}";
                 throw new ArgumentException(message, nameof(value));
             }
 

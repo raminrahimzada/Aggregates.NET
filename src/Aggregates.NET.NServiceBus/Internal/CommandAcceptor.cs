@@ -1,16 +1,8 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
-using Aggregates.Attributes;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using NServiceBus.MessageInterfaces;
-using NServiceBus.ObjectBuilder;
 using NServiceBus.Pipeline;
 using Aggregates.Messages;
 using NServiceBus;
@@ -65,7 +57,7 @@ namespace Aggregates.Internal
 
                     // Tell the sender the command was rejected due to a business exception
                     var rejection = context.Builder.Build<Action<BusinessException, Reject>>();
-                    await context.Reply<Reject>((msg) => rejection(e, msg), replyOptions).ConfigureAwait(false);
+                    await context.Reply<Reject>(msg => rejection(e, msg), replyOptions).ConfigureAwait(false);
 
                     // ExceptionRejector will filter out BusinessException, throw is just to cancel the UnitOfWork
                     throw;
@@ -83,7 +75,7 @@ namespace Aggregates.Internal
             stepId: "CommandAcceptor",
             behavior: typeof(CommandAcceptor),
             description: "Filters [BusinessException] from processing failures",
-            factoryMethod: (b) => new CommandAcceptor(b.Build<IMetrics>())
+            factoryMethod: b => new CommandAcceptor(b.Build<IMetrics>())
         )
         {
             // If a command fails business exception uow still needs to error out

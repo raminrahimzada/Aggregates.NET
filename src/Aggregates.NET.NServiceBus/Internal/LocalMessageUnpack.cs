@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using NServiceBus;
 using NServiceBus.Pipeline;
 
 namespace Aggregates.Internal
@@ -127,7 +124,7 @@ namespace Aggregates.Internal
             stepId: "LocalMessageUnpack",
             behavior: typeof(LocalMessageUnpack),
             description: "Pulls local message from context",
-            factoryMethod: (b) => new LocalMessageUnpack(b.Build<IMetrics>())
+            factoryMethod: b => new LocalMessageUnpack(b.Build<IMetrics>())
         )
         {
             InsertAfterIfExists("UnitOfWorkExecution");

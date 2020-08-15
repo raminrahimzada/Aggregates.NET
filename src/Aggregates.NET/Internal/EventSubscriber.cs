@@ -2,21 +2,16 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
 
 namespace Aggregates.Internal
 {
-    class EventSubscriber : IEventSubscriber
+    internal class EventSubscriber : IEventSubscriber
     {
 
         private static readonly ILog Logger = LogProvider.GetLogger("EventSubscriber");
@@ -196,7 +191,7 @@ when({{
                         consumer.Acknowledge(@event.Item1, @event.Item2, @event.Item3).ConfigureAwait(false)
                             .GetAwaiter().GetResult();
                     }
-                    catch (System.AggregateException e)
+                    catch (AggregateException e)
                     {
                         if (e.InnerException is OperationCanceledException)
                             throw e.InnerException;

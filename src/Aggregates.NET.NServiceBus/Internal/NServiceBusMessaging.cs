@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Aggregates.Contracts;
-using NServiceBus;
 using NServiceBus.Settings;
 using NServiceBus.Unicast;
 using NServiceBus.Unicast.Messages;
@@ -65,7 +61,7 @@ namespace Aggregates.Internal
             return typeof(Messages.IMessage).IsAssignableFrom(type) && !typeof(IState).IsAssignableFrom(type);
         }
         // https://stackoverflow.com/a/457708/223547
-        static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
+        private static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
         {
             while (toCheck != null && toCheck != typeof(object))
             {

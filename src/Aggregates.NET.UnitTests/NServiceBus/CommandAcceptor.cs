@@ -1,13 +1,8 @@
-﻿using Aggregates.Contracts;
-using Aggregates.Messages;
+﻿using Aggregates.Messages;
 using FakeItEasy;
 using FluentAssertions;
-using NServiceBus.Pipeline;
 using NServiceBus.Testing;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -20,7 +15,7 @@ namespace Aggregates.NServiceBus
         {
             var next = A.Fake<Func<Task>>();
             var context = new TestableIncomingLogicalMessageContext();
-            context.UpdateMessageInstance(Fake<Messages.IEvent>());
+            context.UpdateMessageInstance(Fake<IEvent>());
 
             await Sut.Invoke(context, next).ConfigureAwait(false);
 
@@ -31,7 +26,7 @@ namespace Aggregates.NServiceBus
         {
             var next = A.Fake<Func<Task>>();
             var context = new TestableIncomingLogicalMessageContext();
-            context.UpdateMessageInstance(Fake<Messages.ICommand>());
+            context.UpdateMessageInstance(Fake<ICommand>());
             context.MessageHeaders[Defaults.RequestResponse] = "1";
             context.Builder.Register<Action<Accept>>(A.Fake<Action<Accept>>());
 
@@ -47,7 +42,7 @@ namespace Aggregates.NServiceBus
             var next = A.Fake<Func<Task>>();
             A.CallTo(() => next()).Throws<BusinessException>();
             var context = new TestableIncomingLogicalMessageContext();
-            context.UpdateMessageInstance(Fake<Messages.ICommand>());
+            context.UpdateMessageInstance(Fake<ICommand>());
             context.MessageHeaders[Defaults.RequestResponse] = "1";
             context.Builder.Register<Action<BusinessException, Reject>>(A.Fake<Action<BusinessException, Reject>>());
 
@@ -62,7 +57,7 @@ namespace Aggregates.NServiceBus
         {
             var next = A.Fake<Func<Task>>();
             var context = new TestableIncomingLogicalMessageContext();
-            context.UpdateMessageInstance(Fake<Messages.ICommand>());
+            context.UpdateMessageInstance(Fake<ICommand>());
             context.MessageHeaders[Defaults.RequestResponse] = "0";
 
             await Sut.Invoke(context, next).ConfigureAwait(false);
@@ -76,7 +71,7 @@ namespace Aggregates.NServiceBus
             var next = A.Fake<Func<Task>>();
             A.CallTo(() => next()).Throws<BusinessException>();
             var context = new TestableIncomingLogicalMessageContext();
-            context.UpdateMessageInstance(Fake<Messages.ICommand>());
+            context.UpdateMessageInstance(Fake<ICommand>());
             context.MessageHeaders[Defaults.RequestResponse] = "0";
 
             await Sut.Invoke(context, next).ConfigureAwait(false);

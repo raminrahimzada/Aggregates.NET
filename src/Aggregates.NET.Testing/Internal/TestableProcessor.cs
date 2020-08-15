@@ -1,17 +1,15 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Newtonsoft.Json;
 using NServiceBus.MessageInterfaces.MessageMapper.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class TestableProcessor : ITestableProcessor
+    internal class TestableProcessor : ITestableProcessor
     {
         private readonly TestableEventFactory _factory;
 

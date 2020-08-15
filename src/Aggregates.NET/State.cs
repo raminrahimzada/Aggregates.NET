@@ -1,6 +1,5 @@
 ﻿
 using System.Collections.Generic;
-using System.Linq;
 using Aggregates.Contracts;
 using Aggregates.Internal;
 using Aggregates.Messages;

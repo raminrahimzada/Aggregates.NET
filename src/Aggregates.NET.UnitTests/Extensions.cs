@@ -1,9 +1,6 @@
 ﻿using FakeItEasy;
 using FakeItEasy.Configuration;
 using FluentAssertions.Primitives;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Aggregates
 {

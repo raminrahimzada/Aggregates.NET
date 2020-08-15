@@ -1,22 +1,18 @@
 ﻿using Aggregates.Attributes;
-using Aggregates.Contracts;
-using FakeItEasy;
 using FluentAssertions;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Aggregates.Common
 {
     public class DelayedAttributes : Test
     {
-        class FakeDto
+        private class FakeDto
         {
             public string Property { get; set; }
         }
-        class FakeDtoWithKeyProperties
+
+        private class FakeDtoWithKeyProperties
         {
             [KeyProperty]
             public string Property { get; set; }

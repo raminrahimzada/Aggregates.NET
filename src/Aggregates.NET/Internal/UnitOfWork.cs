@@ -2,10 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 using Aggregates.Messages;
@@ -71,8 +69,7 @@ namespace Aggregates.Internal
         {
             var key = typeof(T).FullName;
 
-            IRepository repository;
-            if (_repositories.TryGetValue(key, out repository)) return (IRepository<T>)repository;
+            if (_repositories.TryGetValue(key, out var repository)) return (IRepository<T>)repository;
 
             return (IRepository<T>)(_repositories[key] = (IRepository)_repoFactory.ForEntity<T>());
         }
@@ -80,8 +77,7 @@ namespace Aggregates.Internal
         {
             var key = $"{typeof(TParent).FullName}.{parent.Id}.{typeof(TEntity).FullName}";
 
-            IRepository repository;
-            if (_repositories.TryGetValue(key, out repository))
+            if (_repositories.TryGetValue(key, out var repository))
                 return (IRepository<TEntity, TParent>)repository;
 
             return (IRepository<TEntity, TParent>)(_repositories[key] = (IRepository)_repoFactory.ForEntity<TEntity, TParent>(parent));
@@ -100,8 +96,7 @@ namespace Aggregates.Internal
                 // On exception Begin and End will run multiple times without a new unit of work instance
                 _repositories.Clear();
 
-                Guid eventId;
-                EventIds.TryRemove(CommitId, out eventId);
+                EventIds.TryRemove(CommitId, out var eventId);
                 return Task.CompletedTask;
             }
 
@@ -142,8 +137,7 @@ namespace Aggregates.Internal
             }
             finally
             {
-                Guid eventId;
-                EventIds.TryRemove(CommitId, out eventId);
+                EventIds.TryRemove(CommitId, out var eventId);
             }
 
         }

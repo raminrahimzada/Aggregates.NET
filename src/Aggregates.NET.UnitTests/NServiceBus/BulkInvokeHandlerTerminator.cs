@@ -1,15 +1,10 @@
-﻿using Aggregates.Contracts;
-using Aggregates.Messages;
-using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using NServiceBus;
 using NServiceBus.Pipeline;
 using NServiceBus.Sagas;
 using NServiceBus.Testing;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using System.Reflection;
@@ -86,14 +81,14 @@ namespace Aggregates.NServiceBus
         }
 
 
-        static ActiveSagaInstance AssociateSagaWithMessage(FakeSaga saga, IInvokeHandlerContext behaviorContext)
+        private static ActiveSagaInstance AssociateSagaWithMessage(FakeSaga saga, IInvokeHandlerContext behaviorContext)
         {
             var sagaInstance = new ActiveSagaInstance(saga, SagaMetadata.Create(typeof(FakeSaga), new List<Type>(), new Conventions()), () => DateTime.UtcNow);
             behaviorContext.Extensions.Set(sagaInstance);
             return sagaInstance;
         }
 
-        static MessageHandler CreateMessageHandler(Action<object, object, IMessageHandlerContext> invocationAction, object handlerInstance)
+        private static MessageHandler CreateMessageHandler(Action<object, object, IMessageHandlerContext> invocationAction, object handlerInstance)
         {
             var messageHandler = new MessageHandler((instance, message, handlerContext) =>
             {
@@ -106,7 +101,7 @@ namespace Aggregates.NServiceBus
             return messageHandler;
         }
 
-        static MessageHandler CreateMessageHandlerThatReturnsNull(Action<object, object, IMessageHandlerContext> invocationAction, object handlerInstance)
+        private static MessageHandler CreateMessageHandlerThatReturnsNull(Action<object, object, IMessageHandlerContext> invocationAction, object handlerInstance)
         {
             var messageHandler = new MessageHandler((instance, message, handlerContext) =>
             {
@@ -119,7 +114,7 @@ namespace Aggregates.NServiceBus
             return messageHandler;
         }
 
-        static IInvokeHandlerContext CreateBehaviorContext(MessageHandler messageHandler)
+        private static IInvokeHandlerContext CreateBehaviorContext(MessageHandler messageHandler)
         {
             var behaviorContext = new TestableInvokeHandlerContext
             {
@@ -129,7 +124,7 @@ namespace Aggregates.NServiceBus
             return behaviorContext;
         }
 
-        class FakeSaga : global::NServiceBus.Saga<FakeSaga.FakeSagaData>, IAmStartedByMessages<StartMessage>
+        private class FakeSaga : global::NServiceBus.Saga<FakeSaga.FakeSagaData>, IAmStartedByMessages<StartMessage>
         {
             public Task Handle(StartMessage message, IMessageHandlerContext context)
             {
@@ -147,12 +142,12 @@ namespace Aggregates.NServiceBus
             }
         }
 
-        class StartMessage
+        private class StartMessage
         {
             public string SomeId { get; set; }
         }
 
-        class FakeMessageHandler
+        private class FakeMessageHandler
         {
         }
     }

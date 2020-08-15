@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Aggregates.Contracts;
 using Aggregates.Extensions;
 using Aggregates.Logging;
@@ -10,7 +7,7 @@ using Aggregates.Messages;
 
 namespace Aggregates.Internal
 {
-    static class EntityFactory
+    internal static class EntityFactory
     {
         public static readonly long NewEntityVersion = -1;
         private static readonly ConcurrentDictionary<Type, object> Factories = new ConcurrentDictionary<Type, object>();

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
 using Aggregates.Contracts;
 using NServiceBus.MessageInterfaces;
 using NServiceBus.Settings;
@@ -15,7 +14,7 @@ namespace Aggregates.Internal
     /// serializer without breaking the library apart into "Aggregates.NET.NServiceBus.JsonNet" and "Aggregates.NET.NServiceBus.Protobuf")
     /// </summary>
     [ExcludeFromCodeCoverage]
-    class Serializer : NServiceBus.Serialization.IMessageSerializer
+    internal class Serializer : NServiceBus.Serialization.IMessageSerializer
     {
         private readonly Lazy<IMessageSerializer> _serializer = new Lazy<IMessageSerializer>(() => Configuration.Settings.Container.Resolve<IMessageSerializer>());
 
@@ -33,7 +32,7 @@ namespace Aggregates.Internal
     }
 
     [ExcludeFromCodeCoverage]
-    class AggregatesSerializer : NServiceBus.Serialization.SerializationDefinition
+    internal class AggregatesSerializer : NServiceBus.Serialization.SerializationDefinition
     {
         public override Func<IMessageMapper, NServiceBus.Serialization.IMessageSerializer> Configure(ReadOnlySettings settings)
         {

@@ -1,16 +1,14 @@
 ﻿using Aggregates.Internal;
-using Aggregates.UnitOfWork;
 using Aggregates.UnitOfWork.Query;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates
 {
     [ExcludeFromCodeCoverage]
-    class TestableApplication : ITestableApplication
+    internal class TestableApplication : ITestableApplication
     {
         private IdRegistry _ids;
         public dynamic Bag { get; set; }

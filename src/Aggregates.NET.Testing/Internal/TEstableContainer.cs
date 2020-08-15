@@ -1,11 +1,10 @@
 ﻿using Aggregates.Contracts;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Aggregates.Internal
 {
-    class TestableContainer : IContainer
+    internal class TestableContainer : IContainer
     {
         public void Dispose()
         {

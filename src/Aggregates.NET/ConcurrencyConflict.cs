@@ -1,8 +1,4 @@
-﻿using System;
-using Aggregates.Contracts;
-using Aggregates.Internal;
-
-namespace Aggregates
+﻿namespace Aggregates
 {
     public enum ConcurrencyConflict
     {

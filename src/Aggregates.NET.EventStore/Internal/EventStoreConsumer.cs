@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,6 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Projections;
-using Newtonsoft.Json;
 
 namespace Aggregates.Internal
 {
@@ -241,8 +239,7 @@ namespace Aggregates.Internal
         public Task Acknowledge(string stream, long position, IFullEvent @event)
         {
             var eventId = $"{@event.EventId.Value}:{stream}:{position}";
-            Tuple<EventStorePersistentSubscriptionBase, Guid> outstanding;
-            if (!@event.EventId.HasValue || !_outstandingEvents.TryRemove(eventId, out outstanding))
+            if (!@event.EventId.HasValue || !_outstandingEvents.TryRemove(eventId, out var outstanding))
             {
                 Logger.WarnEvent("ACK", "Unknown ack {EventId}", @event.EventId);
                 return Task.CompletedTask;
@@ -265,7 +262,7 @@ namespace Aggregates.Internal
             if (token.IsCancellationRequested)
             {
                 Logger.WarnEvent("Cancelation", "Token cancel requested");
-                ThreadPool.QueueUserWorkItem((_) => sub.Stop(TimeSpan.FromSeconds(10)));
+                ThreadPool.QueueUserWorkItem(_ => sub.Stop(TimeSpan.FromSeconds(10)));
                 token.ThrowIfCancellationRequested();
             }
 
@@ -295,7 +292,7 @@ namespace Aggregates.Internal
             if (token.IsCancellationRequested)
             {
                 Logger.WarnEvent("Cancelation", "Token cancel requested");
-                ThreadPool.QueueUserWorkItem((_) => sub.Stop(TimeSpan.FromSeconds(10)));
+                ThreadPool.QueueUserWorkItem(_ => sub.Stop(TimeSpan.FromSeconds(10)));
                 token.ThrowIfCancellationRequested();
             }
             try

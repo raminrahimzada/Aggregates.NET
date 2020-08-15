@@ -3,9 +3,7 @@ using Aggregates.Extensions;
 using Aggregates.Logging;
 using NServiceBus.Pipeline;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
@@ -82,7 +80,7 @@ namespace Aggregates.Internal
             stepId: "SagaBehaviour",
             behavior: typeof(SagaBehaviour),
             description: "Handles internal sagas for consecutive command support",
-            factoryMethod: (b) => new SagaBehaviour(b.Build<IMetrics>(), b.Build<IMessageDispatcher>())
+            factoryMethod: b => new SagaBehaviour(b.Build<IMetrics>(), b.Build<IMessageDispatcher>())
         )
         {
             InsertBefore("ExceptionRejector");

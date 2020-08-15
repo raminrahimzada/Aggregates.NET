@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Logging;
 
@@ -71,7 +70,7 @@ namespace Aggregates.Internal
                 };
 
 
-                string id = "";
+                var id = "";
 
                 id = @event.Descriptor.Headers[Defaults.OobHeaderKey];
 

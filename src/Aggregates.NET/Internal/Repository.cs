@@ -2,16 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Aggregates.Attributes;
 using Aggregates.Contracts;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
-using Aggregates.Messages;
 
 namespace Aggregates.Internal
 {
@@ -41,10 +36,9 @@ namespace Aggregates.Internal
         public override async Task<TEntity> Get(Id id)
         {
             var cacheId = $"{_parent.Bucket}.{_parent.Id}.{id}";
-            TEntity root;
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
-                root = await GetUntracked(_parent.Bucket, id, _parent).ConfigureAwait(false);
+                root = await GetUnTracked(_parent.Bucket, id, _parent).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
                     throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
             }
@@ -56,10 +50,9 @@ namespace Aggregates.Internal
         {
             var cacheId = $"{_parent.Bucket}.{_parent.Id}.{id}";
 
-            TEntity root;
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
-                root = await NewUntracked(_parent.Bucket, id, _parent).ConfigureAwait(false);
+                root = await NewUnTracked(_parent.Bucket, id, _parent).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
                     throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
             }
@@ -67,9 +60,9 @@ namespace Aggregates.Internal
             return root;
         }
 
-        protected override async Task<TEntity> GetUntracked(string bucket, Id id, IEntity parent)
+        protected override async Task<TEntity> GetUnTracked(string bucket, Id id, IEntity parent)
         {
-            var entity = await base.GetUntracked(bucket, id, parent).ConfigureAwait(false);
+            var entity = await base.GetUnTracked(bucket, id, parent).ConfigureAwait(false);
 
             entity.Parent = _parent;
             (entity.State as State<TState, TStateParent>).Parent = _parent.State;
@@ -77,9 +70,9 @@ namespace Aggregates.Internal
             return entity;
         }
 
-        protected override async Task<TEntity> NewUntracked(string bucket, Id id, IEntity parent)
+        protected override async Task<TEntity> NewUnTracked(string bucket, Id id, IEntity parent)
         {
-            var entity = await base.NewUntracked(bucket, id, parent).ConfigureAwait(false);
+            var entity = await base.NewUnTracked(bucket, id, parent).ConfigureAwait(false);
 
             entity.Parent = _parent;
 
@@ -113,7 +106,7 @@ namespace Aggregates.Internal
                 Tracked.Values
                     .Where(x => !x.Dirty)
                     .ToArray()
-                    .WhenAllAsync((x) => _store.Verify<TEntity, TState>(x));
+                    .WhenAllAsync(x => _store.Verify<TEntity, TState>(x));
         }
 
 
@@ -124,7 +117,7 @@ namespace Aggregates.Internal
             await Tracked.Values
                 .ToArray()
                 .Where(x => x.Dirty)
-                .WhenAllAsync((tracked) =>
+                .WhenAllAsync(tracked =>
                     _store.Commit<TEntity, TState>(tracked, commitId, commitHeaders)
                 ).ConfigureAwait(false);
 
@@ -172,17 +165,16 @@ namespace Aggregates.Internal
         public async Task<TEntity> Get(string bucket, Id id)
         {
             var cacheId = $"{bucket}.{id}";
-            TEntity root;
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
-                root = await GetUntracked(bucket, id).ConfigureAwait(false);
+                root = await GetUnTracked(bucket, id).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
                     throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
             }
 
             return root;
         }
-        protected virtual Task<TEntity> GetUntracked(string bucket, Id id, IEntity parent = null)
+        protected virtual Task<TEntity> GetUnTracked(string bucket, Id id, IEntity parent = null)
         {
             return _store.Get<TEntity, TState>(bucket, id, parent);
         }
@@ -195,17 +187,16 @@ namespace Aggregates.Internal
 
         public async Task<TEntity> New(string bucket, Id id)
         {
-            TEntity root;
             var cacheId = $"{bucket}.{id}";
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
-                root = await NewUntracked(bucket, id).ConfigureAwait(false);
+                root = await NewUnTracked(bucket, id).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
                     throw new InvalidOperationException($"Could not add cache key [{cacheId}] to repo tracked");
             }
             return root;
         }
-        protected virtual Task<TEntity> NewUntracked(string bucket, Id id, IEntity parent = null)
+        protected virtual Task<TEntity> NewUnTracked(string bucket, Id id, IEntity parent = null)
         {
             return _store.New<TEntity, TState>(bucket, id, parent);
         }

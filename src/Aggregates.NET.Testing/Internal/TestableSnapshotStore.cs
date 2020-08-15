@@ -1,14 +1,12 @@
 ﻿using Aggregates.Contracts;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class TestableSnapshotStore : IStoreSnapshots
+    internal class TestableSnapshotStore : IStoreSnapshots
     {
         private Dictionary<string, ISnapshot> _snapshots;
         private Dictionary<string, IState> _writtenSnapshots;
@@ -21,7 +19,7 @@ namespace Aggregates.Internal
 
         public void SpecifySnapshot<T>(string bucket, Id streamId, object payload)
         {
-            _snapshots[$"{bucket}.{typeof(T).FullName}.{streamId}"] = new Internal.Snapshot
+            _snapshots[$"{bucket}.{typeof(T).FullName}.{streamId}"] = new Snapshot
             {
                 Bucket = bucket,
                 EntityType = typeof(T).FullName,

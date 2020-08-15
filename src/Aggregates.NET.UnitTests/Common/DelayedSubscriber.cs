@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Aggregates.Messages;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Xunit;
 using FakeItEasy;
-using FluentAssertions;
 
 namespace Aggregates.Common
 {

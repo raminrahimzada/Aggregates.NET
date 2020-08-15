@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Threading.Tasks;
 using Aggregates.Contracts;
 using NServiceBus;
 
@@ -26,7 +23,7 @@ namespace Aggregates.Internal
             var messageId = Guid.NewGuid().ToString();
             message.Headers.TryGetValue(Headers.MessageId, out messageId);
 
-            Timer.Expire((state) =>
+            Timer.Expire(state =>
             {
                 var msg = (IFullMessage)state;
                 

@@ -1,11 +1,7 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.Extensions;
-using Aggregates.Logging;
 using NServiceBus;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Aggregates.Internal
 {
@@ -66,12 +62,11 @@ namespace Aggregates.Internal
             if (command.Headers.ContainsKey(Headers.CorrelationId))
                 CurrentHeaders[$"{Defaults.PrefixHeader}.{Defaults.CorrelationIdHeader}"] = command.Headers[Headers.CorrelationId];
 
-            string messageId;
             Guid commitId = Guid.NewGuid();
 
             // Attempt to get MessageId from NServicebus headers
             // If we maintain a good CommitId convention it should solve the message idempotentcy issue (assuming the storage they choose supports it)
-            if (command.Headers.TryGetValue(Headers.MessageId, out messageId))
+            if (command.Headers.TryGetValue(Headers.MessageId, out var messageId))
                 Guid.TryParse(messageId, out commitId);
             if (command.Headers.TryGetValue($"{Defaults.PrefixHeader}.{Defaults.MessageIdHeader}", out messageId))
                 Guid.TryParse(messageId, out commitId);
@@ -84,7 +79,7 @@ namespace Aggregates.Internal
             CommitId = commitId;
 
             // Helpful log and gets CommitId into the dictionary
-            var firstEventId = UnitOfWork.NextEventId(CommitId);
+            var firstEventId = NextEventId(CommitId);
 
             return command;
         }

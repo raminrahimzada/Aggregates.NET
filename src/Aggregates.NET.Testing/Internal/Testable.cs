@@ -3,15 +3,13 @@ using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class EventPlanner<TEntity, TState> : IEventPlanner<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
+    internal class EventPlanner<TEntity, TState> : IEventPlanner<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
     {
         private IdRegistry _ids;
         private TestableDomain _uow;
@@ -64,7 +62,7 @@ namespace Aggregates.Internal
 
     }
     [ExcludeFromCodeCoverage]
-    class EventChecker<TEntity, TState> : IEventChecker<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
+    internal class EventChecker<TEntity, TState> : IEventChecker<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
     {
         private IdRegistry _ids;
         private TestableDomain _uow;
@@ -122,7 +120,7 @@ namespace Aggregates.Internal
         }
     }
     [ExcludeFromCodeCoverage]
-    class ModelChecker<TModel> : IModelChecker<TModel> where TModel : class, new()
+    internal class ModelChecker<TModel> : IModelChecker<TModel> where TModel : class, new()
     {
         private TestableApplication _app;
         private IdRegistry _ids;
@@ -209,7 +207,7 @@ namespace Aggregates.Internal
     }
 
     [ExcludeFromCodeCoverage]
-    class ModelPlanner<TModel> : IModelPlanner<TModel> where TModel : class, new()
+    internal class ModelPlanner<TModel> : IModelPlanner<TModel> where TModel : class, new()
     {
         private TestableApplication _app;
         private IdRegistry _ids;
@@ -236,7 +234,7 @@ namespace Aggregates.Internal
     }
 
     [ExcludeFromCodeCoverage]
-    class ServicePlanner<TService, TResponse> : IServicePlanner<TService, TResponse> where TService : IService<TResponse>
+    internal class ServicePlanner<TService, TResponse> : IServicePlanner<TService, TResponse> where TService : IService<TResponse>
     {
         private TestableProcessor _processor;
         private TService _service;
@@ -255,7 +253,7 @@ namespace Aggregates.Internal
     }
 
     [ExcludeFromCodeCoverage]
-    class ServiceChecker<TService, TResponse> : IServiceChecker<TService, TResponse> where TService : IService<TResponse>
+    internal class ServiceChecker<TService, TResponse> : IServiceChecker<TService, TResponse> where TService : IService<TResponse>
     {
         private TestableProcessor _processor;
         private TService _service;

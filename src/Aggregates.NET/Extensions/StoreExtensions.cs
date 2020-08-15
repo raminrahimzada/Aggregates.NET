@@ -3,12 +3,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using Aggregates.Contracts;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Linq;
 
 namespace Aggregates.Extensions
 {
-    static class StoreExtensions
+    internal static class StoreExtensions
     {
         public static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         

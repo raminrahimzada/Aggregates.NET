@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Aggregates.Extensions
 {
-    static class TaskExtensions
+    internal static class TaskExtensions
     {
         // https://blogs.msdn.microsoft.com/pfxteam/2012/03/05/implementing-a-simple-foreachasync-part-2/
         public static Task StartEachAsync<T>(

@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Newtonsoft.Json;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class IdJsonConverter : JsonConverter
+    internal class IdJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType) => typeof(Id) == objectType;
 
@@ -17,8 +15,7 @@ namespace Aggregates.Internal
                 return new Id((long)reader.Value);
 
             var str = reader.Value as string;
-            Guid guid;
-            return Guid.TryParse(str, out guid) ? new Id(guid) : new Id(str);
+            return Guid.TryParse(str, out var guid) ? new Id(guid) : new Id(str);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Aggregates.Internal
@@ -16,16 +15,16 @@ namespace Aggregates.Internal
 
         public class VersionDefinition
         {
-            public int Version { get; private set; }
-            public string Name { get; private set; }
-            public string Namespace { get; private set; }
-            public Type Type { get; private set; }
+            public int Version { get; }
+            public string Name { get; }
+            public string Namespace { get; }
+            public Type Type { get; }
             public VersionDefinition(string name, string @namespace, int version, Type type)
             {
-                this.Version = version;
-                this.Name = name;
-                this.Namespace = @namespace;
-                this.Type = type;
+                Version = version;
+                Name = name;
+                Namespace = @namespace;
+                Type = type;
             }
         }
 

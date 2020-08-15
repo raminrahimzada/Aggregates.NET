@@ -5,22 +5,18 @@ using Aggregates.Logging;
 using Aggregates.Messages;
 using NServiceBus;
 using NServiceBus.Features;
-using NServiceBus.MessageInterfaces;
-using NServiceBus.Settings;
-using NServiceBus.Unicast;
 using NServiceBus.Unicast.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Aggregates
 {
     [ExcludeFromCodeCoverage]
-    class Feature : NServiceBus.Features.Feature
+    internal class Feature : NServiceBus.Features.Feature
     {
         public Feature()
         {
@@ -46,7 +42,7 @@ namespace Aggregates
                 context.Pipeline.Remove("ExecuteUnitOfWork");
 
                 // bulk invoke only possible with consumer feature because it uses the eventstore as a sink when overloaded
-                context.Pipeline.Replace("InvokeHandlers", (b) =>
+                context.Pipeline.Replace("InvokeHandlers", b =>
                     new BulkInvokeHandlerTerminator(b.Build<IMetrics>(), b.Build<IEventMapper>()),
                     "Replaces default invoke handlers with one that supports our custom delayed invoker");
             }
@@ -91,7 +87,7 @@ namespace Aggregates
     }
 
     [ExcludeFromCodeCoverage]
-    class EndpointRunner : FeatureStartupTask
+    internal class EndpointRunner : FeatureStartupTask
     {
         private static readonly ILog Logger = LogProvider.GetLogger("EndpointRunner");
         private readonly String _instanceQueue;

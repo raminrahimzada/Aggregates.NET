@@ -4,13 +4,10 @@ using Aggregates.Logging;
 using Aggregates.Messages;
 using NServiceBus;
 using NServiceBus.Pipeline;
-using NServiceBus.Transport;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
@@ -103,7 +100,7 @@ namespace Aggregates.Internal
                 // Tell the sender the command was not handled due to a service exception
                 var rejection = context.Builder.Build<Action<Exception, string, Error>>();
                 // Wrap exception in our object which is serializable
-                await context.Reply<Error>((message) => rejection(e,
+                await context.Reply<Error>(message => rejection(e,
                             $"Rejected message after {retries} attempts!", message), replyOptions)
                         .ConfigureAwait(false);
 
@@ -120,7 +117,7 @@ namespace Aggregates.Internal
             stepId: "ExceptionRejector",
             behavior: typeof(ExceptionRejector),
             description: "handles exceptions and retries",
-            factoryMethod: (b) => new ExceptionRejector(b.Build<IMetrics>(), b.Build<IMessageSerializer>(), b.Build<DelayedRetry>())
+            factoryMethod: b => new ExceptionRejector(b.Build<IMetrics>(), b.Build<IMessageSerializer>(), b.Build<DelayedRetry>())
         )
         {
             InsertBefore("MutateIncomingMessages");

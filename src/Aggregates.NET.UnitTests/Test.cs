@@ -3,22 +3,19 @@ using Aggregates.Internal;
 using Aggregates.Messages;
 using AutoFixture;
 using AutoFixture.AutoFakeItEasy;
-using FakeItEasy;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Aggregates
 {
 
     public abstract class Test
     {
-        protected IFixture Fixture { get; private set; }
+        protected IFixture Fixture { get; }
         
         public Test()
         {
-            Aggregates.Configuration.Settings = new FakeConfiguration();
+            Configuration.Settings = new FakeConfiguration();
 
             Fixture = new Fixture().Customize(new AutoFakeItEasyCustomization { ConfigureMembers = true });
 

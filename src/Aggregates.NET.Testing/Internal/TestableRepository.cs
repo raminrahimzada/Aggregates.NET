@@ -1,22 +1,19 @@
 ﻿using Aggregates.Contracts;
 using Aggregates.Exceptions;
 using Aggregates.Extensions;
-using Aggregates.Internal;
-using Newtonsoft.Json;
 using NServiceBus.MessageInterfaces.MessageMapper.Reflection;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
 
     [ExcludeFromCodeCoverage]
-    class TestableRepository<TEntity, TState, TParent> : TestableRepository<TEntity, TState>, IRepository<TEntity, TParent>, IRepositoryTest<TEntity, TParent> where TParent : IEntity where TEntity : Entity<TEntity, TState, TParent> where TState : class, IState, new()
+    internal class TestableRepository<TEntity, TState, TParent> : TestableRepository<TEntity, TState>, IRepository<TEntity, TParent>, IRepositoryTest<TEntity, TParent> where TParent : IEntity where TEntity : Entity<TEntity, TState, TParent> where TState : class, IState, new()
     {
         private readonly TParent _parent;
 
@@ -42,8 +39,7 @@ namespace Aggregates.Internal
         {
             id = _ids.MakeId(id);
             var cacheId = $"{_parent.Bucket}.{_parent.Id}.{id}";
-            TEntity root;
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
                 root = await GetUntracked(_parent.Bucket, id, _parent).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
@@ -58,8 +54,7 @@ namespace Aggregates.Internal
             id = _ids.MakeId(id);
             var cacheId = $"{_parent.Bucket}.{_parent.Id}.{id}";
 
-            TEntity root;
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
                 root = await NewUntracked(_parent.Bucket, id, _parent).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
@@ -109,7 +104,7 @@ namespace Aggregates.Internal
         }
     }
     [ExcludeFromCodeCoverage]
-    class TestableRepository<TEntity, TState> : IRepository<TEntity>, IRepositoryTest<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
+    internal class TestableRepository<TEntity, TState> : IRepository<TEntity>, IRepositoryTest<TEntity> where TEntity : Entity<TEntity, TState> where TState : class, IState, new()
     {
         private static readonly IEntityFactory<TEntity> Factory = EntityFactory.For<TEntity>();
 
@@ -169,8 +164,7 @@ namespace Aggregates.Internal
         {
             id = _ids.MakeId(id);
             var cacheId = $"{bucket}.{id}";
-            TEntity root;
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
                 root = await GetUntracked(bucket, id).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))
@@ -204,9 +198,8 @@ namespace Aggregates.Internal
         public async Task<TEntity> New(string bucket, Id id)
         {
             id = _ids.MakeId(id);
-            TEntity root;
             var cacheId = $"{bucket}.{id}";
-            if (!Tracked.TryGetValue(cacheId, out root))
+            if (!Tracked.TryGetValue(cacheId, out var root))
             {
                 root = await NewUntracked(bucket, id).ConfigureAwait(false);
                 if (!Tracked.TryAdd(cacheId, root))

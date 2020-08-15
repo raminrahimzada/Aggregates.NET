@@ -1,12 +1,9 @@
 ﻿using Aggregates.Contracts;
 using FakeItEasy;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Aggregates
 {
-    class FakeConfiguration : Aggregates.Configure
+    internal class FakeConfiguration : Configure
     {
         public FakeConfiguration() : base()
         {

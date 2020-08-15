@@ -1,10 +1,5 @@
-﻿using Aggregates.Contracts;
-using FakeItEasy;
-using FluentAssertions;
+﻿using FluentAssertions;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 using Aggregates.Extensions;
 
@@ -27,7 +22,7 @@ namespace Aggregates.Common.Extensions
         [Fact]
         public void ShouldSerializeAggregateExceptionToString()
         {
-            var e = new System.AggregateException("test", new[] {
+            var e = new AggregateException("test", new[] {
                 new System.Exception("test2"),
                 new System.Exception("test3")
             });

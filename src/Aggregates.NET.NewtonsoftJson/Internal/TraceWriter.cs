@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class TraceWriter : ITraceWriter
+    internal class TraceWriter : ITraceWriter
     {
         private static readonly ILog Logger = LogProvider.GetLogger("Json");
 

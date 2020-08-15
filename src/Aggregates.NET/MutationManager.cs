@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Aggregates.Contracts;
-using Aggregates.Extensions;
 using Aggregates.Logging;
 
 namespace Aggregates
@@ -25,8 +21,7 @@ namespace Aggregates
 
         public static void DeregisterMutator(string id)
         {
-            Type temp;
-            Mutators.TryRemove(id, out temp);
+            Mutators.TryRemove(id, out var temp);
         }
 
         public static IEnumerable<Type> Registered => Mutators.Values;

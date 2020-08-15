@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Aggregates.Extensions
 {
-    static class DictionaryExtensions
+    internal static class DictionaryExtensions
     {
         public static Dictionary<T, TU> Merge<T, TU>(this IDictionary<T, TU> first, IDictionary<T, TU> second)
         {

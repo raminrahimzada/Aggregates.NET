@@ -2,13 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class TestableOobWriter : IOobWriter
+    internal class TestableOobWriter : IOobWriter
     {
         public Task<IFullEvent[]> GetEvents<TEntity>(string bucket, Id streamId, Id[] parents, string oobId, long? start = null, int? count = null) where TEntity : IEntity
         {

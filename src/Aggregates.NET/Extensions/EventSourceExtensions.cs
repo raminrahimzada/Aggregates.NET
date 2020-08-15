@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 
 namespace Aggregates.Extensions
 {
-    static class EventSourceExtensions
+    internal static class EventSourceExtensions
     {
         public static string BuildParentsString(this Id[] parents)
         {

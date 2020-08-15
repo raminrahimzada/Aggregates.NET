@@ -1,12 +1,10 @@
 ﻿using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Internal;
 using Aggregates.Messages;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -127,7 +125,7 @@ namespace Aggregates
             MessageContentType = "";
             LocalContainer = new AsyncLocal<IContainer>();
 
-            RegistrationTasks.Add((c) =>
+            RegistrationTasks.Add(c =>
             {
                 var container = c.Container;
 
@@ -148,15 +146,15 @@ namespace Aggregates
 
                     container.Register<IDelayedChannel, DelayedChannel>(Lifestyle.UnitOfWork);
                     container.Register<IRepositoryFactory, RepositoryFactory>(Lifestyle.Singleton);
-                    container.Register<IStoreSnapshots>((factory) => new StoreSnapshots(factory.Resolve<IMetrics>(), factory.Resolve<IStoreEvents>(), factory.Resolve<ISnapshotReader>(), factory.Resolve<IVersionRegistrar>()), Lifestyle.Singleton);
-                    container.Register<IOobWriter>((factory) => new OobWriter(factory.Resolve<IMessageDispatcher>(), factory.Resolve<IStoreEvents>(), factory.Resolve<IVersionRegistrar>()), Lifestyle.Singleton);
+                    container.Register<IStoreSnapshots>(factory => new StoreSnapshots(factory.Resolve<IMetrics>(), factory.Resolve<IStoreEvents>(), factory.Resolve<ISnapshotReader>(), factory.Resolve<IVersionRegistrar>()), Lifestyle.Singleton);
+                    container.Register<IOobWriter>(factory => new OobWriter(factory.Resolve<IMessageDispatcher>(), factory.Resolve<IStoreEvents>(), factory.Resolve<IVersionRegistrar>()), Lifestyle.Singleton);
                     container.Register<ISnapshotReader, SnapshotReader>(Lifestyle.Singleton);
                     container.Register<IStoreEntities, StoreEntities>(Lifestyle.Singleton);
-                    container.Register<IDelayedCache>((factory) => new DelayedCache(factory.Resolve<IMetrics>(), factory.Resolve<IStoreEvents>(), factory.Resolve<IVersionRegistrar>(), factory.Resolve<IRandomProvider>(), factory.Resolve<ITimeProvider>()), Lifestyle.Singleton);
+                    container.Register<IDelayedCache>(factory => new DelayedCache(factory.Resolve<IMetrics>(), factory.Resolve<IStoreEvents>(), factory.Resolve<IVersionRegistrar>(), factory.Resolve<IRandomProvider>(), factory.Resolve<ITimeProvider>()), Lifestyle.Singleton);
 
-                    container.Register<IEventSubscriber>((factory) => new EventSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IMessaging>(), factory.Resolve<IEventStoreConsumer>(), factory.Resolve<IVersionRegistrar>(), c.ParallelEvents, c.AllEvents), Lifestyle.Singleton, "eventsubscriber");
-                    container.Register<IEventSubscriber>((factory) => new DelayedSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IEventStoreConsumer>(), factory.Resolve<IMessageDispatcher>(), c.Retries), Lifestyle.Singleton, "delayedsubscriber");
-                    container.Register<IEventSubscriber>((factory) => (IEventSubscriber)factory.Resolve<ISnapshotReader>(), Lifestyle.Singleton, "snapshotreader");
+                    container.Register<IEventSubscriber>(factory => new EventSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IMessaging>(), factory.Resolve<IEventStoreConsumer>(), factory.Resolve<IVersionRegistrar>(), c.ParallelEvents, c.AllEvents), Lifestyle.Singleton, "eventsubscriber");
+                    container.Register<IEventSubscriber>(factory => new DelayedSubscriber(factory.Resolve<IMetrics>(), factory.Resolve<IEventStoreConsumer>(), factory.Resolve<IMessageDispatcher>(), c.Retries), Lifestyle.Singleton, "delayedsubscriber");
+                    container.Register<IEventSubscriber>(factory => (IEventSubscriber)factory.Resolve<ISnapshotReader>(), Lifestyle.Singleton, "snapshotreader");
 
                     container.Register<ITrackChildren, TrackChildren>(Lifestyle.Singleton);
 
@@ -172,7 +170,7 @@ namespace Aggregates
                     message.Trace = ex.AsString();
                 }, Lifestyle.Singleton);
 
-                container.Register<Action<Accept>>((_) =>
+                container.Register<Action<Accept>>(_ =>
                 {
                 }, Lifestyle.Singleton);
 
@@ -184,7 +182,7 @@ namespace Aggregates
 
                 return Task.CompletedTask;
             });
-            StartupTasks.Add((c) =>
+            StartupTasks.Add(c =>
             {
                 return Task.CompletedTask;
             });
@@ -292,7 +290,7 @@ namespace Aggregates
 
         public Configure AddMetrics<TImplementation>() where TImplementation : class, IMetrics
         {
-            RegistrationTasks.Add((c) =>
+            RegistrationTasks.Add(c =>
             {
                 c.Container.Register<IMetrics, TImplementation>(Lifestyle.Singleton);
                 return Task.CompletedTask;

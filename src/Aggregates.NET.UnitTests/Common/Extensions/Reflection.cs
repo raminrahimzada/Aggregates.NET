@@ -1,9 +1,5 @@
 ﻿using Aggregates.Contracts;
-using FakeItEasy;
 using FluentAssertions;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Aggregates.Extensions;
@@ -12,14 +8,15 @@ namespace Aggregates.Common.Extensions
 {
     public class Reflection : Test
     {
-        class FakeState : Aggregates.State<FakeState>
+        private class FakeState : State<FakeState>
         {
             private void Handle(int one) { }
             private void Conflict(int one) { }
             public void Handle(string one) { }
             public void Conflict(string one) { }
         }
-        class FakeService :
+
+        private class FakeService :
             IProvideService<IService<int>, int>
         {
             public Task<int> Handle(IService<int> one, IServiceContext context) { return Task.FromResult(1); }

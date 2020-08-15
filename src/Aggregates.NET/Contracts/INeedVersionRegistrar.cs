@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Aggregates.Contracts
+﻿namespace Aggregates.Contracts
 {
-    interface INeedVersionRegistrar
+    internal interface INeedVersionRegistrar
     {
         IVersionRegistrar Registrar { get; set; }
     }

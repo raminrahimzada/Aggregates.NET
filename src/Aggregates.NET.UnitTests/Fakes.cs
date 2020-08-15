@@ -1,11 +1,9 @@
 ﻿using Aggregates.Attributes;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Internal;
 using Aggregates.Messages;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates

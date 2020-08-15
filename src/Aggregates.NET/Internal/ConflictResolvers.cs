@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Exceptions;
@@ -11,7 +10,7 @@ using Aggregates.Messages;
 
 namespace Aggregates.Internal
 {
-    class ConcurrencyStrategy : Enumeration<ConcurrencyStrategy, ConcurrencyConflict>
+    internal class ConcurrencyStrategy : Enumeration<ConcurrencyStrategy, ConcurrencyConflict>
     {
         public static ConcurrencyStrategy Throw = new ConcurrencyStrategy(ConcurrencyConflict.Throw, "Throw");
         public static ConcurrencyStrategy Ignore = new ConcurrencyStrategy(ConcurrencyConflict.Ignore, "Ignore");
@@ -26,7 +25,7 @@ namespace Aggregates.Internal
 
         public IResolveConflicts Build(Type type = null)
         {
-            switch (this.Value)
+            switch (Value)
             {
                 case ConcurrencyConflict.Throw:
                     return Configuration.Settings.Container.Resolve<ThrowConflictResolver>();
@@ -41,7 +40,7 @@ namespace Aggregates.Internal
                 case ConcurrencyConflict.Custom:
                     return (IResolveConflicts)Configuration.Settings.Container.Resolve(type);
             };
-            throw new InvalidOperationException($"Unknown conflict resolver: {this.Value}");
+            throw new InvalidOperationException($"Unknown conflict resolver: {Value}");
         }
     }
 
@@ -138,9 +137,9 @@ namespace Aggregates.Internal
                     else if (u.Descriptor.StreamType == StreamTypes.OOB)
                     {
                         // Todo: small hack
-                        string id = "";
-                        bool transient = true;
-                        int daysToLive = -1;
+                        var id = "";
+                        var transient = true;
+                        var daysToLive = -1;
 
                         id = u.Descriptor.Headers[Defaults.OobHeaderKey];
 

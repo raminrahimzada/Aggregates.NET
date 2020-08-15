@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aggregates.Attributes
 {
@@ -11,9 +7,9 @@ namespace Aggregates.Attributes
     {
         public KeyProperty(bool always = false)
         {
-            this.Always = always;
+            Always = always;
         }
 
-        public bool Always { get; private set; }
+        public bool Always { get; }
     }
 }

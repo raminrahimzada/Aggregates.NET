@@ -4,13 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 
 namespace Aggregates.Internal
 {
     // somewhat from https://github.com/Particular/NServiceBus.StructureMap/blob/master/src/NServiceBus.StructureMap/StructureMapObjectBuilder.cs
     [ExcludeFromCodeCoverage]
-    class Container : IContainer
+    internal class Container : IContainer
     {
         private readonly StructureMap.IContainer _container;
 
@@ -24,22 +23,22 @@ namespace Aggregates.Internal
             _container.Dispose();
         }
 
-        private StructureMap.Pipeline.ILifecycle ConvertLifestyle(Contracts.Lifestyle lifestyle)
+        private ILifecycle ConvertLifestyle(Lifestyle lifestyle)
         {
             switch (lifestyle)
             {
-                case Contracts.Lifestyle.PerInstance:
-                    return new StructureMap.Pipeline.TransientLifecycle();
-                case Contracts.Lifestyle.Singleton:
-                    return new StructureMap.Pipeline.SingletonLifecycle();
-                case Contracts.Lifestyle.UnitOfWork:
+                case Lifestyle.PerInstance:
+                    return new TransientLifecycle();
+                case Lifestyle.Singleton:
+                    return new SingletonLifecycle();
+                case Lifestyle.UnitOfWork:
                     // Transients are singletons in child containers
-                    return new StructureMap.Pipeline.TransientLifecycle();
+                    return new TransientLifecycle();
             }
             throw new ArgumentException($"Unknown lifestyle {lifestyle}");
         }
 
-        public void Register(Type concrete, Contracts.Lifestyle lifestyle)
+        public void Register(Type concrete, Lifestyle lifestyle)
         {
             _container.Configure(x =>
             {
@@ -51,7 +50,7 @@ namespace Aggregates.Internal
                 }
             });
         }
-        public void Register(Type serviceType, object instance, Contracts.Lifestyle lifestyle)
+        public void Register(Type serviceType, object instance, Lifestyle lifestyle)
         {
             _container.Configure(x =>
             {
@@ -63,7 +62,7 @@ namespace Aggregates.Internal
                 }
             });
         }
-        public void Register<TInterface>(TInterface instance, Contracts.Lifestyle lifestyle)
+        public void Register<TInterface>(TInterface instance, Lifestyle lifestyle)
         {
             _container.Configure(x =>
             {
@@ -76,7 +75,7 @@ namespace Aggregates.Internal
             });
         }
 
-        public void Register<TInterface>(Func<IContainer, TInterface> factory, Contracts.Lifestyle lifestyle, string name = null)
+        public void Register<TInterface>(Func<IContainer, TInterface> factory, Lifestyle lifestyle, string name = null)
         {
 
             _container.Configure(x =>
@@ -92,7 +91,7 @@ namespace Aggregates.Internal
                 }
             });
         }
-        public void Register<TInterface, TConcrete>(Contracts.Lifestyle lifestyle, string name = null)
+        public void Register<TInterface, TConcrete>(Lifestyle lifestyle, string name = null)
         {
             _container.Configure(x =>
             {
@@ -131,9 +130,10 @@ namespace Aggregates.Internal
         {
             return _container.TryGetInstance<TResolve>();
         }
-        static IEnumerable<Type> GetAllInterfacesImplementedBy(Type t)
+
+        private static IEnumerable<Type> GetAllInterfacesImplementedBy(Type t)
         {
-            return t.GetInterfaces().Where(x => !x.FullName.StartsWith("System."));
+            return t.GetInterfaces().Where(x => !x.FullName?.StartsWith("System.")??false);
         }
 
         public IContainer GetChildContainer()

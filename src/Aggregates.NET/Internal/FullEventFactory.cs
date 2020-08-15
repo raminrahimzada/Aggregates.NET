@@ -3,7 +3,6 @@ using Aggregates.Messages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Aggregates.Internal
 {
@@ -11,7 +10,7 @@ namespace Aggregates.Internal
     {
         public static IFullEvent OOBEvent(IVersionRegistrar versionRegistry, Aggregates.UnitOfWork.IDomain uow, IEntity entity, IEvent @event, string id, bool transient, int? daysToLive)
         {
-            var eventId = Internal.UnitOfWork.NextEventId(uow.CommitId);
+            var eventId = UnitOfWork.NextEventId(uow.CommitId);
 
             var newEvent = new FullEvent
             {
@@ -41,7 +40,7 @@ namespace Aggregates.Internal
         }
         public static IFullEvent Event(IVersionRegistrar versionRegistry, Aggregates.UnitOfWork.IDomain uow, IEntity entity, IEvent @event)
         {
-            var eventId = Internal.UnitOfWork.NextEventId(uow.CommitId);
+            var eventId = UnitOfWork.NextEventId(uow.CommitId);
 
             var newEvent = new FullEvent
             {

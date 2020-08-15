@@ -4,12 +4,11 @@ using Aggregates.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates.Internal
 {
-    class TrackChildren : ITrackChildren
+    internal class TrackChildren : ITrackChildren
     {
         private static readonly ILog Logger = LogProvider.GetLogger("TrackChildren");
 

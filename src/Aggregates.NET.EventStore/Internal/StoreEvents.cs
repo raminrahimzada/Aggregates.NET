@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Exceptions;
@@ -13,12 +10,11 @@ using Aggregates.Logging;
 using Aggregates.Messages;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
-using Newtonsoft.Json;
 
 namespace Aggregates.Internal
 {
     [ExcludeFromCodeCoverage]
-    class StoreEvents : IStoreEvents
+    internal class StoreEvents : IStoreEvents
     {
         private static readonly ILog Logger = LogProvider.GetLogger("StoreEvents");
         private static readonly ILog SlowLogger = LogProvider.GetLogger("Slow Alarm");

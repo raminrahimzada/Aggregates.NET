@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Aggregates.Contracts;
-using Aggregates.Exceptions;
 using Aggregates.Extensions;
 using Aggregates.Logging;
 
@@ -110,10 +106,9 @@ namespace Aggregates.Internal
 
             var fromCache = await _cache.Pull(channel, key, max).ConfigureAwait(false);
 
-            List<IDelayedMessage> discovered = new List<IDelayedMessage>(fromCache);
+            var discovered = new List<IDelayedMessage>(fromCache);
 
-            List<IDelayedMessage> fromUncommitted;
-            if (_uncommitted.TryRemove(specificKey, out fromUncommitted))
+            if (_uncommitted.TryRemove(specificKey, out var fromUncommitted))
                 discovered.AddRange(fromUncommitted);
 
             if(discovered.Any())

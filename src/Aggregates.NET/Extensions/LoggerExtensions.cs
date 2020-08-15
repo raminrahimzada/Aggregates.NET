@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Aggregates.Extensions
 {
     [ExcludeFromCodeCoverage]
-    static class LoggerExtensions
+    internal static class LoggerExtensions
     {
         public static void LogEvent(this ILog logger, LogLevel level, string eventId, string messageTemplate, params object[] propertyValues)
         {

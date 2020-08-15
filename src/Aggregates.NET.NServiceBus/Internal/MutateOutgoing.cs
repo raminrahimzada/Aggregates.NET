@@ -31,9 +31,7 @@ namespace Aggregates.Internal
             var mutators = MutationManager.Registered.ToList();
             if (!mutators.Any()) return next();
 
-            IContainer container;
-
-            if (!context.Extensions.TryGet<IContainer>(out container))
+            if (!context.Extensions.TryGet<IContainer>(out var container))
                 container = Configuration.Settings.Container.GetChildContainer();
 
             foreach (var type in mutators)

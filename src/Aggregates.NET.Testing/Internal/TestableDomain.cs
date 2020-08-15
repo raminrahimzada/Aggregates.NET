@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Aggregates.Contracts;
 using Aggregates.Internal;
 using Aggregates.UnitOfWork;
@@ -11,7 +8,7 @@ using Aggregates.UnitOfWork;
 namespace Aggregates
 {
     [ExcludeFromCodeCoverage]
-    class TestableDomain : ITestableDomain
+    internal class TestableDomain : ITestableDomain
     {
         private IdRegistry _ids;
         private Dictionary<string, IRepository> _repositories;
@@ -37,8 +34,7 @@ namespace Aggregates
             var stateType = typeof(T).BaseType.GetGenericArguments()[1];
             var repoType = typeof(TestableRepository<,>).MakeGenericType(typeof(T), stateType);
 
-            IRepository repository;
-            if (_repositories.TryGetValue(key, out repository)) return (IRepository<T>)repository;
+            if (_repositories.TryGetValue(key, out var repository)) return (IRepository<T>)repository;
 
             return (IRepository<T>)(_repositories[key] = (IRepository)Activator.CreateInstance(repoType, this, _ids));
 
@@ -51,8 +47,7 @@ namespace Aggregates
             var stateType = typeof(TEntity).BaseType.GetGenericArguments()[1];
             var repoType = typeof(TestableRepository<,,>).MakeGenericType(typeof(TEntity), stateType, typeof(TParent));
 
-            IRepository repository;
-            if (_repositories.TryGetValue(key, out repository))
+            if (_repositories.TryGetValue(key, out var repository))
                 return (IRepository<TEntity, TParent>)repository;
 
             return (IRepository<TEntity, TParent>)(_repositories[key] = (IRepository)Activator.CreateInstance(repoType, parent, this, _ids));

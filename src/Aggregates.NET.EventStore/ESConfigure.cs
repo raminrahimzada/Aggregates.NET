@@ -2,11 +2,8 @@
 using Aggregates.Extensions;
 using Aggregates.Internal;
 using EventStore.ClientAPI;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Aggregates
@@ -16,11 +13,11 @@ namespace Aggregates
     {
         public static Configure EventStore(this Configure config, params IEventStoreConnection[] connections)
         {
-            config.RegistrationTasks.Add((c) =>
+            config.RegistrationTasks.Add(c =>
             {
                 var container = c.Container;
 
-                container.Register<IEventStoreConsumer>((factory) =>
+                container.Register<IEventStoreConsumer>(factory =>
                     new EventStoreConsumer(
                         factory.Resolve<IMetrics>(),
                         factory.Resolve<IMessageSerializer>(),
@@ -28,7 +25,7 @@ namespace Aggregates
                         connections,
                         factory.Resolve<IEventMapper>()
                         ), Lifestyle.Singleton);
-                container.Register<IStoreEvents>((factory) =>
+                container.Register<IStoreEvents>(factory =>
                     new StoreEvents(
                         factory.Resolve<IMetrics>(),
                         factory.Resolve<IMessageSerializer>(),
@@ -42,7 +39,7 @@ namespace Aggregates
 
             // These tasks are needed for any endpoint connected to the eventstore
             // Todo: when implementing another eventstore, dont copy this, do it a better way
-            config.StartupTasks.Add(async (c) =>
+            config.StartupTasks.Add(async c =>
             {
                 var subscribers = c.Container.ResolveAll<IEventSubscriber>();
 
@@ -61,7 +58,7 @@ namespace Aggregates
                 }
 
             });
-            config.ShutdownTasks.Add(async (c) =>
+            config.ShutdownTasks.Add(async c =>
             {
                 var subscribers = c.Container.ResolveAll<IEventSubscriber>();
 

@@ -2,9 +2,6 @@
 using FakeItEasy;
 using FluentAssertions;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Aggregates.Common.Extensions
@@ -42,7 +39,7 @@ namespace Aggregates.Common.Extensions
             A.CallTo(() => context.Container).Returns(container);
             A.CallTo(() => context.Processor).Returns(processor);
 
-            context.Service<IService<int>, int>((_) => { });
+            context.Service<IService<int>, int>(_ => { });
 
             A.CallTo(() => processor.Process<IService<int>, int>(A<Action<IService<int>>>.Ignored, A<IContainer>.Ignored)).MustHaveHappened();
         }
